@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Timer, Plus, X, Trash2, Dumbbell } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
-import { WorkoutSet, Exercise } from '../types/workout';
-import { exercises } from '../data/exercises';
 import { useNavigate } from 'react-router-dom';
+import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 
 export const WorkoutSession: React.FC = () => {
   const { 
     currentWorkout, 
     updateWorkoutExercise, 
     completeWorkout,
-    deleteExercise 
+    deleteExercise,
+    addExercisesToWorkout 
   } = useWorkout();
   const [workoutName, setWorkoutName] = useState('');
   const [duration, setDuration] = useState(0);
@@ -58,7 +58,7 @@ export const WorkoutSession: React.FC = () => {
   const handleAddSet = (exerciseId: string) => {
     const exercise = currentWorkout.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
-      const newSet: WorkoutSet = {
+      const newSet = {
         id: Date.now().toString(),
         setNumber: exercise.sets.length + 1,
         targetReps: 0,
@@ -89,7 +89,7 @@ export const WorkoutSession: React.FC = () => {
     }
   };
 
-  const handleUpdateSet = (exerciseId: string, setId: string, field: keyof WorkoutSet, value: any) => {
+  const handleUpdateSet = (exerciseId: string, setId: string, field: string, value: any) => {
     if (!currentWorkout) return;
     const exercise = currentWorkout.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
@@ -103,20 +103,8 @@ export const WorkoutSession: React.FC = () => {
     }
   };
 
-  const handleAddExercise = (exercise: Exercise) => {
-    const newExercise = {
-      exercise,
-      sets: [{
-        id: Date.now().toString(),
-        setNumber: 1,
-        targetReps: 0,
-        performedReps: '',
-        weight: 0,
-        comments: '',
-        isPR: false
-      }]
-    };
-    updateWorkoutExercise(exercise.id, newExercise);
+  const handleAddExercises = (selectedExercises: Exercise[]) => {
+    addExercisesToWorkout(selectedExercises);
     setShowExerciseModal(false);
   };
 
@@ -175,7 +163,7 @@ export const WorkoutSession: React.FC = () => {
               </div>
               <div className="space-y-4">
                 {sets.map(set => (
-                  <div key={set.id} className="grid grid-cols-6 gap-4 items-center">
+                  <div key={set.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
                     <div className="text-gray-500">Set {set.setNumber}</div>
                     <input
                       type="number"
@@ -234,45 +222,21 @@ export const WorkoutSession: React.FC = () => {
         </div>
       )}
 
-      <div className="mt-6">
+      <div className="mt-6 sticky bottom-4">
         <button
           onClick={() => completeWorkout(workoutName)}
-          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
         >
           Complete Workout
         </button>
       </div>
 
       {showExerciseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-lg w-full max-h-[80vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">Add Exercise</h3>
-                <button
-                  onClick={() => setShowExerciseModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="space-y-2">
-                {exercises
-                  .filter(e => !currentWorkout.exercises.some(ce => ce.exercise.id === e.id))
-                  .map(exercise => (
-                    <button
-                      key={exercise.id}
-                      onClick={() => handleAddExercise(exercise)}
-                      className="w-full p-4 text-left hover:bg-gray-50 rounded-lg"
-                    >
-                      <div className="font-medium">{exercise.name}</div>
-                      <div className="text-sm text-gray-500">{exercise.muscleGroup}</div>
-                    </button>
-                  ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <ExerciseSelectionModal
+          onClose={() => setShowExerciseModal(false)}
+          onAdd={handleAddExercises}
+          currentExercises={currentWorkout.exercises.map(e => e.exercise)}
+        />
       )}
     </div>
   );

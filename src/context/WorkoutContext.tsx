@@ -13,6 +13,7 @@ interface WorkoutContextType {
   startWorkout: (exercises: Exercise[]) => void;
   completeWorkout: (name: string) => void;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
+  addExercisesToWorkout: (exercises: Exercise[]) => void;
   deleteExercise: (exerciseId: string) => void;
   setCurrentView: (view: View) => void;
   searchLogs: (query: string) => void;
@@ -48,6 +49,24 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     setCurrentWorkout(workout);
     setCurrentView('workout');
+  };
+
+  const addExercisesToWorkout = (exercises: Exercise[]) => {
+    if (!currentWorkout) return;
+
+    setCurrentWorkout(prev => {
+      if (!prev) return null;
+
+      const newExercises = exercises.map(exercise => ({
+        exercise,
+        sets: [{ id: Date.now().toString(), setNumber: 1, targetReps: 0, performedReps: '', weight: 0, comments: '', isPR: false }]
+      }));
+
+      return {
+        ...prev,
+        exercises: [...prev.exercises, ...newExercises]
+      };
+    });
   };
 
   const completeWorkout = async (name: string) => {
@@ -109,6 +128,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       startWorkout,
       completeWorkout,
       updateWorkoutExercise,
+      addExercisesToWorkout,
       deleteExercise,
       setCurrentView,
       searchLogs
