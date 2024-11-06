@@ -62,7 +62,7 @@ export const Navigation: React.FC = () => {
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
               <Dumbbell className="h-8 w-8 text-blue-500 ml-3" />
-              <span className="ml-2 text-xl font-bold text-gray-900">SSL</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">LogDay</span>
             </div>
             {!currentWorkout && selectedExercises.length > 0 && (
               <div className="flex items-center">
