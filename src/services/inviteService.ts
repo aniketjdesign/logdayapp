@@ -19,7 +19,10 @@ export const validateInviteCode = async (code: string): Promise<{
       .eq('code', code.toUpperCase())
       .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error validating invite code:', error);
+      throw new Error('Error validating invite code');
+    }
 
     if (!data) {
       return { 
@@ -62,7 +65,10 @@ export const markInviteCodeAsUsed = async (code: string, userId: string): Promis
       })
       .eq('code', code.toUpperCase());
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error marking invite code as used:', error);
+      throw error;
+    }
 
     return {
       success: true,

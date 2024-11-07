@@ -37,7 +37,7 @@ export const SignUp: React.FC = () => {
       return;
     }
 
-    const code = inviteCode.join('');
+    const code = inviteCode.join('').toUpperCase();
     if (code.length !== 6) {
       setError('Please enter a valid invite code');
       return;
@@ -48,17 +48,26 @@ export const SignUp: React.FC = () => {
       setLoading(true);
 
       // Validate invite code
-      const isValidCode = await validateInviteCode(code);
-      if (!isValidCode) {
-        setError('Invalid or expired invite code');
+      const { valid, message } = await validateInviteCode(code);
+      if (!valid) {
+        setError(message);
+        setLoading(false);
         return;
       }
 
       // Create user account
-      await signUp(email, password);
+      const { error: signUpError, data } = await signUp(email, password);
+      if (signUpError) throw signUpError;
+
+      if (!data.user?.id) {
+        throw new Error('Failed to create user account');
+      }
 
       // Mark invite code as used
-      await markInviteCodeAsUsed(code, email);
+      const { success, message: markUsedMessage } = await markInviteCodeAsUsed(code, data.user.id);
+      if (!success) {
+        throw new Error(markUsedMessage);
+      }
 
       // Navigate to login
       navigate('/login');
@@ -196,7 +205,7 @@ export const SignUp: React.FC = () => {
                   required
                   minLength={6}
                   className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Select a strong password"
+                  placeholder="Confirm your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
@@ -226,7 +235,7 @@ export const SignUp: React.FC = () => {
                     onChange={(e) => handleInviteCodeChange(index, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(index, e)}
                     onPaste={handlePaste}
-                    className="w-12 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300"
+                    className="w-12 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300 uppercase"
                     required
                   />
                 ))}
