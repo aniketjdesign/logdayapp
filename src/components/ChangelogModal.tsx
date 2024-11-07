@@ -9,30 +9,40 @@ interface ChangelogModalProps {
 export const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose }) => {
   useEffect(() => {
     if (isOpen) {
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+      
+      // Auto-close after 7 seconds
       const timer = setTimeout(() => {
         onClose();
-      }, 30000);
+      }, 7000);
 
-      return () => clearTimeout(timer);
+      return () => {
+        // Re-enable body scroll when modal closes
+        document.body.style.overflow = 'unset';
+        clearTimeout(timer);
+      };
     }
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-md w-full">
-        <div className="p-6">
-          <div className="flex justify-between items-start mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50 overflow-y-auto">
+      <div className="bg-white rounded-xl w-full max-w-md my-8 max-h-[80vh] flex flex-col relative">
+        <div className="p-6 border-b flex-shrink-0">
+          <div className="flex justify-between items-start">
             <h2 className="text-2xl font-bold">What's New? 🚀</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors -mr-2 -mt-2"
             >
               <X size={20} />
             </button>
           </div>
+        </div>
 
+        <div className="p-6 overflow-y-auto flex-1 scrollbar-thin">
           <div className="prose prose-blue">
             <p className="text-gray-600">Hi! Aniket from LogDay. Never skip Log Day</p>
             <p className="text-gray-600">I've shipped few good improvements to this app. Listed below!</p>
