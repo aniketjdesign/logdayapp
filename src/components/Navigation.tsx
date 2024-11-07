@@ -90,7 +90,7 @@ export const Navigation: React.FC = () => {
               {!currentWorkout && selectedExercises.length > 0 && (
                 <button
                   onClick={handleStartWorkout}
-                  className="inline-flex items-center px-6 py-2 border-2 border-blue-600 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 border-2 border-blue-600 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors whitespace-nowrap"
                 >
                   Start Workout
                 </button>
@@ -100,7 +100,6 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>
 
-      {/* Full-height slide-out menu */}
       <div 
         className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${
           isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'

@@ -1,33 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
-import { Dumbbell } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Dumbbell, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { validateInviteCode, markInviteCodeAsUsed } from '../../services/inviteService';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [inviteCode, setInviteCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const navigate = useNavigate();
+  const inputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      return setError('Passwords do not match');
+      setError('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      return;
+    }
+
+    const code = inviteCode.join('');
+    if (code.length !== 6) {
+      setError('Please enter a valid invite code');
+      return;
     }
 
     try {
       setError('');
       setLoading(true);
+
+      // Validate invite code
+      const isValidCode = await validateInviteCode(code);
+      if (!isValidCode) {
+        setError('Invalid or expired invite code');
+        return;
+      }
+
+      // Create user account
       await signUp(email, password);
-    } catch (err) {
-      setError('Failed to create an account');
-      console.error(err);
+
+      // Mark invite code as used
+      await markInviteCodeAsUsed(code, email);
+
+      // Navigate to login
+      navigate('/login');
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleInviteCodeChange = (index: number, value: string) => {
+    // Only allow alphanumeric characters
+    const sanitizedValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    if (sanitizedValue.length <= 1) {
+      const newInviteCode = [...inviteCode];
+      newInviteCode[index] = sanitizedValue;
+      setInviteCode(newInviteCode);
+
+      // Move to next input if value is entered
+      if (sanitizedValue.length === 1 && index < 5) {
+        inputRefs[index + 1].current?.focus();
+      }
+    }
+  };
+
+  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
+      // Move to previous input on backspace if current input is empty
+      inputRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    const pastedArray = pastedData.split('').slice(0, 6);
+    const newInviteCode = [...inviteCode];
+    
+    pastedArray.forEach((char, index) => {
+      if (index < 6) {
+        newInviteCode[index] = char;
+      }
+    });
+    
+    setInviteCode(newInviteCode);
+    
+    // Focus last filled input or first empty input
+    const focusIndex = Math.min(pastedArray.length, 5);
+    inputRefs[focusIndex].current?.focus();
   };
 
   return (
@@ -44,18 +126,19 @@ export const SignUp: React.FC = () => {
             Start your fitness journey today
           </p>
         </div>
+
         {error && (
-          <div
-            className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative"
-            role="alert"
-          >
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center" role="alert">
+            <AlertCircle className="h-5 w-5 mr-2" />
             <span className="block sm:inline">{error}</span>
           </div>
         )}
+
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="rounded-md shadow-sm -space-y-px">
+          <div className="space-y-4">
+            {/* Email Input */}
             <div>
-              <label htmlFor="email-address" className="sr-only">
+              <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
                 Email address
               </label>
               <input
@@ -64,43 +147,90 @@ export const SignUp: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="ronnie@coleman.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
+            {/* Password Input */}
             <div>
-              <label htmlFor="password" className="sr-only">
+              <label htmlFor="password" className="block text-sm font-normal text-gray-500 mb-1">
                 Password
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Select a strong password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
             </div>
+
+            {/* Confirm Password Input */}
             <div>
-              <label htmlFor="confirm-password" className="sr-only">
+              <label htmlFor="confirm-password" className="block text-sm font-normal text-gray-500 mb-1">
                 Confirm Password
               </label>
-              <input
-                id="confirm-password"
-                name="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                required
-                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                placeholder="Confirm Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
+              <div className="relative">
+                <input
+                  id="confirm-password"
+                  name="confirm-password"
+                  type={showConfirmPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  required
+                  minLength={6}
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Select a strong password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+            </div>
+
+            {/* Invite Code Input */}
+            <div>
+              <label className="block text-sm font-normal text-gray-500 mb-1">
+                Invite Code
+              </label>
+              <div className="flex gap-2 justify-between">
+                {inviteCode.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={inputRefs[index]}
+                    type="text"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleInviteCodeChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onPaste={handlePaste}
+                    className="w-12 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300"
+                    required
+                  />
+                ))}
+              </div>
             </div>
           </div>
 
@@ -108,9 +238,13 @@ export const SignUp: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                loading 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+              }`}
             >
-              Sign up
+              {loading ? 'Creating account...' : 'Sign up'}
             </button>
           </div>
         </form>
