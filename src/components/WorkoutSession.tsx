@@ -125,9 +125,11 @@ export const WorkoutSession: React.FC = () => {
     if (exercise) {
       let processedValue = value;
       
-      if (field === 'weight') {
-        // Round to nearest 0.25
-        processedValue = Math.round(parseFloat(value) * 4) / 4;
+      if (field === 'weight' || field === 'targetReps') {
+        processedValue = Math.max(0, value); // Prevent negative numbers
+        if (field === 'weight') {
+          processedValue = Math.round(parseFloat(processedValue) * 4) / 4; // Round to nearest 0.25
+        }
         if (isNaN(processedValue)) processedValue = 0;
       }
 
@@ -189,7 +191,7 @@ export const WorkoutSession: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {currentWorkout.exercises.map(({ exercise, sets }) => (
-            <div key={exercise.id} className="bg-white rounded-lg shadow-md p-6">
+            <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-bold">{exercise.name}</h3>
                 <button
@@ -200,61 +202,128 @@ export const WorkoutSession: React.FC = () => {
                 </button>
               </div>
               <div className="space-y-4">
+                {/* Desktop Layout */}
+                <div className="hidden md:grid md:grid-cols-5 gap-4 mb-2 text-sm font-medium text-gray-500">
+                  <div>Weight (kg)</div>
+                  <div>Goal Reps</div>
+                  <div>Performed Reps</div>
+                  <div>Comments</div>
+                  <div>Actions</div>
+                </div>
+
                 {sets.map(set => (
-                  <div key={set.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-                    <div className="text-gray-500">Set {set.setNumber}</div>
-                    <input
-                      type="number"
-                      placeholder="Goal Reps"
-                      className="px-3 py-2 border border-gray-300 rounded-md"
-                      value={set.targetReps || ''}
-                      onChange={(e) => handleUpdateSet(exercise.id, set.id, 'targetReps', parseInt(e.target.value) || 0)}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Performed Reps"
-                      className="px-3 py-2 border border-gray-300 rounded-md"
-                      value={set.performedReps}
-                      onChange={(e) => handleUpdateSet(exercise.id, set.id, 'performedReps', e.target.value)}
-                    />
-                    <div className="relative flex items-center border border-gray-300 rounded-md overflow-hidden">
+                  <div key={set.id}>
+                    {/* Desktop Layout */}
+                    <div className="hidden md:grid md:grid-cols-5 gap-4 items-center">
                       <input
                         type="number"
                         step="0.25"
-                        placeholder="0"
-                        className="w-full px-3 py-2 border-none focus:ring-0 focus:outline-none"
+                        min="0"
+                        placeholder="Weight"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
                         value={set.weight || ''}
                         onChange={(e) => handleUpdateSet(exercise.id, set.id, 'weight', e.target.value)}
                       />
-                      <div className="flex items-center px-3 bg-gray-50 border-l border-gray-300 h-full">
-                        <span className="text-gray-500 whitespace-nowrap">kg</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="Goal Reps"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                        value={set.targetReps || ''}
+                        onChange={(e) => handleUpdateSet(exercise.id, set.id, 'targetReps', parseInt(e.target.value))}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Performed Reps"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                        value={set.performedReps}
+                        onChange={(e) => handleUpdateSet(exercise.id, set.id, 'performedReps', e.target.value)}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Comments"
+                        className="px-3 py-2 border border-gray-300 rounded-md"
+                        value={set.comments}
+                        onChange={(e) => handleUpdateSet(exercise.id, set.id, 'comments', e.target.value)}
+                      />
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleUpdateSet(exercise.id, set.id, 'isPR', !set.isPR)}
+                          className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
+                            set.isPR 
+                              ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
+                              : 'border border-yellow-400 text-yellow-600 hover:bg-yellow-50'
+                          }`}
+                        >
+                          <Medal size={16} />
+                          <span>PR</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSet(exercise.id, set.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                        >
+                          <X size={20} />
+                        </button>
                       </div>
                     </div>
-                    <input
-                      type="text"
-                      placeholder="Comments"
-                      className="px-3 py-2 border border-gray-300 rounded-md"
-                      value={set.comments}
-                      onChange={(e) => handleUpdateSet(exercise.id, set.id, 'comments', e.target.value)}
-                    />
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleUpdateSet(exercise.id, set.id, 'isPR', !set.isPR)}
-                        className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
-                          set.isPR 
-                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
-                            : 'border border-yellow-400 text-yellow-600 hover:bg-yellow-50'
-                        }`}
-                      >
-                        <Medal size={16} />
-                        <span>PR</span>
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSet(exercise.id, set.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                      >
-                        <X size={20} />
-                      </button>
+
+                    {/* Mobile Layout */}
+                    <div className="md:hidden space-y-4">
+                      <div className="flex justify-between items-center">
+                        <div className="text-gray-500">Set {set.setNumber}</div>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => handleUpdateSet(exercise.id, set.id, 'isPR', !set.isPR)}
+                            className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
+                              set.isPR 
+                                ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
+                                : 'border border-yellow-400 text-yellow-600'
+                            }`}
+                          >
+                            <Medal size={16} />
+                            <span>PR</span>
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSet(exercise.id, set.id)}
+                            className="p-2 text-red-600 rounded-full"
+                          >
+                            <X size={20} />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        <input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          placeholder="Weight"
+                          className="px-3 py-2 border border-gray-300 rounded-md"
+                          value={set.weight || ''}
+                          onChange={(e) => handleUpdateSet(exercise.id, set.id, 'weight', e.target.value)}
+                        />
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Goal reps"
+                          className="px-3 py-2 border border-gray-300 rounded-md"
+                          value={set.targetReps || ''}
+                          onChange={(e) => handleUpdateSet(exercise.id, set.id, 'targetReps', parseInt(e.target.value))}
+                        />
+                        <input
+                          type="text"
+                          placeholder="Actual reps"
+                          className="px-3 py-2 border border-gray-300 rounded-md"
+                          value={set.performedReps}
+                          onChange={(e) => handleUpdateSet(exercise.id, set.id, 'performedReps', e.target.value)}
+                        />
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Comments"
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        value={set.comments}
+                        onChange={(e) => handleUpdateSet(exercise.id, set.id, 'comments', e.target.value)}
+                      />
                     </div>
                   </div>
                 ))}

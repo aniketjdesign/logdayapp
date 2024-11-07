@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
+import { Dumbbell } from 'lucide-react';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -8,7 +9,7 @@ export const SignUp: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,26 +30,19 @@ export const SignUp: React.FC = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setError('');
-      setLoading(true);
-      await signInWithGoogle();
-    } catch (err) {
-      setError('Failed to sign in with Google');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Create your account
+        <div className="text-center">
+          <div className="flex justify-center">
+            <Dumbbell className="h-16 w-16 text-blue-500" />
+          </div>
+          <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
+            Join LogDay
           </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Start your fitness journey today
+          </p>
         </div>
         {error && (
           <div
@@ -119,17 +113,6 @@ export const SignUp: React.FC = () => {
               Sign up
             </button>
           </div>
-
-          {/* <div>
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Sign up with Google
-            </button>
-          </div> */}
         </form>
 
         <div className="text-center">
