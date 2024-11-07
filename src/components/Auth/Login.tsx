@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -16,7 +16,11 @@ export const Login: React.FC = () => {
       setLoading(true);
       await signIn(email, password);
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
+      if (err?.name === 'AuthApiError' && err?.status === 400) {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError('Failed to sign in. Please check your credentials and try again.');
+      }
       console.error('Sign in error:', err);
     } finally {
       setLoading(false);
@@ -29,8 +33,10 @@ export const Login: React.FC = () => {
       setLoading(true);
       await signInWithGoogle();
     } catch (err: any) {
-      setError(err.message || 'Failed to sign in with Google');
+      setError('Failed to sign in with Google. Please try again.');
       console.error('Google sign in error:', err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -90,22 +96,15 @@ export const Login: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                loading 
+                  ? 'bg-blue-400 cursor-not-allowed' 
+                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+              }`}
             >
               {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-
-          {/* <div>
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="group relative w-full flex justify-center py-2 px-4 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Sign in with Google
-            </button>
-          </div> */}
         </form>
 
         <div className="text-center">

@@ -1,6 +1,30 @@
 import { Exercise } from '../types/workout';
 
 export const exercises: Exercise[] = [
+  // Shoulders
+  { id: 's1', name: 'Seated Shoulder Press (Dumbbells)', muscleGroup: 'Shoulders' },
+  { id: 's2', name: 'Seated Shoulder Press (Barbell)', muscleGroup: 'Shoulders' },
+  { id: 's3', name: 'Seated Shoulder Press (Smith Machine)', muscleGroup: 'Shoulders' },
+  { id: 's4', name: 'Seated Shoulder Press (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's5', name: 'Seated Iso Shoulder Press (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's6', name: 'Standing Military Press (Barbell)', muscleGroup: 'Shoulders' },
+  { id: 's7', name: 'Standing Military Press (Smith Machine)', muscleGroup: 'Shoulders' },
+  { id: 's8', name: 'Arnold Press (Dumbbells)', muscleGroup: 'Shoulders' },
+  { id: 's9', name: 'Standing Lateral Raises (Dumbbells)', muscleGroup: 'Shoulders' },
+  { id: 's10', name: 'Standing Lateral Raises (Cables)', muscleGroup: 'Shoulders' },
+  { id: 's11', name: 'Seated Lateral Raises (Dumbbells)', muscleGroup: 'Shoulders' },
+  { id: 's12', name: 'Seated Lateral Raises (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's13', name: 'Seated Lateral Raises (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's14', name: 'Standing Lateral Raises (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's15', name: 'Standing Lateral Raises (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's16', name: 'Rear Delt Fly (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's17', name: 'Single-Arm Rear Delt Fly (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's18', name: 'Rear Delt Fly (Cables)', muscleGroup: 'Shoulders' },
+  { id: 's19', name: 'Lying Rear Delt Raises (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's20', name: 'Bent-over Rear Delt Raises (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's21', name: 'Bent-over Rear Delt Raises (Machine)', muscleGroup: 'Shoulders' },
+  { id: 's22', name: 'Bent-over Rear Delt Raises (Dumbbells)', muscleGroup: 'Shoulders' },
+
   // Chest
   { id: 'c1', name: 'Pushups', muscleGroup: 'Chest' },
   { id: 'c2', name: 'Flat Chest Press (Dumbbell)', muscleGroup: 'Chest' },

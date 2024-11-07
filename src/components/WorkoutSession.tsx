@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Timer, Plus, X, Trash2, Dumbbell } from 'lucide-react';
+import { Timer, Plus, X, Trash2, Dumbbell, Medal } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
+import { WorkoutReview } from './WorkoutReview';
+import { WorkoutLog } from '../types/workout';
 
 export const WorkoutSession: React.FC = () => {
   const { 
@@ -15,6 +17,7 @@ export const WorkoutSession: React.FC = () => {
   const [workoutName, setWorkoutName] = useState('');
   const [duration, setDuration] = useState(0);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -28,7 +31,22 @@ export const WorkoutSession: React.FC = () => {
     return () => clearInterval(timer);
   }, [currentWorkout?.startTime]);
 
-  if (!currentWorkout) {
+  const handleCompleteWorkout = async () => {
+    if (currentWorkout) {
+      const endTime = new Date().toISOString();
+      const duration = new Date(endTime).getTime() - new Date(currentWorkout.startTime).getTime();
+      const completed = {
+        ...currentWorkout,
+        name: workoutName,
+        endTime,
+        duration
+      };
+      await completeWorkout(workoutName);
+      setCompletedWorkout(completed);
+    }
+  };
+
+  if (!currentWorkout && !completedWorkout) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
@@ -45,6 +63,18 @@ export const WorkoutSession: React.FC = () => {
           </button>
         </div>
       </div>
+    );
+  }
+
+  if (completedWorkout) {
+    return (
+      <WorkoutReview
+        workout={completedWorkout}
+        onClose={() => {
+          setCompletedWorkout(null);
+          navigate('/');
+        }}
+      />
     );
   }
 
@@ -93,8 +123,16 @@ export const WorkoutSession: React.FC = () => {
     if (!currentWorkout) return;
     const exercise = currentWorkout.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
+      let processedValue = value;
+      
+      if (field === 'weight') {
+        // Round to nearest 0.25
+        processedValue = Math.round(parseFloat(value) * 4) / 4;
+        if (isNaN(processedValue)) processedValue = 0;
+      }
+
       const updatedSets = exercise.sets.map(set =>
-        set.id === setId ? { ...set, [field]: value } : set
+        set.id === setId ? { ...set, [field]: processedValue } : set
       );
       updateWorkoutExercise(exerciseId, {
         ...exercise,
@@ -167,25 +205,31 @@ export const WorkoutSession: React.FC = () => {
                     <div className="text-gray-500">Set {set.setNumber}</div>
                     <input
                       type="number"
-                      placeholder="Target"
+                      placeholder="Goal Reps"
                       className="px-3 py-2 border border-gray-300 rounded-md"
                       value={set.targetReps || ''}
                       onChange={(e) => handleUpdateSet(exercise.id, set.id, 'targetReps', parseInt(e.target.value) || 0)}
                     />
                     <input
                       type="text"
-                      placeholder="Actual"
+                      placeholder="Performed Reps"
                       className="px-3 py-2 border border-gray-300 rounded-md"
                       value={set.performedReps}
                       onChange={(e) => handleUpdateSet(exercise.id, set.id, 'performedReps', e.target.value)}
                     />
-                    <input
-                      type="number"
-                      placeholder="Weight (kg)"
-                      className="px-3 py-2 border border-gray-300 rounded-md"
-                      value={set.weight || ''}
-                      onChange={(e) => handleUpdateSet(exercise.id, set.id, 'weight', parseInt(e.target.value) || 0)}
-                    />
+                    <div className="relative flex items-center border border-gray-300 rounded-md overflow-hidden">
+                      <input
+                        type="number"
+                        step="0.25"
+                        placeholder="0"
+                        className="w-full px-3 py-2 border-none focus:ring-0 focus:outline-none"
+                        value={set.weight || ''}
+                        onChange={(e) => handleUpdateSet(exercise.id, set.id, 'weight', e.target.value)}
+                      />
+                      <div className="flex items-center px-3 bg-gray-50 border-l border-gray-300 h-full">
+                        <span className="text-gray-500 whitespace-nowrap">kg</span>
+                      </div>
+                    </div>
                     <input
                       type="text"
                       placeholder="Comments"
@@ -196,9 +240,14 @@ export const WorkoutSession: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleUpdateSet(exercise.id, set.id, 'isPR', !set.isPR)}
-                        className={`p-2 rounded-full ${set.isPR ? 'text-yellow-500' : 'text-gray-400'}`}
+                        className={`px-3 py-1.5 rounded-md flex items-center space-x-1 transition-all ${
+                          set.isPR 
+                            ? 'bg-gradient-to-r from-yellow-400 to-yellow-600 text-white' 
+                            : 'border border-yellow-400 text-yellow-600 hover:bg-yellow-50'
+                        }`}
                       >
-                        <Star size={20} />
+                        <Medal size={16} />
+                        <span>PR</span>
                       </button>
                       <button
                         onClick={() => handleDeleteSet(exercise.id, set.id)}
@@ -211,7 +260,7 @@ export const WorkoutSession: React.FC = () => {
                 ))}
                 <button
                   onClick={() => handleAddSet(exercise.id)}
-                  className="flex items-center px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+                  className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                 >
                   <Plus size={20} className="mr-2" />
                   Add Set
@@ -224,7 +273,7 @@ export const WorkoutSession: React.FC = () => {
 
       <div className="mt-6 sticky bottom-4">
         <button
-          onClick={() => completeWorkout(workoutName)}
+          onClick={handleCompleteWorkout}
           className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
         >
           Complete Workout

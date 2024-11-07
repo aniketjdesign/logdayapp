@@ -31,6 +31,7 @@ export interface WorkoutLog {
 export type MuscleGroup = 
   | 'Chest'
   | 'Back'
+  | 'Shoulders'
   | 'Quads'
   | 'Hamstrings'
   | 'Triceps'

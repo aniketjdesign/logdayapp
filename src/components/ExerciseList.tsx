@@ -14,6 +14,7 @@ export const ExerciseList: React.FC = () => {
     'All',
     'Chest',
     'Back',
+    'Shoulders',
     'Quads',
     'Hamstrings',
     'Triceps',

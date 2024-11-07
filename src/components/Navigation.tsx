@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
-import { Menu, X, Dumbbell, LogOut } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Menu, X, Dumbbell, LogOut, Bell } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { ChangelogModal } from './ChangelogModal';
+
+const CHANGELOG_VIEWED_KEY = 'changelog_viewed';
 
 export const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const navigate = useNavigate();
   const { 
     selectedExercises, 
@@ -15,6 +19,18 @@ export const Navigation: React.FC = () => {
     setCurrentView 
   } = useWorkout();
   const { signOut } = useAuth();
+
+  useEffect(() => {
+    const hasViewedChangelog = localStorage.getItem(CHANGELOG_VIEWED_KEY);
+    if (!hasViewedChangelog) {
+      setShowChangelog(true);
+    }
+  }, []);
+
+  const handleCloseChangelog = () => {
+    setShowChangelog(false);
+    localStorage.setItem(CHANGELOG_VIEWED_KEY, 'true');
+  };
 
   const handleStartWorkout = () => {
     startWorkout(selectedExercises);
@@ -64,16 +80,22 @@ export const Navigation: React.FC = () => {
               <Dumbbell className="h-8 w-8 text-blue-500 ml-3" />
               <span className="ml-2 text-xl font-bold text-gray-900">LogDay</span>
             </div>
-            {!currentWorkout && selectedExercises.length > 0 && (
-              <div className="flex items-center">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => setShowChangelog(true)}
+                className="p-2 rounded-md hover:bg-gray-100"
+              >
+                <Bell size={24} className="text-gray-600" />
+              </button>
+              {!currentWorkout && selectedExercises.length > 0 && (
                 <button
                   onClick={handleStartWorkout}
                   className="inline-flex items-center px-6 py-2 border-2 border-blue-600 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors"
                 >
                   Start Workout
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </nav>
@@ -126,6 +148,8 @@ export const Navigation: React.FC = () => {
           </button>
         </div>
       </div>
+
+      <ChangelogModal isOpen={showChangelog} onClose={handleCloseChangelog} />
     </>
   );
 };
