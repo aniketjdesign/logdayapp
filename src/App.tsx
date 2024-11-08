@@ -13,39 +13,41 @@ import { useAuth } from './context/AuthContext';
 const AppContent = () => {
   const { user } = useAuth();
 
-  // // Prevent page reload on mobile when pulling down
-  // useEffect(() => {
-  //   const preventDefault = (e: TouchEvent) => {
-  //     e.preventDefault();
-  //   };
+  // Prevent page reload on mobile when pulling down
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      e.preventDefault();
+    };
 
-  //   document.addEventListener('touchmove', preventDefault, { passive: false });
-  //   return () => {
-  //     document.removeEventListener('touchmove', preventDefault);
-  //   };
-  // }, []);
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventDefault);
+    };
+  }, []);
 
   return (
     <WorkoutProvider>
       <div className="min-h-screen bg-gray-50">
         {user && <Navigation />}
-        <Routes>
-          <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-          <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/" />} />
-          <Route
-            path="/"
-            element={user ? <ExerciseList /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/workout"
-            element={user ? <WorkoutSession /> : <Navigate to="/login" />}
-          />
-          <Route
-            path="/logs"
-            element={user ? <WorkoutLogs /> : <Navigate to="/login" />}
-          />
-          <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
-        </Routes>
+        <div className={user ? 'pt-16' : ''}>
+          <Routes>
+            <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+            <Route path="/signup" element={!user ? <SignUp /> : <Navigate to="/" />} />
+            <Route
+              path="/"
+              element={user ? <ExerciseList /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/workout"
+              element={user ? <WorkoutSession /> : <Navigate to="/login" />}
+            />
+            <Route
+              path="/logs"
+              element={user ? <WorkoutLogs /> : <Navigate to="/login" />}
+            />
+            <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
+          </Routes>
+        </div>
       </div>
     </WorkoutProvider>
   );

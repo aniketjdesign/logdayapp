@@ -51,3 +51,15 @@
     padding-right: 0.75rem;
   }
 }
+
+/* Safe area insets for modern mobile devices */
+@supports (padding-top: env(safe-area-inset-top)) {
+  .fixed {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
+/* Prevent content from being hidden under fixed navigation */
+.pt-16 {
+  padding-top: 4rem;
+}
