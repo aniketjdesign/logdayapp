@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { WorkoutProvider } from './context/WorkoutContext';
@@ -12,6 +12,18 @@ import { useAuth } from './context/AuthContext';
 
 const AppContent = () => {
   const { user } = useAuth();
+
+  // Prevent page reload on mobile when pulling down
+  useEffect(() => {
+    const preventDefault = (e: TouchEvent) => {
+      e.preventDefault();
+    };
+
+    document.addEventListener('touchmove', preventDefault, { passive: false });
+    return () => {
+      document.removeEventListener('touchmove', preventDefault);
+    };
+  }, []);
 
   return (
     <WorkoutProvider>
