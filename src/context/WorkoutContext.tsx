@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Exercise, WorkoutLog, WorkoutExercise } from '../types/workout';
-import { saveWorkout, getWorkouts, searchWorkouts } from '../db/database';
+import { saveWorkout, getWorkouts, searchWorkouts, deleteWorkoutLog } from '../db/database';
 
 type View = 'exercises' | 'workout' | 'logs';
 
@@ -16,6 +16,7 @@ interface WorkoutContextType {
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
   deleteExercise: (exerciseId: string) => void;
+  deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
   searchLogs: (query: string) => void;
 }
@@ -114,6 +115,15 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const deleteLog = async (logId: string) => {
+    try {
+      await deleteWorkoutLog(logId);
+      setWorkoutLogs(prev => prev.filter(log => log.id !== logId));
+    } catch (error) {
+      console.error('Error deleting workout log:', error);
+    }
+  };
+
   const searchLogs = async (query: string) => {
     const results = await searchWorkouts(query);
     setWorkoutLogs(results);
@@ -132,6 +142,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       updateWorkoutExercise,
       addExercisesToWorkout,
       deleteExercise,
+      deleteLog,
       setCurrentView,
       searchLogs
     }}>

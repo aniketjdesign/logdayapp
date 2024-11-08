@@ -45,3 +45,8 @@ export const searchWorkouts = async (query: string): Promise<WorkoutLog[]> => {
       new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
     );
 };
+
+export const deleteWorkoutLog = async (id: string): Promise<void> => {
+  const db = await initDB();
+  await db.delete('workouts', id);
+};
