@@ -13,17 +13,17 @@ import { useAuth } from './context/AuthContext';
 const AppContent = () => {
   const { user } = useAuth();
 
-  // Prevent page reload on mobile when pulling down
-  useEffect(() => {
-    const preventDefault = (e: TouchEvent) => {
-      e.preventDefault();
-    };
+  // // Prevent page reload on mobile when pulling down
+  // useEffect(() => {
+  //   const preventDefault = (e: TouchEvent) => {
+  //     e.preventDefault();
+  //   };
 
-    document.addEventListener('touchmove', preventDefault, { passive: false });
-    return () => {
-      document.removeEventListener('touchmove', preventDefault);
-    };
-  }, []);
+  //   document.addEventListener('touchmove', preventDefault, { passive: false });
+  //   return () => {
+  //     document.removeEventListener('touchmove', preventDefault);
+  //   };
+  // }, []);
 
   return (
     <WorkoutProvider>
