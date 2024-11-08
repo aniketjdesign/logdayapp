@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
 import { ConfirmationModal } from './ConfirmationModal';
-import { WorkoutLog } from '../types/workout';
+import { WorkoutLog, Exercise } from '../types/workout';
 
 export const WorkoutSession: React.FC = () => {
   const { 
@@ -35,6 +35,13 @@ export const WorkoutSession: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [currentWorkout?.startTime]);
+
+  const formatTime = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   const getIncompleteStats = () => {
     if (!currentWorkout) return { exercises: 0, sets: 0 };
@@ -75,49 +82,8 @@ export const WorkoutSession: React.FC = () => {
     navigate('/');
   };
 
-  const { exercises, sets } = getIncompleteStats();
-
-  if (!currentWorkout && !completedWorkout) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <div className="text-center py-12">
-          <div className="flex justify-center mb-4">
-            <Dumbbell className="h-16 w-16 text-gray-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">No active workout</h3>
-          <p className="text-gray-500 mb-6">Select exercises to start your workout session</p>
-          <button
-            onClick={() => navigate('/')}
-            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Select Exercises
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (completedWorkout) {
-    return (
-      <WorkoutReview
-        workout={completedWorkout}
-        onClose={() => {
-          setCompletedWorkout(null);
-          navigate('/');
-        }}
-      />
-    );
-  }
-
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-
   const handleAddSet = (exerciseId: string) => {
-    const exercise = currentWorkout.exercises.find(e => e.exercise.id === exerciseId);
+    const exercise = currentWorkout?.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
       const newSet = {
         id: Date.now().toString(),
@@ -136,7 +102,7 @@ export const WorkoutSession: React.FC = () => {
   };
 
   const handleDeleteSet = (exerciseId: string, setId: string) => {
-    const exercise = currentWorkout.exercises.find(e => e.exercise.id === exerciseId);
+    const exercise = currentWorkout?.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
       const updatedSets = exercise.sets.filter(set => set.id !== setId);
       const renumberedSets = updatedSets.map((set, index) => ({
@@ -179,6 +145,40 @@ export const WorkoutSession: React.FC = () => {
     setShowExerciseModal(false);
   };
 
+  const { exercises, sets } = getIncompleteStats();
+
+  if (!currentWorkout && !completedWorkout) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="text-center py-12">
+          <div className="flex justify-center mb-4">
+            <Dumbbell className="h-16 w-16 text-gray-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-700 mb-2">No active workout</h3>
+          <p className="text-gray-500 mb-6">Select exercises to start your workout session</p>
+          <button
+            onClick={() => navigate('/')}
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Select Exercises
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (completedWorkout) {
+    return (
+      <WorkoutReview
+        workout={completedWorkout}
+        onClose={() => {
+          setCompletedWorkout(null);
+          navigate('/');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
@@ -189,7 +189,7 @@ export const WorkoutSession: React.FC = () => {
           </div>
           <button
             onClick={() => setShowExerciseModal(true)}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex items-center px-4 py-2 border-2 border-blue-300 hover:bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
           >
             <Plus size={20} className="mr-2" />
             Add Exercise
@@ -233,7 +233,6 @@ export const WorkoutSession: React.FC = () => {
                 </button>
               </div>
               <div className="space-y-4">
-                {/* Desktop Layout */}
                 <div className="hidden md:grid md:grid-cols-5 gap-4 mb-2 text-sm font-medium text-gray-500">
                   <div>Weight (kg)</div>
                   <div>Goal Reps</div>
@@ -244,7 +243,6 @@ export const WorkoutSession: React.FC = () => {
 
                 {sets.map(set => (
                   <div key={set.id}>
-                    {/* Desktop Layout */}
                     <div className="hidden md:grid md:grid-cols-5 gap-4 items-center">
                       <input
                         type="number"
@@ -298,7 +296,6 @@ export const WorkoutSession: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Mobile Layout */}
                     <div className="md:hidden space-y-4">
                       <div className="flex justify-between items-center">
                         <div className="text-gray-500">Set {set.setNumber}</div>
@@ -371,16 +368,16 @@ export const WorkoutSession: React.FC = () => {
         </div>
       )}
 
-      <div className="mt-6 sticky bottom-4 space-y-2">
+      <div className="mt-6 sticky bottom-4 space-y-4">
         <button
           onClick={() => setShowFinishConfirmation(true)}
-          className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
+          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg transition-colors"
         >
           Finish Workout
         </button>
         <button
           onClick={() => setShowCancelConfirmation(true)}
-          className="w-full py-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium"
+          className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors"
         >
           Cancel Workout
         </button>
@@ -398,10 +395,10 @@ export const WorkoutSession: React.FC = () => {
         isOpen={showFinishConfirmation}
         onClose={() => setShowFinishConfirmation(false)}
         onConfirm={handleCompleteWorkout}
-        title="Complete Workout?"
+        title="Finish Workout?"
         message={`You have ${exercises} exercises with ${sets} incomplete sets. Are you sure you want to finish this workout?`}
-        confirmText="Complete Workout"
-        confirmButtonClass="bg-green-600 hover:bg-green-700"
+        confirmText="Yes, Finish Workout"
+        confirmButtonClass="bg-blue-600 hover:bg-blue-700"
       />
 
       <ConfirmationModal
@@ -410,7 +407,7 @@ export const WorkoutSession: React.FC = () => {
         onConfirm={handleCancelWorkout}
         title="Cancel Workout?"
         message={`You have ${exercises} exercises with ${sets} sets that will be discarded. This action cannot be undone.`}
-        confirmText="Cancel Workout"
+        confirmText="Yes, Cancel Workout"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />
     </div>
