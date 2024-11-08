@@ -10,6 +10,7 @@ interface WorkoutContextType {
   workoutLogs: WorkoutLog[];
   currentView: View;
   setSelectedExercises: (exercises: Exercise[]) => void;
+  setCurrentWorkout: (workout: WorkoutLog | null) => void;
   startWorkout: (exercises: Exercise[]) => void;
   completeWorkout: (name: string) => void;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
@@ -125,6 +126,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       workoutLogs,
       currentView,
       setSelectedExercises,
+      setCurrentWorkout,
       startWorkout,
       completeWorkout,
       updateWorkoutExercise,

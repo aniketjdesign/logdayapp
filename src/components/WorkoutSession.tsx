@@ -4,6 +4,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
+import { ConfirmationModal } from './ConfirmationModal';
 import { WorkoutLog } from '../types/workout';
 
 export const WorkoutSession: React.FC = () => {
@@ -12,12 +13,16 @@ export const WorkoutSession: React.FC = () => {
     updateWorkoutExercise, 
     completeWorkout,
     deleteExercise,
-    addExercisesToWorkout 
+    addExercisesToWorkout,
+    setCurrentWorkout,
+    setSelectedExercises 
   } = useWorkout();
   const [workoutName, setWorkoutName] = useState('');
   const [duration, setDuration] = useState(0);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
+  const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
+  const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -30,6 +35,24 @@ export const WorkoutSession: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [currentWorkout?.startTime]);
+
+  const getIncompleteStats = () => {
+    if (!currentWorkout) return { exercises: 0, sets: 0 };
+    
+    let incompleteSets = 0;
+    currentWorkout.exercises.forEach(({ sets }) => {
+      sets.forEach(set => {
+        if (!set.performedReps || !set.weight) {
+          incompleteSets++;
+        }
+      });
+    });
+
+    return {
+      exercises: currentWorkout.exercises.length,
+      sets: incompleteSets
+    };
+  };
 
   const handleCompleteWorkout = async () => {
     if (currentWorkout) {
@@ -45,6 +68,14 @@ export const WorkoutSession: React.FC = () => {
       setCompletedWorkout(completed);
     }
   };
+
+  const handleCancelWorkout = () => {
+    setCurrentWorkout(null);
+    setSelectedExercises([]);
+    navigate('/');
+  };
+
+  const { exercises, sets } = getIncompleteStats();
 
   if (!currentWorkout && !completedWorkout) {
     return (
@@ -126,9 +157,9 @@ export const WorkoutSession: React.FC = () => {
       let processedValue = value;
       
       if (field === 'weight' || field === 'targetReps') {
-        processedValue = Math.max(0, value); // Prevent negative numbers
+        processedValue = Math.max(0, value);
         if (field === 'weight') {
-          processedValue = Math.round(parseFloat(processedValue) * 4) / 4; // Round to nearest 0.25
+          processedValue = Math.round(parseFloat(processedValue) * 4) / 4;
         }
         if (isNaN(processedValue)) processedValue = 0;
       }
@@ -340,12 +371,18 @@ export const WorkoutSession: React.FC = () => {
         </div>
       )}
 
-      <div className="mt-6 sticky bottom-4">
+      <div className="mt-6 sticky bottom-4 space-y-2">
         <button
-          onClick={handleCompleteWorkout}
+          onClick={() => setShowFinishConfirmation(true)}
           className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium shadow-lg"
         >
-          Complete Workout
+          Finish Workout
+        </button>
+        <button
+          onClick={() => setShowCancelConfirmation(true)}
+          className="w-full py-3 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 font-medium"
+        >
+          Cancel Workout
         </button>
       </div>
 
@@ -356,6 +393,26 @@ export const WorkoutSession: React.FC = () => {
           currentExercises={currentWorkout.exercises.map(e => e.exercise)}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={showFinishConfirmation}
+        onClose={() => setShowFinishConfirmation(false)}
+        onConfirm={handleCompleteWorkout}
+        title="Complete Workout?"
+        message={`You have ${exercises} exercises with ${sets} incomplete sets. Are you sure you want to finish this workout?`}
+        confirmText="Complete Workout"
+        confirmButtonClass="bg-green-600 hover:bg-green-700"
+      />
+
+      <ConfirmationModal
+        isOpen={showCancelConfirmation}
+        onClose={() => setShowCancelConfirmation(false)}
+        onConfirm={handleCancelWorkout}
+        title="Cancel Workout?"
+        message={`You have ${exercises} exercises with ${sets} sets that will be discarded. This action cannot be undone.`}
+        confirmText="Cancel Workout"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
     </div>
   );
 };

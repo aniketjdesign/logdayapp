@@ -20,6 +20,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
 
   const muscleGroups: ('All' | MuscleGroup)[] = [
     'All',
+    'Shoulders',
     'Chest',
     'Back',
     'Quads',

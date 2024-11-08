@@ -44,40 +44,45 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose 
 
         <div className="p-6 overflow-y-auto flex-1 scrollbar-thin">
           <div className="prose prose-blue">
-            <p className="text-gray-600">Hi! Aniket from LogDay. Never skip Log Day</p>
-            <p className="text-gray-600">I've shipped few good improvements to this app. Listed below!</p>
+            <p className="text-gray-600">Hey there! Aniket from LogDay here. Just dropped some fresh updates to make your workout tracking even better. Check 'em out!</p>
 
             <div className="space-y-4 mt-4">
               <div>
                 <h3 className="text-lg font-semibold flex items-center">
-                  Shoulder exercises are now available 🪨
+                Shoulder exercises are live 💪
                 </h3>
                 <p className="text-gray-600">
-                  Tbh not sure why I forgot this one while building in the first place lol. 
-                  Go build them boulder shoulders!
+                Can't believe I missed adding these from the start! But better late than never—now you can add shoulder exercises at any point during your workout.
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold">Workout reviews 🧗</h3>
+                <h3 className="text-lg font-semibold flex items-center">
+                  Finish Workout & Cancel Workout 🕰️
+                </h3>
                 <p className="text-gray-600">
-                  You will now be able to see a review of your workout once you complete it. 
-                  To look upon the greatness you just achieved. Lot of cool highlights here. Check it!
+                Added a "Finish Workout" option with a quick confirmation pop-up to prevent any accidental taps. Plus, you can fully cancel a workout now if you need to bail tho I'll be sad if you quit on a workout 😔
                 </p>
               </div>
 
               <div>
-                <h3 className="text-lg font-semibold">0.25kgs weight increments 🏋️</h3>
+                <h3 className="text-lg font-semibold">Workout Reviews 🏋️‍♂️</h3>
                 <p className="text-gray-600">
-                  You can increase the weights on your exercises in 0.25kg increments 
-                  instead of 1kg like previously.
+                After you wrap up, you'll get a cool summary of your workout. Look back at the hard work you put in and see all the highlights!
+                </p>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold">0.25kg Weight Increments 🏋️</h3>
+                <p className="text-gray-600">
+                Adjust weights in 0.25kg steps instead of the previous 1kg jumps. Fine-tune those lifts like a pro.
                 </p>
               </div>
 
               <div>
                 <h3 className="text-lg font-semibold">Fresh new PR button!</h3>
                 <p className="text-gray-600">
-                  to mark a set as PR!
+                Got a fresh personal record? Hit that shiny new button to log it with pride!
                 </p>
               </div>
 
@@ -96,6 +101,14 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose 
                   className="text-blue-600 hover:text-blue-700"
                 >
                   @raichu.copper
+                </a>  <p> and </p>
+                <a 
+                  href="https://www.instagram.com/kobaltkaria/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-700"
+                >
+               @kobaltkaria
                 </a>
               </p>
               <p className="mt-2">
