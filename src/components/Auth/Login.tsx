@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { Dumbbell, AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { LogDayLogo } from '../LogDayLogo';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -34,7 +35,7 @@ export const Login: React.FC = () => {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
-            <Dumbbell className="h-16 w-16 text-blue-500" />
+            <LogDayLogo className="h-16 w-16" />
           </div>
           <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
             Welcome to LogDay

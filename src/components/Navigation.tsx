@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Dumbbell, LogOut, Bell } from 'lucide-react';
+import { Menu, X, LogOut, Bell } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { ChangelogModal } from './ChangelogModal';
+import { LogDayLogo } from './LogDayLogo';
 
 const CHANGELOG_VIEWED_KEY = 'changelog_viewed';
 
@@ -12,9 +13,6 @@ export const Navigation: React.FC = () => {
   const [showChangelog, setShowChangelog] = useState(false);
   const navigate = useNavigate();
   const { 
-    selectedExercises, 
-    currentWorkout, 
-    startWorkout, 
     setSelectedExercises,
     setCurrentView 
   } = useWorkout();
@@ -30,11 +28,6 @@ export const Navigation: React.FC = () => {
   const handleCloseChangelog = () => {
     setShowChangelog(false);
     localStorage.setItem(CHANGELOG_VIEWED_KEY, 'true');
-  };
-
-  const handleStartWorkout = () => {
-    startWorkout(selectedExercises);
-    navigate('/workout');
   };
 
   const handleLogout = async () => {
@@ -77,24 +70,17 @@ export const Navigation: React.FC = () => {
               >
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
-              <Dumbbell className="h-8 w-8 text-blue-500 ml-3" />
+              <LogDayLogo />
               <span className="ml-2 text-xl font-bold text-gray-900">LogDay</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
               <button
                 onClick={() => setShowChangelog(true)}
                 className="p-2 rounded-md hover:bg-gray-100"
+                title="What's New"
               >
                 <Bell size={24} className="text-gray-600" />
               </button>
-              {!currentWorkout && selectedExercises.length > 0 && (
-                <button
-                  onClick={handleStartWorkout}
-                  className="inline-flex items-center px-4 py-2 border-2 border-blue-600 text-sm font-medium rounded-full text-white bg-blue-600 hover:bg-blue-700 hover:border-blue-700 transition-colors whitespace-nowrap"
-                >
-                  Start Workout
-                </button>
-              )}
             </div>
           </div>
         </div>
