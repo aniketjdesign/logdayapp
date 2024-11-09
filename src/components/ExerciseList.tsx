@@ -1,16 +1,16 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, AlertCircle, Plus } from 'lucide-react';
+import { Search, Filter, AlertCircle, Plus, ArrowLeft } from 'lucide-react';
 import { Exercise, MuscleGroup } from '../types/workout';
 import { exercises } from '../data/exercises';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
+import { generateWorkoutName } from '../utils/workoutNameGenerator';
 
 export const ExerciseList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | 'All'>('All');
-  const [showTooltip, setShowTooltip] = useState(false);
-  const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout } = useWorkout();
   const navigate = useNavigate();
+  const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout } = useWorkout();
 
   const muscleGroups: ('All' | MuscleGroup)[] = [
     'All',
@@ -27,40 +27,41 @@ export const ExerciseList: React.FC = () => {
   ];
 
   const filteredExercises = useMemo(() => {
+    const searchTerms = search.toLowerCase().split(' ').filter(term => term.length > 0);
+    
     return exercises.filter(exercise => {
-      const matchesSearch = exercise.name.toLowerCase().includes(search.toLowerCase());
+      const matchesSearch = searchTerms.length === 0 || searchTerms.every(term =>
+        exercise.name.toLowerCase().includes(term) ||
+        exercise.muscleGroup.toLowerCase().includes(term)
+      );
       const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
       return matchesSearch && matchesMuscleGroup;
     });
   }, [search, selectedMuscleGroup]);
 
-  const toggleExercise = (exercise: Exercise) => {
-    if (currentWorkout) {
-      setShowTooltip(true);
-      setTimeout(() => setShowTooltip(false), 3000);
-      return;
-    }
-
-    setSelectedExercises(
-      selectedExercises.find(e => e.id === exercise.id)
-        ? selectedExercises.filter(e => e.id !== exercise.id)
-        : [...selectedExercises, exercise]
-    );
-  };
-
   const handleStartWorkout = () => {
     if (selectedExercises.length > 0 && !currentWorkout) {
-      startWorkout(selectedExercises);
+      const workoutName = generateWorkoutName(selectedExercises);
+      startWorkout(selectedExercises, workoutName);
       navigate('/workout');
     }
   };
 
   return (
     <div className="max-w-2xl mx-auto p-6">
-      {showTooltip && (
-        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center space-x-2 z-50 animate-fade-in">
-          <AlertCircle size={20} />
-          <span>Workout in progress. Please finish current workout first.</span>
+      {currentWorkout && (
+        <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mr-2" />
+            <span className="text-yellow-700">You have an ongoing workout</span>
+          </div>
+          <button
+            onClick={() => navigate('/workout')}
+            className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 text-sm font-medium flex items-center"
+          >
+            <ArrowLeft size={16} className="mr-1" />
+            Return to Workout
+          </button>
         </div>
       )}
 
@@ -70,7 +71,7 @@ export const ExerciseList: React.FC = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Search exercises..."
+              placeholder="Search exercises (e.g. 'dumbbell chest press')"
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -86,7 +87,7 @@ export const ExerciseList: React.FC = () => {
             }`}
           >
             <Plus size={20} className="mr-1" />
-            Start Workout {selectedExercises.length > 0 && `(${selectedExercises.length})`}
+            Start Workout ({selectedExercises.length})
           </button>
         </div>
         
@@ -112,8 +113,16 @@ export const ExerciseList: React.FC = () => {
         {filteredExercises.map(exercise => (
           <div
             key={exercise.id}
-            onClick={() => toggleExercise(exercise)}
-            className={`p-4 rounded-lg cursor-pointer transition-all ${
+            onClick={() => {
+              if (!currentWorkout) {
+                setSelectedExercises(
+                  selectedExercises.find(e => e.id === exercise.id)
+                    ? selectedExercises.filter(e => e.id !== exercise.id)
+                    : [...selectedExercises, exercise]
+                );
+              }
+            }}
+            className={`p-4 rounded-lg transition-all ${
               currentWorkout 
                 ? 'opacity-50 cursor-not-allowed'
                 : selectedExercises.find(e => e.id === exercise.id)

@@ -130,7 +130,7 @@ export const SignUp: React.FC = () => {
             <LogDayLogo className="h-16 w-16" />
           </div>
           <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
-            Join LogDay
+            Join Logday
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Start your fitness journey today
@@ -146,7 +146,6 @@ export const SignUp: React.FC = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* Email Input */}
             <div>
               <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
                 Email address
@@ -164,7 +163,6 @@ export const SignUp: React.FC = () => {
               />
             </div>
 
-            {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-normal text-gray-500 mb-1">
                 Password
@@ -192,7 +190,6 @@ export const SignUp: React.FC = () => {
               </div>
             </div>
 
-            {/* Confirm Password Input */}
             <div>
               <label htmlFor="confirm-password" className="block text-sm font-normal text-gray-500 mb-1">
                 Confirm Password
@@ -220,7 +217,6 @@ export const SignUp: React.FC = () => {
               </div>
             </div>
 
-            {/* Invite Code Input */}
             <div>
               <label className="block text-sm font-normal text-gray-500 mb-1">
                 Invite Code

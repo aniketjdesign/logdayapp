@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 
@@ -11,6 +11,8 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,6 +20,10 @@ export const Login: React.FC = () => {
       setError('');
       setLoading(true);
       await signIn(email, password);
+      
+      // Redirect to the originally requested URL or default to home
+      const from = (location.state as any)?.from?.pathname || '/';
+      navigate(from, { replace: true });
     } catch (err: any) {
       if (err?.name === 'AuthApiError' && err?.status === 400) {
         setError('Invalid email or password. Please try again.');
@@ -38,7 +44,7 @@ export const Login: React.FC = () => {
             <LogDayLogo className="h-16 w-16" />
           </div>
           <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
-            Welcome to LogDay
+            Welcome to Logday
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             Never skip log day
@@ -54,7 +60,6 @@ export const Login: React.FC = () => {
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
-            {/* Email Input */}
             <div>
               <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
                 Email address
@@ -72,7 +77,6 @@ export const Login: React.FC = () => {
               />
             </div>
 
-            {/* Password Input */}
             <div>
               <label htmlFor="password" className="block text-sm font-normal text-gray-500 mb-1">
                 Password

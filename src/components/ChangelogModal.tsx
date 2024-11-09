@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface ChangelogModalProps {
@@ -44,7 +44,7 @@ export const ChangelogModal: React.FC<ChangelogModalProps> = ({ isOpen, onClose 
 
         <div className="p-6 overflow-y-auto flex-1 scrollbar-thin">
           <div className="prose prose-blue">
-            <p className="text-gray-600">Hey there! Aniket from LogDay here. Just dropped some fresh updates to make your workout tracking even better. Check 'em out!</p>
+            <p className="text-gray-600">Hey there! Aniket from Logday here. Just dropped some fresh updates to make your workout tracking even better. Check 'em out!</p>
 
             <div className="space-y-4 mt-4">
               <div>

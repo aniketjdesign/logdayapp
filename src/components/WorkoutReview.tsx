@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Dumbbell, Medal, ClipboardList, Plus } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
+import { useWorkout } from '../context/WorkoutContext';
 
 interface WorkoutReviewProps {
   workout: WorkoutLog;
@@ -10,6 +11,7 @@ interface WorkoutReviewProps {
 
 export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }) => {
   const navigate = useNavigate();
+  const { clearWorkoutState } = useWorkout();
 
   const calculateStats = () => {
     let totalWeight = 0;
@@ -35,8 +37,19 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
     return `${hrs}h ${mins}m`;
   };
 
+  const handleGoToLogs = () => {
+    clearWorkoutState();
+    onClose();
+    navigate('/logs');
+  };
+
+  const handleStartNew = () => {
+    clearWorkoutState();
+    onClose();
+    navigate('/');
+  };
+
   React.useEffect(() => {
-    // Prevent body scroll when modal is open
     document.body.style.overflow = 'hidden';
     return () => {
       document.body.style.overflow = 'unset';
@@ -46,7 +59,6 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50">
       <div className="bg-white rounded-xl max-w-2xl w-full my-8 max-h-[80vh] flex flex-col relative">
-        {/* Header */}
         <div className="p-6 border-b flex-shrink-0">
           <div className="flex justify-between items-start">
             <h2 className="text-2xl font-bold">Workout Complete! 🎉</h2>
@@ -59,7 +71,6 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
           </div>
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           <div className="p-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
@@ -106,18 +117,17 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-6 border-t flex-shrink-0">
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => navigate('/logs')}
+              onClick={handleGoToLogs}
               className="flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors whitespace-nowrap text-sm sm:text-base sm:px-4"
             >
               <ClipboardList size={20} className="mr-1 sm:mr-2 flex-shrink-0" />
               <span className="truncate">Go to Logs</span>
             </button>
             <button
-              onClick={() => navigate('/')}
+              onClick={handleStartNew}
               className="flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors whitespace-nowrap text-sm sm:text-base sm:px-4"
             >
               <Plus size={20} className="mr-1 sm:mr-2 flex-shrink-0" />
