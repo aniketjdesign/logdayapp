@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Medal } from 'lucide-react';
 import { WorkoutSet } from '../types/workout';
+import { useSettings } from '../context/SettingsContext';
 
 interface SetRowProps {
   set: WorkoutSet;
@@ -9,6 +10,8 @@ interface SetRowProps {
 }
 
 export const SetRow: React.FC<SetRowProps> = ({ set, onUpdate, onDelete }) => {
+  const { weightUnit } = useSettings();
+
   return (
     <>
       {/* Desktop View */}
@@ -99,15 +102,20 @@ export const SetRow: React.FC<SetRowProps> = ({ set, onUpdate, onDelete }) => {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <input
-            type="number"
-            step="0.25"
-            min="0"
-            placeholder="Weight"
-            className="px-2 py-1.5 border border-gray-300 rounded-md text-sm"
-            value={set.weight || ''}
-            onChange={(e) => onUpdate('weight', e.target.value)}
-          />
+          <div className="relative">
+            <input
+              type="number"
+              step="0.25"
+              min="0"
+              placeholder="Weight"
+              className="px-2 py-1.5 border border-gray-300 rounded-md text-sm w-full pr-8"
+              value={set.weight || ''}
+              onChange={(e) => onUpdate('weight', e.target.value)}
+            />
+            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+              {weightUnit}
+            </span>
+          </div>
           <input
             type="number"
             min="0"

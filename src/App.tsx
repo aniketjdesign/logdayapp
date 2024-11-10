@@ -2,10 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { Navigation } from './components/Navigation';
 import { ExerciseList } from './components/ExerciseList';
 import { WorkoutSession } from './components/WorkoutSession';
 import { WorkoutLogs } from './components/WorkoutLogs';
+import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
 
@@ -63,6 +65,7 @@ const AppContent = () => {
           <Route path="/" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
           <Route path="/logs" element={<WorkoutLogs />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
@@ -73,9 +76,11 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <WorkoutProvider>
-        <AppContent />
-      </WorkoutProvider>
+      <SettingsProvider>
+        <WorkoutProvider>
+          <AppContent />
+        </WorkoutProvider>
+      </SettingsProvider>
     </AuthProvider>
   );
 }

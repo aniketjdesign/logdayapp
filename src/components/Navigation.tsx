@@ -110,6 +110,11 @@ export const Navigation: React.FC = () => {
     navigate('/logs');
   };
 
+  const navigateToSettings = () => {
+    setIsMenuOpen(false);
+    navigate('/settings');
+  };
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
@@ -126,13 +131,6 @@ export const Navigation: React.FC = () => {
               <span className="ml-2 text-xl font-bold text-gray-900">Logday</span>
             </div>
             <div className="flex items-center space-x-2">
-              {/* <button
-                onClick={() => setShowChangelog(true)}
-                className="p-2 rounded-md hover:bg-gray-100"
-                title="What's New"
-              >
-                <Bell size={24} className="text-gray-600" />
-              </button> */}
               <button
                 data-canny-changelog
                 className="px-2 py-1.5 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
@@ -186,6 +184,12 @@ export const Navigation: React.FC = () => {
             className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
           >
             Your Logs
+          </button>
+          <button
+            onClick={navigateToSettings}
+            className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+          >
+            Settings
           </button>
         </div>
 

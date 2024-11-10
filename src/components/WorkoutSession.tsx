@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Timer, Plus, Trash2, Dumbbell } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
+import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
@@ -21,6 +22,7 @@ export const WorkoutSession: React.FC = () => {
     setSelectedExercises,
     clearWorkoutState 
   } = useWorkout();
+  const { weightUnit } = useSettings();
   const [workoutName, setWorkoutName] = useState(currentWorkout?.name || '');
   const [duration, setDuration] = useState(0);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
@@ -29,7 +31,6 @@ export const WorkoutSession: React.FC = () => {
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const navigate = useNavigate();
 
-  // Update workout name when exercises change
   useEffect(() => {
     if (currentWorkout) {
       const generatedName = generateWorkoutName(currentWorkout.exercises.map(e => e.exercise));
@@ -291,7 +292,7 @@ export const WorkoutSession: React.FC = () => {
               <div className="space-y-3">
                 <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
                   <div className="text-center">SET</div>
-                  <div>KGs</div>
+                  <div>{weightUnit.toUpperCase()}</div>
                   <div>GOAL</div>
                   <div>DONE</div>
                   <div>NOTES</div>

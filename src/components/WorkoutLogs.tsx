@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Calendar, Clock, Dumbbell, MoreVertical, Trash2, ArrowLeft, Plus } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
+import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from './ConfirmationModal';
 import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
 
 export const WorkoutLogs: React.FC = () => {
   const { workoutLogs, searchLogs, deleteLog, currentWorkout } = useWorkout();
+  const { weightUnit, convertWeight } = useSettings();
   const [search, setSearch] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
@@ -156,7 +158,7 @@ export const WorkoutLogs: React.FC = () => {
                           <tr className="text-left text-xs sm:text-sm text-gray-500">
                             <th className="pb-2 pr-4 pl-4 sm:pl-0">Set</th>
                             <th className="pb-2 pr-4">Reps</th>
-                            <th className="pb-2 pr-4">Weight</th>
+                            <th className="pb-2 pr-4">Weight ({weightUnit})</th>
                             <th className="pb-2">Notes</th>
                           </tr>
                         </thead>
@@ -165,11 +167,15 @@ export const WorkoutLogs: React.FC = () => {
                             <tr key={set.id} className="border-t border-gray-100">
                               <td className="py-2 pr-4 pl-4 sm:pl-0">Set {set.setNumber}</td>
                               <td className="py-2 pr-4">{set.performedReps}</td>
-                              <td className="py-2 pr-4">{set.weight}kg</td>
+                              <td className="py-2 pr-4">
+                                {weightUnit === 'lb' 
+                                  ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
+                                  : set.weight}
+                              </td>
                               <td className="py-2 flex items-center">
                                 <span className="truncate">{set.comments}</span>
                                 {set.isPR && (
-                                  <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐</span>
+                                  <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐ </span>
                                 )}
                               </td>
                             </tr>
