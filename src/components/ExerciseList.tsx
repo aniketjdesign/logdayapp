@@ -52,7 +52,10 @@ export const ExerciseList: React.FC = () => {
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
       {currentWorkout && <OngoingWorkoutMessage />}
 
-      <div className="mb-6 space-y-4">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">Quick Start</h1>
+        <p className="text-sm text-gray-600 mb-4">Select or search exercises and click Start Workout</p>
+
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -80,7 +83,7 @@ export const ExerciseList: React.FC = () => {
           </button>
         </div>
         
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin mt-4">
           <Filter size={18} className="text-gray-500 flex-shrink-0" />
           {muscleGroups.map(group => (
             <button

@@ -57,6 +57,9 @@ export const WorkoutLogs: React.FC = () => {
   if (workoutLogs.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
+        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
+
         {currentWorkout && <OngoingWorkoutMessage />}
         <div className="text-center py-8 sm:py-12">
           <div className="flex justify-center mb-4">
@@ -98,6 +101,9 @@ export const WorkoutLogs: React.FC = () => {
       {currentWorkout && <OngoingWorkoutMessage />}
 
       <div className="mb-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
+        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
+
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
           <input

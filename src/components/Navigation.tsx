@@ -173,17 +173,19 @@ export const Navigation: React.FC = () => {
           >
             Quick Start
           </button>
-          <button
-            onClick={navigateToWorkout}
-            className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
-          >
-            Your Workout
-          </button>
+          {currentWorkout && (
+            <button
+              onClick={navigateToWorkout}
+              className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+            >
+              Active Workout
+            </button>
+          )}
           <button
             onClick={navigateToLogs}
             className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
           >
-            Your Logs
+            Workout History
           </button>
           <button
             onClick={navigateToSettings}
