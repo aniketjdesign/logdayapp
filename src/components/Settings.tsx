@@ -23,26 +23,26 @@ export const Settings: React.FC = () => {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <button
-                onClick={() => !currentWorkout && setWeightUnit('kg')}
+                onClick={() => !currentWorkout && setWeightUnit('kgs')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  weightUnit === 'kg'
+                  weightUnit === 'kgs'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 } ${currentWorkout ? 'cursor-not-allowed opacity-60' : ''}`}
                 disabled={!!currentWorkout}
               >
-                Kilograms (kg)
+                Kilograms (KGs)
               </button>
               <button
-                onClick={() => !currentWorkout && setWeightUnit('lb')}
+                onClick={() => !currentWorkout && setWeightUnit('lbs')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                  weightUnit === 'lb'
+                  weightUnit === 'lbs'
                     ? 'bg-blue-600 text-white'
                     : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 } ${currentWorkout ? 'cursor-not-allowed opacity-60' : ''}`}
                 disabled={!!currentWorkout}
               >
-                Pounds (lb)
+                Pounds (LBs)
               </button>
             </div>
             {currentWorkout && (

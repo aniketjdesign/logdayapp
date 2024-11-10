@@ -12,7 +12,7 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
-  const [weightUnit, setWeightUnitState] = useState<WeightUnit>('lb');
+  const [weightUnit, setWeightUnitState] = useState<WeightUnit>('lbs');
 
   // Load settings when user changes
   useEffect(() => {
@@ -36,7 +36,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const convertWeight = (weight: number, from: WeightUnit, to: WeightUnit): number => {
     if (from === to) return weight;
-    if (from === 'kg' && to === 'lb') return weight * 2.20462;
+    if (from === 'kgs' && to === 'lbs') return weight * 2.20462;
     return weight / 2.20462;
   };
 

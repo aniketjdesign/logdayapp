@@ -4,7 +4,7 @@ import { WorkoutLog } from '../types/workout';
 const dbName = 'ssl-workout-tracker';
 const dbVersion = 2; // Incrementing version for new store
 
-export type WeightUnit = 'kg' | 'lb';
+export type WeightUnit = 'kgs' | 'lbs';
 
 export interface UserSettings {
   id: string;

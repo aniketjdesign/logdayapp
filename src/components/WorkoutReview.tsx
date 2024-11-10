@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { X, Dumbbell, Medal, ClipboardList, Plus } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useWorkout } from '../context/WorkoutContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface WorkoutReviewProps {
   workout: WorkoutLog;
@@ -12,6 +13,7 @@ interface WorkoutReviewProps {
 export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }) => {
   const navigate = useNavigate();
   const { clearWorkoutState } = useWorkout();
+  const { weightUnit, convertWeight } = useSettings();
 
   const calculateStats = () => {
     let totalWeight = 0;
@@ -20,7 +22,8 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
 
     workout.exercises.forEach(({ sets }) => {
       sets.forEach(set => {
-        totalWeight += set.weight * (parseInt(set.performedReps) || 0);
+        const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
+        totalWeight += weight * (parseInt(set.performedReps) || 0);
         totalSets++;
         if (set.isPR) totalPRs++;
       });
@@ -80,7 +83,7 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
               </div>
               <div className="bg-purple-50 p-4 rounded-lg">
                 <div className="text-purple-600 font-semibold">Total Weight</div>
-                <div className="text-2xl font-bold">{totalWeight.toLocaleString()} kg</div>
+                <div className="text-2xl font-bold">{totalWeight.toLocaleString()} {weightUnit}</div>
               </div>
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-green-600 font-semibold">Total Sets</div>
@@ -97,19 +100,25 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
                 <div key={exercise.id} className="bg-gray-50 rounded-lg p-4">
                   <h3 className="font-semibold mb-2">{exercise.name}</h3>
                   <div className="grid gap-2">
-                    {sets.map(set => (
-                      <div key={set.id} className="grid grid-cols-4 text-sm bg-white p-2 rounded">
-                        <div>Set {set.setNumber}</div>
-                        <div>{set.performedReps} reps</div>
-                        <div>{set.weight} kg</div>
-                        {set.isPR && (
-                          <div className="text-yellow-500 flex items-center">
-                            <Medal size={16} className="mr-1" />
-                            PR Set
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                    {sets.map(set => {
+                      const displayWeight = weightUnit === 'lb' 
+                        ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
+                        : set.weight;
+
+                      return (
+                        <div key={set.id} className="grid grid-cols-4 text-sm bg-white p-2 rounded">
+                          <div>Set {set.setNumber}</div>
+                          <div>{set.performedReps} reps</div>
+                          <div>{displayWeight} {weightUnit}</div>
+                          {set.isPR && (
+                            <div className="text-yellow-500 flex items-center">
+                              <Medal size={16} className="mr-1" />
+                              PR Set
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               ))}

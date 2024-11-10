@@ -7,6 +7,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
 import { useWorkout } from '../context/WorkoutContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface MobileWorkoutViewProps {
   workout: WorkoutLog;
@@ -47,6 +48,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
   const { clearWorkoutState } = useWorkout();
+  const { weightUnit } = useSettings();
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -155,7 +157,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
             <div className="p-4">
               <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
                 <div>SET</div>
-                <div>KGs</div>
+                <div>{weightUnit.toUpperCase()}</div>
                 <div>GOAL</div>
                 <div>DONE</div>
                 <div></div>
