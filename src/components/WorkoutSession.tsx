@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Timer, Plus, Trash2, Dumbbell } from 'lucide-react';
+import { Timer, Plus, Trash2, Dumbbell, CheckCheck, X } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
@@ -248,13 +248,21 @@ export const WorkoutSession: React.FC = () => {
             <Timer size={24} className="text-gray-500" />
             <span className="text-2xl font-bold">{formatTime(duration)}</span>
           </div>
-          <button
-            onClick={() => setShowExerciseModal(true)}
-            className="flex items-center px-4 py-2 border-2 border-blue-300 hover:bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <Plus size={20} className="mr-2" />
-            Add Exercise
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowExerciseModal(true)}
+              className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+            >
+              <Plus size={18} className="mr-2" />
+              Add Exercise
+            </button>
+            <button
+              onClick={() => setShowFinishConfirmation(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors text-sm"
+            >
+              <CheckCheck size={18} />
+            </button>
+          </div>
         </div>
         <input
           type="text"
@@ -281,63 +289,67 @@ export const WorkoutSession: React.FC = () => {
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
-          {currentWorkout.exercises.map(({ exercise, sets }) => (
-            <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold">{exercise.name}</h3>
-                <button
-                  onClick={() => deleteExercise(exercise.id)}
-                  className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                >
-                  <Trash2 size={20} />
-                </button>
-              </div>
-              <div className="space-y-3">
-                <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
-                  <div className="text-center">SET</div>
-                  <div>{weightUnit.toUpperCase()}</div>
-                  <div>GOAL</div>
-                  <div>DONE</div>
-                  <div>NOTES</div>
-                  <div>ACTIONS</div>
+        <>
+          <div className="space-y-6 mb-6">
+            {currentWorkout.exercises.map(({ exercise, sets }) => (
+              <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold">{exercise.name}</h3>
+                  <button
+                    onClick={() => deleteExercise(exercise.id)}
+                    className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 size={20} />
+                  </button>
                 </div>
+                <div className="space-y-3">
+                  <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
+                    <div className="text-center">SET</div>
+                    <div>{weightUnit.toUpperCase()}</div>
+                    <div>GOAL</div>
+                    <div>DONE</div>
+                    <div>NOTES</div>
+                    <div>ACTIONS</div>
+                  </div>
 
-                {sets.map(set => (
-                  <SetRow
-                    key={set.id}
-                    set={set}
-                    onUpdate={(field, value) => handleUpdateSet(exercise.id, set.id, field, value)}
-                    onDelete={() => handleDeleteSet(exercise.id, set.id)}
-                  />
-                ))}
-                <button
-                  onClick={() => handleAddSet(exercise.id)}
-                  className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
-                >
-                  <Plus size={18} className="mr-2" />
-                  Add Set
-                </button>
+                  {sets.map(set => (
+                    <SetRow
+                      key={set.id}
+                      set={set}
+                      onUpdate={(field, value) => handleUpdateSet(exercise.id, set.id, field, value)}
+                      onDelete={() => handleDeleteSet(exercise.id, set.id)}
+                    />
+                  ))}
+                  <button
+                    onClick={() => handleAddSet(exercise.id)}
+                    className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+                  >
+                    <Plus size={18} className="mr-2" />
+                    Add Set
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
 
-      <div className="mt-6 sticky bottom-4 space-y-4">
-        <button
-          onClick={() => setShowFinishConfirmation(true)}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg transition-colors"
-        >
-          Finish Workout
-        </button>
-        <button
-          onClick={() => setShowCancelConfirmation(true)}
-          className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors"
-        >
-          Cancel Workout
-        </button>
-      </div>
+          <div className="space-y-4 mb-6">
+            <button
+              onClick={() => setShowFinishConfirmation(true)}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
+            >
+              <CheckCheck size={20} className="mr-2" />
+              Finish Workout
+            </button>
+            <button
+              onClick={() => setShowCancelConfirmation(true)}
+              className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors flex items-center justify-center"
+            >
+              <X size={20} className="mr-2" />
+              Cancel Workout
+            </button>
+          </div>
+        </>
+      )}
 
       {showExerciseModal && (
         <ExerciseSelectionModal
@@ -369,5 +381,3 @@ export const WorkoutSession: React.FC = () => {
     </div>
   );
 };
-
-export default WorkoutSession;

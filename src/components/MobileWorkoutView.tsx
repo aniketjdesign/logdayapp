@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Timer, Trash2, Dumbbell } from 'lucide-react';
+import { Plus, Timer, Trash2, Dumbbell, CheckCheck, X } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
@@ -114,7 +114,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   }
 
   return (
-    <div className="md:hidden min-h-screen bg-gray-50 pb-32">
+    <div className="md:hidden min-h-screen bg-gray-50">
       {/* Header */}
       <div className="fixed top-16 left-0 right-0 bg-white border-b z-40">
         <div className="flex items-center justify-between p-4">
@@ -122,13 +122,21 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
             <Timer size={20} className="text-gray-500" />
             <span className="text-xl font-semibold">{formatTime(duration)}</span>
           </div>
-          <button
-            onClick={() => setShowExerciseModal(true)}
-            className="flex items-center px-4 py-2 border-2 border-blue-300 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors"
-          >
-            <Plus size={20} className="mr-2" />
-            Add Exercise
-          </button>
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowExerciseModal(true)}
+              className="flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+            >
+              <Plus size={16} className="mr-1.5" />
+              Add Exercise
+            </button>
+            <button
+              onClick={() => setShowFinishConfirmation(true)}
+              className="flex items-center px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors"
+            >
+              <CheckCheck size={16} />
+            </button>
+          </div>
         </div>
         <div className="px-4 pb-4">
           <input
@@ -142,7 +150,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </div>
 
       {/* Exercise List */}
-      <div className="mt-36 px-4 space-y-6">
+      <div className="mt-36 px-4 space-y-6 pb-32">
         {workout.exercises.map(({ exercise, sets }) => (
           <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
             <div className="p-4 border-b flex justify-between items-center">
@@ -178,29 +186,31 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               ))}
               <button
                 onClick={() => onAddSet(exercise.id)}
-                className="mt-3 text-blue-600 text-sm font-medium flex items-center"
+                className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
               >
-                <Plus size={16} className="mr-1" /> Add Set
+                <Plus size={16} className="mr-2" />
+                Add Set
               </button>
             </div>
           </div>
         ))}
-      </div>
 
-      {/* Action Buttons */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t space-y-2">
-        <button
-          onClick={() => setShowFinishConfirmation(true)}
-          className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-lg transition-colors"
-        >
-          Finish Workout
-        </button>
-        <button
-          onClick={() => setShowCancelConfirmation(true)}
-          className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors"
-        >
-          Cancel Workout
-        </button>
+        <div className="space-y-3 mb-6">
+          <button
+            onClick={() => setShowFinishConfirmation(true)}
+            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
+          >
+            <CheckCheck size={20} className="mr-2" />
+            Finish Workout
+          </button>
+          <button
+            onClick={() => setShowCancelConfirmation(true)}
+            className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors flex items-center justify-center"
+          >
+            <X size={20} className="mr-2" />
+            Cancel Workout
+          </button>
+        </div>
       </div>
 
       {/* Add Note Modal */}
@@ -254,5 +264,3 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     </div>
   );
 };
-
-export default MobileWorkoutView;
