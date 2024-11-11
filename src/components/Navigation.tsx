@@ -3,7 +3,6 @@ import { Menu, X, LogOut, Bell, User } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { ChangelogModal } from './ChangelogModal';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
 import { LogDayLogo } from './LogDayLogo';
 
@@ -15,7 +14,6 @@ declare global {
 
 export const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showChangelog, setShowChangelog] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const navigate = useNavigate();
   const { 
@@ -26,13 +24,6 @@ export const Navigation: React.FC = () => {
   } = useWorkout();
   const { user, signOut } = useAuth();
   const cannyInitialized = useRef(false);
-
-  useEffect(() => {
-    const hasViewedChangelog = localStorage.getItem('changelog_viewed');
-    if (!hasViewedChangelog) {
-      setShowChangelog(true);
-    }
-  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && window.Canny && user?.email && !cannyInitialized.current) {
@@ -55,11 +46,6 @@ export const Navigation: React.FC = () => {
       });
     }
   }, [user]);
-
-  const handleCloseChangelog = () => {
-    setShowChangelog(false);
-    localStorage.setItem('changelog_viewed', 'true');
-  };
 
   const handleLogoutClick = () => {
     if (currentWorkout) {
@@ -209,8 +195,6 @@ export const Navigation: React.FC = () => {
           </button>
         </div>
       </div>
-
-      <ChangelogModal isOpen={showChangelog} onClose={handleCloseChangelog} />
       
       <LogoutConfirmationModal 
         isOpen={showLogoutConfirmation}

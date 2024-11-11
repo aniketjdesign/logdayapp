@@ -102,12 +102,16 @@ export const WorkoutSession: React.FC = () => {
   const handleAddSet = (exerciseId: string) => {
     const exercise = currentWorkout?.exercises.find(e => e.exercise.id === exerciseId);
     if (exercise) {
+      const lastSet = exercise.sets.length > 0 
+        ? exercise.sets[exercise.sets.length - 1]
+        : { targetReps: 0, weight: 0 };
+
       const newSet = {
         id: Date.now().toString(),
         setNumber: exercise.sets.length + 1,
-        targetReps: 0,
+        targetReps: lastSet.targetReps,
         performedReps: '',
-        weight: 0,
+        weight: lastSet.weight,
         comments: '',
         isPR: false
       };
@@ -365,3 +369,5 @@ export const WorkoutSession: React.FC = () => {
     </div>
   );
 };
+
+export default WorkoutSession;
