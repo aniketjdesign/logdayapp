@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet } from '../types/workout';
-import { useSettings } from '../context/SettingsContext';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -17,7 +16,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onOpenNoteModal,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const { weightUnit } = useSettings();
 
   return (
     <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 items-center py-1 relative">
@@ -32,20 +30,15 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           )}
         </div>
       </div>
-      <div className="relative">
-        <input
-          type="number"
-          step="0.25"
-          min="0"
-          placeholder="-"
-          className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm w-full pr-8"
-          value={set.weight || ''}
-          onChange={(e) => onUpdate('weight', e.target.value)}
-        />
-        <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-xs">
-          {weightUnit}
-        </span>
-      </div>
+      <input
+        type="number"
+        step="0.25"
+        min="0"
+        placeholder="-"
+        className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm w-full"
+        value={set.weight || ''}
+        onChange={(e) => onUpdate('weight', e.target.value)}
+      />
       <input
         type="number"
         min="0"
@@ -114,3 +107,5 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     </div>
   );
 };
+
+export default MobileSetRow;
