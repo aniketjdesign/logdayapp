@@ -153,7 +153,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       {/* Exercise List */}
       <div className="mt-36 px-4 space-y-6 pb-32">
         {workout.exercises.map(({ exercise, sets }) => {
+          const isCardio = exercise.muscleGroup === 'Cardio';
+          const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
           const isBodyweight = exercise.name.includes('(Bodyweight)');
+
           return (
             <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
               <div className="p-4 border-b flex justify-between items-center">
@@ -168,16 +171,29 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               <div className="p-4">
                 <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
                   <div>SET</div>
-                  <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                  <div>GOAL</div>
-                  <div>DONE</div>
+                  {isCardio || isTimeBasedCore ? (
+                    <>
+                      <div>TIME</div>
+                      {exercise.metrics?.distance && <div>DISTANCE</div>}
+                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
+                      {exercise.metrics?.incline && <div>INCLINE</div>}
+                      {exercise.metrics?.pace && <div>PACE</div>}
+                      {exercise.metrics?.reps && <div>REPS</div>}
+                    </>
+                  ) : (
+                    <>
+                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                      <div>GOAL</div>
+                      <div>DONE</div>
+                    </>
+                  )}
                   <div></div>
                 </div>
                 {sets.map((set) => (
                   <MobileSetRow
                     key={set.id}
                     set={set}
-                    isBodyweight={isBodyweight}
+                    exercise={exercise}
                     onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
                     onDelete={() => onDeleteSet(exercise.id, set.id)}
                     onOpenNoteModal={() => setActiveNoteModal({

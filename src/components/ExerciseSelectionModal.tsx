@@ -29,7 +29,8 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
     'Biceps',
     'Glutes',
     'Calves',
-    'Core'
+    'Core',
+    'Cardio'
   ];
 
   const toggleExerciseSelection = (exercise: Exercise) => {

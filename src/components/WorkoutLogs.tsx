@@ -54,6 +54,62 @@ export const WorkoutLogs: React.FC = () => {
     setOpenMenuId(openMenuId === logId ? null : logId);
   };
 
+  const getColumnHeaders = (exercise: any) => {
+    const isCardio = exercise.muscleGroup === 'Cardio';
+    const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
+    const isBodyweight = exercise.name.includes('(Bodyweight)');
+
+    if (isCardio) {
+      const headers = ['Set', 'Time'];
+      if (exercise.metrics?.distance) headers.push('Distance');
+      if (exercise.metrics?.difficulty) headers.push('Difficulty');
+      if (exercise.metrics?.incline) headers.push('Incline');
+      if (exercise.metrics?.pace) headers.push('Pace');
+      if (exercise.metrics?.reps) headers.push('Reps');
+      headers.push('Notes');
+      return headers;
+    } else if (isTimeBasedCore) {
+      return ['Set', 'Time', 'Notes'];
+    } else {
+      return ['Set', `Weight ${!isBodyweight ? `(${weightUnit})` : ''}`, 'Reps', 'Notes'];
+    }
+  };
+
+  const getSetValue = (set: any, field: string, exercise: any) => {
+    switch (field) {
+      case 'Set':
+        return `Set ${set.setNumber}`;
+      case 'Time':
+        return set.time || '-';
+      case 'Distance':
+        return set.distance ? `${set.distance}m` : '-';
+      case 'Difficulty':
+        return set.difficulty || '-';
+      case 'Incline':
+        return set.incline ? `${set.incline}%` : '-';
+      case 'Pace':
+        return set.pace || '-';
+      case 'Reps':
+        return set.performedReps || '-';
+      case `Weight ${!exercise.name.includes('(Bodyweight)') ? `(${weightUnit})` : ''}`:
+        if (exercise.name.includes('(Bodyweight)')) return 'BW';
+        return weightUnit === 'lb' 
+          ? convertWeight(set.weight || 0, 'kg', 'lb').toFixed(2)
+          : set.weight || '-';
+      case 'Notes':
+        return (
+          <div className="flex items-center">
+            <span className="truncate">{set.comments}</span>
+            {set.isPR && (
+              <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐</span>
+            )}
+          </div>
+        );
+      default:
+        return '-';
+    }
+  };
+
   if (workoutLogs.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -154,47 +210,35 @@ export const WorkoutLogs: React.FC = () => {
             </div>
 
             <div className="space-y-4 sm:space-y-6">
-              {log.exercises.map(({ exercise, sets }) => {
-                const isBodyweight = exercise.name.includes('(Bodyweight)');
-                return (
-                  <div key={exercise.id} className="border-t pt-4">
-                    <h4 className="font-medium mb-3 text-sm sm:text-base">{exercise.name}</h4>
-                    <div className="overflow-x-auto -mx-4 sm:mx-0">
-                      <div className="min-w-full inline-block align-middle">
-                        <table className="min-w-full">
-                          <thead>
-                            <tr className="text-left text-xs sm:text-sm text-gray-500">
-                              <th className="pb-2 pr-4 pl-4 sm:pl-0">Set</th>
-                              <th className="pb-2 pr-4">Reps</th>
-                              <th className="pb-2 pr-4">Weight {!isBodyweight && `(${weightUnit})`}</th>
-                              <th className="pb-2">Notes</th>
-                            </tr>
-                          </thead>
-                          <tbody className="text-xs sm:text-sm">
-                            {sets.map(set => (
-                              <tr key={set.id} className="border-t border-gray-100">
-                                <td className="py-2 pr-4 pl-4 sm:pl-0">Set {set.setNumber}</td>
-                                <td className="py-2 pr-4">{set.performedReps}</td>
-                                <td className="py-2 pr-4">
-                                  {isBodyweight ? 'BW' : weightUnit === 'lb' 
-                                    ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
-                                    : set.weight}
-                                </td>
-                                <td className="py-2 flex items-center">
-                                  <span className="truncate">{set.comments}</span>
-                                  {set.isPR && (
-                                    <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐ </span>
-                                  )}
-                                </td>
-                              </tr>
+              {log.exercises.map(({ exercise, sets }) => (
+                <div key={exercise.id} className="border-t pt-4">
+                  <h4 className="font-medium mb-3 text-sm sm:text-base">{exercise.name}</h4>
+                  <div className="overflow-x-auto -mx-4 sm:mx-0">
+                    <div className="min-w-full inline-block align-middle">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="text-left text-xs sm:text-sm text-gray-500">
+                            {getColumnHeaders(exercise).map((header, index) => (
+                              <th key={index} className="pb-2 pr-4 pl-4 sm:pl-0">{header}</th>
                             ))}
-                          </tbody>
-                        </table>
-                      </div>
+                          </tr>
+                        </thead>
+                        <tbody className="text-xs sm:text-sm">
+                          {sets.map(set => (
+                            <tr key={set.id} className="border-t border-gray-100">
+                              {getColumnHeaders(exercise).map((header, index) => (
+                                <td key={index} className="py-2 pr-4 pl-4 sm:pl-0">
+                                  {getSetValue(set, header, exercise)}
+                                </td>
+                              ))}
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           </div>
         ))}

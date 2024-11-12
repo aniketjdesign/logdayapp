@@ -24,7 +24,8 @@ export const ExerciseList: React.FC = () => {
     'Biceps',
     'Glutes',
     'Calves',
-    'Core'
+    'Core',
+    'Cardio'
   ];
 
   const filteredExercises = useMemo(() => {

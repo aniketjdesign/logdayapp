@@ -19,11 +19,21 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
     let totalWeight = 0;
     let totalSets = 0;
     let totalPRs = 0;
+    let totalDistance = 0;
+    let totalTime = 0;
 
     workout.exercises.forEach(({ exercise, sets }) => {
       const isBodyweight = exercise.name.includes('(Bodyweight)');
+      const isCardio = exercise.muscleGroup === 'Cardio';
+
       sets.forEach(set => {
-        if (!isBodyweight) {
+        if (isCardio) {
+          if (set.distance) totalDistance += set.distance;
+          if (set.time) {
+            const [minutes = 0, seconds = 0] = set.time.split(':').map(Number);
+            totalTime += minutes * 60 + seconds;
+          }
+        } else if (!isBodyweight && set.weight && set.performedReps) {
           const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
           totalWeight += weight * (parseInt(set.performedReps) || 0);
         }
@@ -32,16 +42,17 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
       });
     });
 
-    return { totalWeight, totalSets, totalPRs };
+    return { totalWeight, totalSets, totalPRs, totalDistance, totalTime };
   };
 
-  const { totalWeight, totalSets, totalPRs } = calculateStats();
-  const duration = Math.floor((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 1000);
-  const formatDuration = (seconds: number) => {
+  const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
     return `${hrs}h ${mins}m`;
   };
+
+  const { totalWeight, totalSets, totalPRs, totalDistance, totalTime } = calculateStats();
+  const duration = Math.floor((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 1000);
 
   const handleGoToLogs = () => {
     clearWorkoutState();
@@ -82,12 +93,26 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="text-blue-600 font-semibold">Duration</div>
-                <div className="text-2xl font-bold">{formatDuration(duration)}</div>
+                <div className="text-2xl font-bold">{formatTime(duration)}</div>
               </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <div className="text-purple-600 font-semibold">Total Weight</div>
-                <div className="text-2xl font-bold">{totalWeight.toLocaleString()} {weightUnit}</div>
-              </div>
+              {totalWeight > 0 && (
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <div className="text-purple-600 font-semibold">Total Weight</div>
+                  <div className="text-2xl font-bold">{totalWeight.toLocaleString()} {weightUnit}</div>
+                </div>
+              )}
+              {totalDistance > 0 && (
+                <div className="bg-green-50 p-4 rounded-lg">
+                  <div className="text-green-600 font-semibold">Total Distance</div>
+                  <div className="text-2xl font-bold">{totalDistance.toLocaleString()} m</div>
+                </div>
+              )}
+              {totalTime > 0 && (
+                <div className="bg-indigo-50 p-4 rounded-lg">
+                  <div className="text-indigo-600 font-semibold">Total Time</div>
+                  <div className="text-2xl font-bold">{formatTime(totalTime)}</div>
+                </div>
+              )}
               <div className="bg-green-50 p-4 rounded-lg">
                 <div className="text-green-600 font-semibold">Total Sets</div>
                 <div className="text-2xl font-bold">{totalSets}</div>
@@ -101,22 +126,40 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
             <div className="space-y-6">
               {workout.exercises.map(({ exercise, sets }) => {
                 const isBodyweight = exercise.name.includes('(Bodyweight)');
+                const isCardio = exercise.muscleGroup === 'Cardio';
+
                 return (
                   <div key={exercise.id} className="bg-gray-50 rounded-lg p-4">
                     <h3 className="font-semibold mb-2">{exercise.name}</h3>
                     <div className="grid gap-2">
                       {sets.map(set => {
-                        const displayWeight = isBodyweight 
-                          ? 'BW'
-                          : weightUnit === 'lb' 
-                            ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
-                            : set.weight;
+                        let displayMetrics = [];
+
+                        if (isCardio) {
+                          if (set.time) displayMetrics.push(`Time: ${set.time}`);
+                          if (set.distance) displayMetrics.push(`Distance: ${set.distance}m`);
+                          if (set.difficulty) displayMetrics.push(`Difficulty: ${set.difficulty}`);
+                          if (set.incline) displayMetrics.push(`Incline: ${set.incline}%`);
+                          if (set.pace) displayMetrics.push(`Pace: ${set.pace}`);
+                          if (set.performedReps) displayMetrics.push(`Reps: ${set.performedReps}`);
+                        } else {
+                          const displayWeight = isBodyweight 
+                            ? 'BW'
+                            : weightUnit === 'lb' 
+                              ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
+                              : set.weight;
+                          displayMetrics.push(`${displayWeight} ${!isBodyweight ? weightUnit : ''}`);
+                          displayMetrics.push(`${set.performedReps} reps`);
+                        }
 
                         return (
-                          <div key={set.id} className="grid grid-cols-4 text-sm bg-white p-2 rounded">
-                            <div>Set {set.setNumber}</div>
-                            <div>{set.performedReps} reps</div>
-                            <div>{displayWeight} {!isBodyweight && weightUnit}</div>
+                          <div key={set.id} className="grid grid-cols-[1fr_auto] text-sm bg-white p-2 rounded">
+                            <div className="flex items-center space-x-4">
+                              <span>Set {set.setNumber}</span>
+                              {displayMetrics.map((metric, index) => (
+                                <span key={index}>{metric}</span>
+                              ))}
+                            </div>
                             {set.isPR && (
                               <div className="text-yellow-500 flex items-center">
                                 <Medal size={16} className="mr-1" />

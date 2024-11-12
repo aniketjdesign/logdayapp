@@ -1,6 +1,83 @@
 import { Exercise } from '../types/workout';
 
 export const exercises: Exercise[] = [
+  // Cardio
+  { 
+    id: 'crd1', 
+    name: 'Rowing', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      difficulty: true,
+      distance: true
+    }
+  },
+  { 
+    id: 'crd2', 
+    name: 'Treadmill', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      incline: true,
+      distance: true
+    }
+  },
+  { 
+    id: 'crd3', 
+    name: 'Stationary Cycling', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      difficulty: true,
+      distance: true
+    }
+  },
+  { 
+    id: 'crd4', 
+    name: 'Walking', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      pace: true,
+      distance: true
+    }
+  },
+  { 
+    id: 'crd5', 
+    name: 'Skipping', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true
+    }
+  },
+  { 
+    id: 'crd6', 
+    name: 'Elliptical/Cross-trainer', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      difficulty: true,
+      distance: true
+    }
+  },
+  { 
+    id: 'crd7', 
+    name: 'Swimming', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true
+    }
+  },
+  { 
+    id: 'crd8', 
+    name: 'Mountain Climber', 
+    muscleGroup: 'Cardio',
+    metrics: {
+      time: true,
+      reps: true
+    }
+  },
+
   // Shoulders
   { id: 's1', name: 'Seated Shoulder Press (Dumbbells)', muscleGroup: 'Shoulders' },
   { id: 's2', name: 'Seated Shoulder Press (Barbell)', muscleGroup: 'Shoulders' },
@@ -183,7 +260,6 @@ export const exercises: Exercise[] = [
   { id: 'ca6', name: 'Seated Calf Raises (Machine)', muscleGroup: 'Calves' },
   { id: 'ca7', name: 'Standing Calf Raises (Bodyweight)', muscleGroup: 'Calves' },
 
-
   // Core
   { id: 'co1', name: 'Crunches (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co2', name: 'Crunches (Machine)', muscleGroup: 'Core' },
@@ -192,10 +268,10 @@ export const exercises: Exercise[] = [
   { id: 'co6', name: 'Decline Crunches (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co7', name: 'Russian Twists (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co8', name: 'Russian Twists (Weighted)', muscleGroup: 'Core' },
-  { id: 'co9', name: 'Boat Hold', muscleGroup: 'Core' },
+  { id: 'co9', name: 'Boat Hold (Time)', muscleGroup: 'Core', metrics: { time: true } },
   { id: 'co10', name: 'Alternate toe touch', muscleGroup: 'Core' },
   { id: 'co11', name: 'Hanging Knee Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co12', name: 'Hanging Leg Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co13', name: 'Lying Leg Raises (Bodyweight)', muscleGroup: 'Core' },
-  { id: 'co14', name: 'Plank (Bodyweight)', muscleGroup: 'Core' },
+  { id: 'co14', name: 'Plank (Time)', muscleGroup: 'Core', metrics: { time: true } },
 ];

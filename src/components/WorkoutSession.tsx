@@ -87,7 +87,6 @@ export const WorkoutSession: React.FC = () => {
         setShowFinishConfirmation(false);
       } catch (error) {
         console.error('Error completing workout:', error);
-        // Handle error appropriately
       }
     }
   };
@@ -291,6 +290,9 @@ export const WorkoutSession: React.FC = () => {
           <div className="space-y-6 mb-6">
             {currentWorkout.exercises.map(({ exercise, sets }) => {
               const isBodyweight = exercise.name.includes('(Bodyweight)');
+              const isCardio = exercise.muscleGroup === 'Cardio';
+              const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
+
               return (
                 <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
                   <div className="flex justify-between items-center mb-4">
@@ -305,9 +307,22 @@ export const WorkoutSession: React.FC = () => {
                   <div className="space-y-3">
                     <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
                       <div className="text-center">SET</div>
-                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                      <div>GOAL</div>
-                      <div>DONE</div>
+                      {isCardio || isTimeBasedCore ? (
+                        <>
+                          <div>TIME</div>
+                          {exercise.metrics?.distance && <div>DISTANCE</div>}
+                          {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
+                          {exercise.metrics?.incline && <div>INCLINE</div>}
+                          {exercise.metrics?.pace && <div>PACE</div>}
+                          {exercise.metrics?.reps && <div>REPS</div>}
+                        </>
+                      ) : (
+                        <>
+                          <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                          <div>GOAL</div>
+                          <div>DONE</div>
+                        </>
+                      )}
                       <div>NOTES</div>
                       <div>ACTIONS</div>
                     </div>
@@ -316,7 +331,7 @@ export const WorkoutSession: React.FC = () => {
                       <SetRow
                         key={set.id}
                         set={set}
-                        isBodyweight={isBodyweight}
+                        exercise={exercise}
                         onUpdate={(field, value) => handleUpdateSet(exercise.id, set.id, field, value)}
                         onDelete={() => handleDeleteSet(exercise.id, set.id)}
                       />
