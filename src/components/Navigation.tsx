@@ -48,11 +48,11 @@ export const Navigation: React.FC = () => {
     }
   }, [user]);
 
-  const handleLogoutClick = () => {
+  const handleLogoutClick = async () => {
     if (currentWorkout) {
       setShowLogoutConfirmation(true);
     } else {
-      handleLogout();
+      await handleLogout();
     }
     setIsMenuOpen(false);
   };
@@ -66,6 +66,9 @@ export const Navigation: React.FC = () => {
       await signOut();
     } catch (error) {
       console.error('Error logging out:', error);
+      // Force reload even if there's an error
+      window.location.href = '/login';
+      window.location.reload(true);
     }
   };
 

@@ -13,6 +13,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const STORAGE_PREFIX = 'logday_';
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
@@ -68,12 +70,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      // First, clear all local storage data
+      // Clear all local storage data
       const localStorageKeys = Object.keys(localStorage);
       localStorageKeys.forEach(key => {
-        if (key.startsWith('sb-') || key.startsWith(STORAGE_PREFIX)) {
-          localStorage.removeItem(key);
-        }
+        localStorage.removeItem(key);
       });
 
       // Clear session cookies
@@ -84,19 +84,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       // Sign out from Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      await supabase.auth.signOut();
 
       // Reset user state
       setUser(null);
       identifyUser(null);
 
-      // Force a clean reload to reset all app state
-      window.location.replace('/login');
+      // Clear IndexedDB data
+      const databases = await window.indexedDB.databases();
+      databases.forEach(db => {
+        if (db.name) {
+          window.indexedDB.deleteDatabase(db.name);
+        }
+      });
+
+      // Force a complete page reload and redirect
+      window.location.href = '/login';
+      window.location.reload(true);
     } catch (error) {
       console.error('Error during sign out:', error);
-      // Even if there's an error, force a reload to clear state
-      window.location.replace('/login');
+      // Fallback: force reload even if there's an error
+      window.location.href = '/login';
+      window.location.reload(true);
     }
   };
 
