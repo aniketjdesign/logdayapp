@@ -48,11 +48,11 @@ export const Navigation: React.FC = () => {
     }
   }, [user]);
 
-  const handleLogoutClick = async () => {
+  const handleLogoutClick = () => {
     if (currentWorkout) {
       setShowLogoutConfirmation(true);
     } else {
-      await handleLogout();
+      handleLogout();
     }
     setIsMenuOpen(false);
   };
@@ -64,11 +64,26 @@ export const Navigation: React.FC = () => {
       setIsLoggingOut(true);
       clearWorkoutState();
       await signOut();
-    } catch (error) {
-      console.error('Error logging out:', error);
-      // Force reload even if there's an error
+      
+      // Clear all localStorage data
+      Object.keys(localStorage).forEach(key => {
+        if (!key.startsWith('vite-')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Clear all sessionStorage data
+      sessionStorage.clear();
+
+      // Reset Canny
+      cannyInitialized.current = false;
+
+      // Force a hard reload and redirect
       window.location.href = '/login';
-      window.location.reload(true);
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Even if there's an error, force logout
+      window.location.href = '/login';
     }
   };
 
