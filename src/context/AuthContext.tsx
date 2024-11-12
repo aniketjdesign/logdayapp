@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
+import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -67,9 +68,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    identifyUser(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear any stored auth data
+      localStorage.removeItem('sb-nusvmmtwguxhgaaezgwy-auth-token');
+      
+      // Reset user state
+      setUser(null);
+      identifyUser(null);
+      
+      // Force reload the page to clear all states
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      throw error;
+    }
   };
 
   const signInWithGoogle = async () => {

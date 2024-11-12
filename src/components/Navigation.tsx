@@ -15,6 +15,7 @@ declare global {
 export const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const navigate = useNavigate();
   const { 
     setSelectedExercises,
@@ -57,13 +58,18 @@ export const Navigation: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+    
     try {
+      setIsLoggingOut(true);
       clearWorkoutState();
       await signOut();
       setShowLogoutConfirmation(false);
       cannyInitialized.current = false;
     } catch (error) {
       console.error('Error logging out:', error);
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -188,10 +194,11 @@ export const Navigation: React.FC = () => {
           </div>
           <button
             onClick={handleLogoutClick}
-            className="w-full py-2 text-red-600 hover:bg-red-50 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors"
+            disabled={isLoggingOut}
+            className="w-full py-2 text-red-600 hover:bg-red-50 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <LogOut size={20} />
-            <span>Logout</span>
+            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>
       </div>
