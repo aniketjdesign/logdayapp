@@ -67,9 +67,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
-    identifyUser(null);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear all localStorage data
+      const keysToKeep = ['vite-dummy']; // Add any keys that should not be cleared
+      Object.keys(localStorage).forEach(key => {
+        if (!keysToKeep.includes(key)) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Clear all sessionStorage data
+      sessionStorage.clear();
+
+      // Reset user state
+      setUser(null);
+      identifyUser(null);
+
+      // Force reload to clear all app state
+      window.location.href = '/login';
+    } catch (error) {
+      console.error('Error during sign out:', error);
+      throw error;
+    }
   };
 
   const signInWithGoogle = async () => {

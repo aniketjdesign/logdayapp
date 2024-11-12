@@ -10,14 +10,29 @@ export const migrationService = {
   async shouldMigrate(): Promise<boolean> {
     try {
       // Check if there's any data to migrate
+      const keys = Object.keys(localStorage);
+      const logdayKeys = keys.filter(key => key.startsWith(STORAGE_PREFIX));
+      
+      console.log('Found localStorage keys:', logdayKeys);
+      
       const hasWorkoutLogs = localStorage.getItem(`${STORAGE_PREFIX}workoutLogs`);
       const hasWeightUnit = localStorage.getItem(`${STORAGE_PREFIX}weightUnit`);
       const lastMigration = localStorage.getItem(MIGRATION_VERSION_KEY);
 
+      if (hasWorkoutLogs) {
+        try {
+          const logs = JSON.parse(hasWorkoutLogs);
+          console.log('Found workout logs:', logs.length);
+        } catch (e) {
+          console.error('Error parsing workout logs:', e);
+        }
+      }
+
       console.log('Migration check:', {
         hasWorkoutLogs: !!hasWorkoutLogs,
         hasWeightUnit: !!hasWeightUnit,
-        lastMigration
+        lastMigration,
+        currentVersion: CURRENT_MIGRATION_VERSION
       });
 
       return (!!hasWorkoutLogs || !!hasWeightUnit) && 
@@ -38,7 +53,7 @@ export const migrationService = {
         key !== MIGRATION_VERSION_KEY
       );
 
-      console.log('Found localStorage keys:', keys);
+      console.log('Found localStorage keys to migrate:', keys);
 
       // Migrate workout logs
       const workoutLogsKey = `${STORAGE_PREFIX}workoutLogs`;
@@ -53,6 +68,8 @@ export const migrationService = {
           
           // Process each log sequentially to maintain order
           for (const log of logs) {
+            console.log('Migrating log:', log.id);
+            
             const validLog = {
               ...log,
               id: generateUUID(),
@@ -75,6 +92,8 @@ export const migrationService = {
         } catch (e) {
           console.error('Error parsing workout logs:', e);
         }
+      } else {
+        console.log('No workout logs found to migrate');
       }
 
       // Migrate user settings
@@ -88,10 +107,13 @@ export const migrationService = {
         } else {
           console.log('Successfully migrated weight unit setting');
         }
+      } else {
+        console.log('No weight unit setting found to migrate');
       }
 
       // Mark migration as complete
       localStorage.setItem(MIGRATION_VERSION_KEY, CURRENT_MIGRATION_VERSION.toString());
+      console.log('Set migration version:', CURRENT_MIGRATION_VERSION);
       
       // Only remove migrated data after successful migration
       keys.forEach(key => {
