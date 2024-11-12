@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
+import { User, AuthResponse } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
-import { useNavigate } from 'react-router-dom';
 
 interface AuthContextType {
   user: User | null;
@@ -69,21 +68,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      // First, clear all local storage data
+      const localStorageKeys = Object.keys(localStorage);
+      localStorageKeys.forEach(key => {
+        if (key.startsWith('sb-') || key.startsWith(STORAGE_PREFIX)) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Clear session cookies
+      document.cookie.split(';').forEach(cookie => {
+        document.cookie = cookie
+          .replace(/^ +/, '')
+          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+      });
+
+      // Sign out from Supabase
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      
-      // Clear any stored auth data
-      localStorage.removeItem('sb-nusvmmtwguxhgaaezgwy-auth-token');
-      
+
       // Reset user state
       setUser(null);
       identifyUser(null);
-      
-      // Force reload the page to clear all states
-      window.location.href = '/login';
+
+      // Force a clean reload to reset all app state
+      window.location.replace('/login');
     } catch (error) {
       console.error('Error during sign out:', error);
-      throw error;
+      // Even if there's an error, force a reload to clear state
+      window.location.replace('/login');
     }
   };
 

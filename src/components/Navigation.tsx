@@ -64,12 +64,8 @@ export const Navigation: React.FC = () => {
       setIsLoggingOut(true);
       clearWorkoutState();
       await signOut();
-      setShowLogoutConfirmation(false);
-      cannyInitialized.current = false;
     } catch (error) {
       console.error('Error logging out:', error);
-    } finally {
-      setIsLoggingOut(false);
     }
   };
 
