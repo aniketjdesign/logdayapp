@@ -28,6 +28,7 @@ export const exercises: Exercise[] = [
   { id: 's24', name: 'Front Raises (Plates)', muscleGroup: 'Shoulders' },
   { id: 's25', name: 'Front Raises (Cables)', muscleGroup: 'Shoulders' },
   { id: 's26', name: 'Front Raises (Barbell)', muscleGroup: 'Shoulders' },
+  { id: 's27', name: 'Facepulls (Rope Cable)', muscleGroup: 'Shoulders' },
 
   // Chest
   { id: 'c1', name: 'Pushups', muscleGroup: 'Chest' },
@@ -46,6 +47,7 @@ export const exercises: Exercise[] = [
   { id: 'c14', name: 'Decline Chest Press (Bench)', muscleGroup: 'Chest' },
   { id: 'c15', name: 'Flat Iso Chest Press (Hammer)', muscleGroup: 'Chest' },
   { id: 'c16', name: 'Incline Iso Chest Press (Hammer)', muscleGroup: 'Chest' },
+  { id: 'c16', name: 'Incline Iso Chest Press (Smith Hammer)', muscleGroup: 'Chest' },
   { id: 'c17', name: 'Decline Iso Chest Press (Hammer)', muscleGroup: 'Chest' },
   { id: 'c18', name: 'Cable Flies (Low to High)', muscleGroup: 'Chest' },
   { id: 'c19', name: 'Cable Flies (High to Low)', muscleGroup: 'Chest' },
@@ -58,6 +60,7 @@ export const exercises: Exercise[] = [
   { id: 'c26', name: 'Pec Deck (Dual Pulley)', muscleGroup: 'Chest' },
   { id: 'c27', name: 'Dips', muscleGroup: 'Chest' },
   { id: 'c28', name: 'Assisted Dips', muscleGroup: 'Chest' },
+  { id: 'c29', name: 'Pullover (Dumbbells)', muscleGroup: 'Chest' },
 
   // Back
   { id: 'b1', name: 'Lat Pulldown - Wide', muscleGroup: 'Back' },
@@ -91,6 +94,10 @@ export const exercises: Exercise[] = [
   { id: 'b29', name: 'Chinups Pullups (Weighted)', muscleGroup: 'Back' },
   { id: 'b30', name: 'Chinups Pullups (Assisted)', muscleGroup: 'Back' },
   { id: 'b31', name: 'Good Mornings', muscleGroup: 'Back' },
+  { id: 'b32', name: 'Shrugs (Dumbbell)', muscleGroup: 'Back' },
+  { id: 'b33', name: 'Shrugs (Smith Machine)', muscleGroup: 'Back' },
+  { id: 'b34', name: 'Shrugs (Barbell)', muscleGroup: 'Back' },
+  { id: 'b34', name: 'Shrugs (Hammer)', muscleGroup: 'Back' },
 
   // Quads
   { id: 'q1', name: 'Bodyweight Squats', muscleGroup: 'Quads' },
