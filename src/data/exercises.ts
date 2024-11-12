@@ -97,7 +97,7 @@ export const exercises: Exercise[] = [
   { id: 'b32', name: 'Shrugs (Dumbbell)', muscleGroup: 'Back' },
   { id: 'b33', name: 'Shrugs (Smith Machine)', muscleGroup: 'Back' },
   { id: 'b34', name: 'Shrugs (Barbell)', muscleGroup: 'Back' },
-  { id: 'b34', name: 'Shrugs (Hammer)', muscleGroup: 'Back' },
+  { id: 'b35', name: 'Shrugs (Hammer)', muscleGroup: 'Back' },
 
   // Quads
   { id: 'q1', name: 'Bodyweight Squats', muscleGroup: 'Quads' },
