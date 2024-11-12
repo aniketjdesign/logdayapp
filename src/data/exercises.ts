@@ -137,7 +137,8 @@ export const exercises: Exercise[] = [
   { id: 't11', name: 'Close-Grip Bench Press (Smith)', muscleGroup: 'Triceps' },
   { id: 't12', name: 'Diamond Pushups', muscleGroup: 'Triceps' },
   { id: 't13', name: 'Tricep Dips (Hammer)', muscleGroup: 'Triceps' },
-  { id: 't14', name: 'Tricep Extensions (V bar)', muscleGroup: 'Triceps' },
+  { id: 't14', name: 'Tricep Dips (Generic)', muscleGroup: 'Triceps' },
+  { id: 't15', name: 'Tricep Extensions (V bar)', muscleGroup: 'Triceps' },
 
   // Biceps
   { id: 'bi1', name: 'Bicep Curls (Dumbbells)', muscleGroup: 'Biceps' },
