@@ -5,11 +5,12 @@ import { useSettings } from '../context/SettingsContext';
 
 interface SetRowProps {
   set: WorkoutSet;
+  isBodyweight?: boolean;
   onUpdate: (field: string, value: any) => void;
   onDelete: () => void;
 }
 
-export const SetRow: React.FC<SetRowProps> = ({ set, onUpdate, onDelete }) => {
+export const SetRow: React.FC<SetRowProps> = ({ set, isBodyweight = false, onUpdate, onDelete }) => {
   const { weightUnit } = useSettings();
 
   return (
@@ -21,15 +22,21 @@ export const SetRow: React.FC<SetRowProps> = ({ set, onUpdate, onDelete }) => {
             {set.setNumber}
           </span>
         </div>
-        <input
-          type="number"
-          step="0.25"
-          min="0"
-          placeholder="-"
-          className="px-2 py-1.5 border border-gray-300 rounded-md text-sm w-full"
-          value={set.weight || ''}
-          onChange={(e) => onUpdate('weight', e.target.value)}
-        />
+        {isBodyweight ? (
+          <div className="px-2 py-1.5 border border-gray-200 rounded-md text-sm w-full bg-gray-50 text-gray-500">
+            BW
+          </div>
+        ) : (
+          <input
+            type="number"
+            step="0.25"
+            min="0"
+            placeholder="-"
+            className="px-2 py-1.5 border border-gray-300 rounded-md text-sm w-full"
+            value={set.weight || ''}
+            onChange={(e) => onUpdate('weight', e.target.value)}
+          />
+        )}
         <input
           type="number"
           min="0"
@@ -102,20 +109,28 @@ export const SetRow: React.FC<SetRowProps> = ({ set, onUpdate, onDelete }) => {
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2">
-          <div className="relative">
-            <input
-              type="number"
-              step="0.25"
-              min="0"
-              placeholder="Weight"
-              className="px-2 py-1.5 border border-gray-300 rounded-md text-sm w-full pr-8"
-              value={set.weight || ''}
-              onChange={(e) => onUpdate('weight', e.target.value)}
-            />
-            <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
-              {weightUnit}
-            </span>
-          </div>
+          {isBodyweight ? (
+            <div className="relative">
+              <div className="px-2 py-1.5 border border-gray-200 rounded-md text-sm w-full bg-gray-50 text-gray-500 text-left">
+                BW
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <input
+                type="number"
+                step="0.25"
+                min="0"
+                placeholder="Weight"
+                className="px-2 py-1.5 border border-gray-300 rounded-md text-sm w-full pr-8"
+                value={set.weight || ''}
+                onChange={(e) => onUpdate('weight', e.target.value)}
+              />
+              <span className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 text-sm">
+                {weightUnit}
+              </span>
+            </div>
+          )}
           <input
             type="number"
             min="0"

@@ -154,44 +154,47 @@ export const WorkoutLogs: React.FC = () => {
             </div>
 
             <div className="space-y-4 sm:space-y-6">
-              {log.exercises.map(({ exercise, sets }) => (
-                <div key={exercise.id} className="border-t pt-4">
-                  <h4 className="font-medium mb-3 text-sm sm:text-base">{exercise.name}</h4>
-                  <div className="overflow-x-auto -mx-4 sm:mx-0">
-                    <div className="min-w-full inline-block align-middle">
-                      <table className="min-w-full">
-                        <thead>
-                          <tr className="text-left text-xs sm:text-sm text-gray-500">
-                            <th className="pb-2 pr-4 pl-4 sm:pl-0">Set</th>
-                            <th className="pb-2 pr-4">Reps</th>
-                            <th className="pb-2 pr-4">Weight ({weightUnit})</th>
-                            <th className="pb-2">Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-xs sm:text-sm">
-                          {sets.map(set => (
-                            <tr key={set.id} className="border-t border-gray-100">
-                              <td className="py-2 pr-4 pl-4 sm:pl-0">Set {set.setNumber}</td>
-                              <td className="py-2 pr-4">{set.performedReps}</td>
-                              <td className="py-2 pr-4">
-                                {weightUnit === 'lb' 
-                                  ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
-                                  : set.weight}
-                              </td>
-                              <td className="py-2 flex items-center">
-                                <span className="truncate">{set.comments}</span>
-                                {set.isPR && (
-                                  <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐ </span>
-                                )}
-                              </td>
+              {log.exercises.map(({ exercise, sets }) => {
+                const isBodyweight = exercise.name.includes('(Bodyweight)');
+                return (
+                  <div key={exercise.id} className="border-t pt-4">
+                    <h4 className="font-medium mb-3 text-sm sm:text-base">{exercise.name}</h4>
+                    <div className="overflow-x-auto -mx-4 sm:mx-0">
+                      <div className="min-w-full inline-block align-middle">
+                        <table className="min-w-full">
+                          <thead>
+                            <tr className="text-left text-xs sm:text-sm text-gray-500">
+                              <th className="pb-2 pr-4 pl-4 sm:pl-0">Set</th>
+                              <th className="pb-2 pr-4">Reps</th>
+                              <th className="pb-2 pr-4">Weight {!isBodyweight && `(${weightUnit})`}</th>
+                              <th className="pb-2">Notes</th>
                             </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                          </thead>
+                          <tbody className="text-xs sm:text-sm">
+                            {sets.map(set => (
+                              <tr key={set.id} className="border-t border-gray-100">
+                                <td className="py-2 pr-4 pl-4 sm:pl-0">Set {set.setNumber}</td>
+                                <td className="py-2 pr-4">{set.performedReps}</td>
+                                <td className="py-2 pr-4">
+                                  {isBodyweight ? 'BW' : weightUnit === 'lb' 
+                                    ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
+                                    : set.weight}
+                                </td>
+                                <td className="py-2 flex items-center">
+                                  <span className="truncate">{set.comments}</span>
+                                  {set.isPR && (
+                                    <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐ </span>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

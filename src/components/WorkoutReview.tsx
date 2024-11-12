@@ -20,10 +20,13 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
     let totalSets = 0;
     let totalPRs = 0;
 
-    workout.exercises.forEach(({ sets }) => {
+    workout.exercises.forEach(({ exercise, sets }) => {
+      const isBodyweight = exercise.name.includes('(Bodyweight)');
       sets.forEach(set => {
-        const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
-        totalWeight += weight * (parseInt(set.performedReps) || 0);
+        if (!isBodyweight) {
+          const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
+          totalWeight += weight * (parseInt(set.performedReps) || 0);
+        }
         totalSets++;
         if (set.isPR) totalPRs++;
       });
@@ -96,32 +99,37 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
             </div>
 
             <div className="space-y-6">
-              {workout.exercises.map(({ exercise, sets }) => (
-                <div key={exercise.id} className="bg-gray-50 rounded-lg p-4">
-                  <h3 className="font-semibold mb-2">{exercise.name}</h3>
-                  <div className="grid gap-2">
-                    {sets.map(set => {
-                      const displayWeight = weightUnit === 'lb' 
-                        ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
-                        : set.weight;
+              {workout.exercises.map(({ exercise, sets }) => {
+                const isBodyweight = exercise.name.includes('(Bodyweight)');
+                return (
+                  <div key={exercise.id} className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold mb-2">{exercise.name}</h3>
+                    <div className="grid gap-2">
+                      {sets.map(set => {
+                        const displayWeight = isBodyweight 
+                          ? 'BW'
+                          : weightUnit === 'lb' 
+                            ? convertWeight(set.weight, 'kg', 'lb').toFixed(2)
+                            : set.weight;
 
-                      return (
-                        <div key={set.id} className="grid grid-cols-4 text-sm bg-white p-2 rounded">
-                          <div>Set {set.setNumber}</div>
-                          <div>{set.performedReps} reps</div>
-                          <div>{displayWeight} {weightUnit}</div>
-                          {set.isPR && (
-                            <div className="text-yellow-500 flex items-center">
-                              <Medal size={16} className="mr-1" />
-                              PR Set
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                        return (
+                          <div key={set.id} className="grid grid-cols-4 text-sm bg-white p-2 rounded">
+                            <div>Set {set.setNumber}</div>
+                            <div>{set.performedReps} reps</div>
+                            <div>{displayWeight} {!isBodyweight && weightUnit}</div>
+                            {set.isPR && (
+                              <div className="text-yellow-500 flex items-center">
+                                <Medal size={16} className="mr-1" />
+                                PR Set
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>

@@ -59,9 +59,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
   const getIncompleteStats = () => {
     let incompleteSets = 0;
-    workout.exercises.forEach(({ sets }) => {
+    workout.exercises.forEach(({ exercise, sets }) => {
+      const isBodyweight = exercise.name.includes('(Bodyweight)');
       sets.forEach(set => {
-        if (!set.performedReps || !set.weight) {
+        if (!set.performedReps || (!isBodyweight && !set.weight)) {
           incompleteSets++;
         }
       });
@@ -151,49 +152,53 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
       {/* Exercise List */}
       <div className="mt-36 px-4 space-y-6 pb-32">
-        {workout.exercises.map(({ exercise, sets }) => (
-          <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-semibold">{exercise.name}</h3>
-              <button
-                onClick={() => onDeleteExercise(exercise.id)}
-                className="text-red-500"
-              >
-                <Trash2 size={18} />
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
-                <div>SET</div>
-                <div>{weightUnit.toUpperCase()}</div>
-                <div>GOAL</div>
-                <div>DONE</div>
-                <div></div>
+        {workout.exercises.map(({ exercise, sets }) => {
+          const isBodyweight = exercise.name.includes('(Bodyweight)');
+          return (
+            <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
+              <div className="p-4 border-b flex justify-between items-center">
+                <h3 className="font-semibold">{exercise.name}</h3>
+                <button
+                  onClick={() => onDeleteExercise(exercise.id)}
+                  className="text-red-500"
+                >
+                  <Trash2 size={18} />
+                </button>
               </div>
-              {sets.map((set) => (
-                <MobileSetRow
-                  key={set.id}
-                  set={set}
-                  onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-                  onDelete={() => onDeleteSet(exercise.id, set.id)}
-                  onOpenNoteModal={() => setActiveNoteModal({
-                    exerciseId: exercise.id,
-                    setId: set.id,
-                    exerciseName: exercise.name,
-                    setNumber: set.setNumber
-                  })}
-                />
-              ))}
-              <button
-                onClick={() => onAddSet(exercise.id)}
-                className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Set
-              </button>
+              <div className="p-4">
+                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
+                  <div>SET</div>
+                  <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                  <div>GOAL</div>
+                  <div>DONE</div>
+                  <div></div>
+                </div>
+                {sets.map((set) => (
+                  <MobileSetRow
+                    key={set.id}
+                    set={set}
+                    isBodyweight={isBodyweight}
+                    onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+                    onDelete={() => onDeleteSet(exercise.id, set.id)}
+                    onOpenNoteModal={() => setActiveNoteModal({
+                      exerciseId: exercise.id,
+                      setId: set.id,
+                      exerciseName: exercise.name,
+                      setNumber: set.setNumber
+                    })}
+                  />
+                ))}
+                <button
+                  onClick={() => onAddSet(exercise.id)}
+                  className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add Set
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         <div className="space-y-3 mb-6">
           <button

@@ -64,9 +64,10 @@ export const WorkoutSession: React.FC = () => {
     if (!currentWorkout) return { exercises: 0, sets: 0 };
     
     let incompleteSets = 0;
-    currentWorkout.exercises.forEach(({ sets }) => {
+    currentWorkout.exercises.forEach(({ exercise, sets }) => {
+      const isBodyweight = exercise.name.includes('(Bodyweight)');
       sets.forEach(set => {
-        if (!set.performedReps || !set.weight) {
+        if (!set.performedReps || (!isBodyweight && !set.weight)) {
           incompleteSets++;
         }
       });
@@ -291,45 +292,49 @@ export const WorkoutSession: React.FC = () => {
       ) : (
         <>
           <div className="space-y-6 mb-6">
-            {currentWorkout.exercises.map(({ exercise, sets }) => (
-              <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold">{exercise.name}</h3>
-                  <button
-                    onClick={() => deleteExercise(exercise.id)}
-                    className="p-2 text-red-600 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash2 size={20} />
-                  </button>
-                </div>
-                <div className="space-y-3">
-                  <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
-                    <div className="text-center">SET</div>
-                    <div>{weightUnit.toUpperCase()}</div>
-                    <div>GOAL</div>
-                    <div>DONE</div>
-                    <div>NOTES</div>
-                    <div>ACTIONS</div>
+            {currentWorkout.exercises.map(({ exercise, sets }) => {
+              const isBodyweight = exercise.name.includes('(Bodyweight)');
+              return (
+                <div key={exercise.id} className="bg-white rounded-lg shadow-md p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold">{exercise.name}</h3>
+                    <button
+                      onClick={() => deleteExercise(exercise.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-full"
+                    >
+                      <Trash2 size={20} />
+                    </button>
                   </div>
+                  <div className="space-y-3">
+                    <div className="hidden md:grid md:grid-cols-[35px_1fr_1fr_1fr_1.2fr_100px] gap-2 mb-2 text-xs font-medium text-gray-500">
+                      <div className="text-center">SET</div>
+                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                      <div>GOAL</div>
+                      <div>DONE</div>
+                      <div>NOTES</div>
+                      <div>ACTIONS</div>
+                    </div>
 
-                  {sets.map(set => (
-                    <SetRow
-                      key={set.id}
-                      set={set}
-                      onUpdate={(field, value) => handleUpdateSet(exercise.id, set.id, field, value)}
-                      onDelete={() => handleDeleteSet(exercise.id, set.id)}
-                    />
-                  ))}
-                  <button
-                    onClick={() => handleAddSet(exercise.id)}
-                    className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
-                  >
-                    <Plus size={18} className="mr-2" />
-                    Add Set
-                  </button>
+                    {sets.map(set => (
+                      <SetRow
+                        key={set.id}
+                        set={set}
+                        isBodyweight={isBodyweight}
+                        onUpdate={(field, value) => handleUpdateSet(exercise.id, set.id, field, value)}
+                        onDelete={() => handleDeleteSet(exercise.id, set.id)}
+                      />
+                    ))}
+                    <button
+                      onClick={() => handleAddSet(exercise.id)}
+                      className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+                    >
+                      <Plus size={18} className="mr-2" />
+                      Add Set
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           <div className="space-y-4 mb-6">

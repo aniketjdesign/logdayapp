@@ -4,6 +4,7 @@ import { WorkoutSet } from '../types/workout';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
+  isBodyweight?: boolean;
   onUpdate: (field: string, value: any) => void;
   onDelete: () => void;
   onOpenNoteModal: () => void;
@@ -11,6 +12,7 @@ interface MobileSetRowProps {
 
 export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   set,
+  isBodyweight = false,
   onUpdate,
   onDelete,
   onOpenNoteModal,
@@ -30,15 +32,21 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           )}
         </div>
       </div>
-      <input
-        type="number"
-        step="0.25"
-        min="0"
-        placeholder="-"
-        className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm w-full"
-        value={set.weight || ''}
-        onChange={(e) => onUpdate('weight', e.target.value)}
-      />
+      {isBodyweight ? (
+        <div className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm w-full bg-gray-50 text-gray-500">
+          BW
+        </div>
+      ) : (
+        <input
+          type="number"
+          step="0.25"
+          min="0"
+          placeholder="-"
+          className="px-2 py-1.5 border border-gray-200 rounded-lg text-sm w-full"
+          value={set.weight || ''}
+          onChange={(e) => onUpdate('weight', e.target.value)}
+        />
+      )}
       <input
         type="number"
         min="0"
