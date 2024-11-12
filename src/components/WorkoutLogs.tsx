@@ -5,41 +5,23 @@ import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from './ConfirmationModal';
 import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { WorkoutLogCard } from './WorkoutLogCard';
+import { EmptyState } from './EmptyState';
 
 export const WorkoutLogs: React.FC = () => {
   const { workoutLogs, searchLogs, deleteLog, currentWorkout } = useWorkout();
-  const { weightUnit, convertWeight } = useSettings();
   const [search, setSearch] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     searchLogs(search);
   }, [search]);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const formatDuration = (ms: number) => {
-    const minutes = Math.floor(ms / (1000 * 60));
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-  };
-
   const handleDeleteClick = (logId: string) => {
     setSelectedLogId(logId);
     setShowDeleteModal(true);
-    setOpenMenuId(null);
   };
 
   const handleConfirmDelete = async () => {
@@ -50,66 +32,6 @@ export const WorkoutLogs: React.FC = () => {
     }
   };
 
-  const toggleMenu = (logId: string) => {
-    setOpenMenuId(openMenuId === logId ? null : logId);
-  };
-
-  const getColumnHeaders = (exercise: any) => {
-    const isCardio = exercise.muscleGroup === 'Cardio';
-    const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
-    const isBodyweight = exercise.name.includes('(Bodyweight)');
-
-    if (isCardio) {
-      const headers = ['Set', 'Time'];
-      if (exercise.metrics?.distance) headers.push('Distance');
-      if (exercise.metrics?.difficulty) headers.push('Difficulty');
-      if (exercise.metrics?.incline) headers.push('Incline');
-      if (exercise.metrics?.pace) headers.push('Pace');
-      if (exercise.metrics?.reps) headers.push('Reps');
-      headers.push('Notes');
-      return headers;
-    } else if (isTimeBasedCore) {
-      return ['Set', 'Time', 'Notes'];
-    } else {
-      return ['Set', `Weight ${!isBodyweight ? `(${weightUnit})` : ''}`, 'Reps', 'Notes'];
-    }
-  };
-
-  const getSetValue = (set: any, field: string, exercise: any) => {
-    switch (field) {
-      case 'Set':
-        return `Set ${set.setNumber}`;
-      case 'Time':
-        return set.time || '-';
-      case 'Distance':
-        return set.distance ? `${set.distance}m` : '-';
-      case 'Difficulty':
-        return set.difficulty || '-';
-      case 'Incline':
-        return set.incline ? `${set.incline}%` : '-';
-      case 'Pace':
-        return set.pace || '-';
-      case 'Reps':
-        return set.performedReps || '-';
-      case `Weight ${!exercise.name.includes('(Bodyweight)') ? `(${weightUnit})` : ''}`:
-        if (exercise.name.includes('(Bodyweight)')) return 'BW';
-        return weightUnit === 'lb' 
-          ? convertWeight(set.weight || 0, 'kg', 'lb').toFixed(2)
-          : set.weight || '-';
-      case 'Notes':
-        return (
-          <div className="flex items-center">
-            <span className="truncate">{set.comments}</span>
-            {set.isPR && (
-              <span className="ml-2 text-yellow-500 flex-shrink-0">PR ⭐</span>
-            )}
-          </div>
-        );
-      default:
-        return '-';
-    }
-  };
-
   if (workoutLogs.length === 0) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6">
@@ -117,37 +39,10 @@ export const WorkoutLogs: React.FC = () => {
         <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
 
         {currentWorkout && <OngoingWorkoutMessage />}
-        <div className="text-center py-8 sm:py-12">
-          <div className="flex justify-center mb-4">
-            <Dumbbell className="h-12 w-12 sm:h-16 sm:w-16 text-gray-400" />
-          </div>
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-700 mb-2">
-            {currentWorkout 
-              ? "Complete Your Workout to See Logs"
-              : "No workout logs yet"}
-          </h3>
-          <p className="text-sm sm:text-base text-gray-500 mb-6">
-            {currentWorkout 
-              ? "Your workout logs will appear here once you finish your current workout"
-              : "Start your fitness journey by logging your first workout"}
-          </p>
-          <button
-            onClick={() => navigate(currentWorkout ? '/workout' : '/')}
-            className="inline-flex items-center px-4 sm:px-6 py-2.5 sm:py-3 border border-transparent text-sm sm:text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-colors"
-          >
-            {currentWorkout ? (
-              <>
-                <ArrowLeft size={18} className="mr-1.5 sm:mr-2" />
-                Return to Workout
-              </>
-            ) : (
-              <>
-                <Plus size={18} className="mr-1.5 sm:mr-2" />
-                Start Your First Workout
-              </>
-            )}
-          </button>
-        </div>
+        <EmptyState
+          currentWorkout={currentWorkout}
+          onNavigate={() => navigate(currentWorkout ? '/workout' : '/')}
+        />
       </div>
     );
   }
@@ -174,73 +69,11 @@ export const WorkoutLogs: React.FC = () => {
 
       <div className="space-y-4 sm:space-y-6">
         {workoutLogs.map(log => (
-          <div key={log.id} className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex justify-between items-start mb-3 sm:mb-4">
-              <h3 className="text-lg sm:text-xl font-bold">{log.name || 'Unnamed Workout'}</h3>
-              <div className="relative">
-                <button
-                  onClick={() => toggleMenu(log.id)}
-                  className="p-1.5 sm:p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <MoreVertical size={20} className="text-gray-500" />
-                </button>
-                {openMenuId === log.id && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border">
-                    <button
-                      onClick={() => handleDeleteClick(log.id)}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center transition-colors"
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete Log
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center text-xs sm:text-sm text-gray-500 mb-4 space-y-2 sm:space-y-0 sm:space-x-4">
-              <div className="flex items-center">
-                <Calendar size={14} className="mr-1" />
-                {formatDate(log.startTime)}
-              </div>
-              <div className="flex items-center">
-                <Clock size={14} className="mr-1" />
-                {formatDuration(log.duration)}
-              </div>
-            </div>
-
-            <div className="space-y-4 sm:space-y-6">
-              {log.exercises.map(({ exercise, sets }) => (
-                <div key={exercise.id} className="border-t pt-4">
-                  <h4 className="font-medium mb-3 text-sm sm:text-base">{exercise.name}</h4>
-                  <div className="overflow-x-auto -mx-4 sm:mx-0">
-                    <div className="min-w-full inline-block align-middle">
-                      <table className="min-w-full">
-                        <thead>
-                          <tr className="text-left text-xs sm:text-sm text-gray-500">
-                            {getColumnHeaders(exercise).map((header, index) => (
-                              <th key={index} className="pb-2 pr-4 pl-4 sm:pl-0">{header}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="text-xs sm:text-sm">
-                          {sets.map(set => (
-                            <tr key={set.id} className="border-t border-gray-100">
-                              {getColumnHeaders(exercise).map((header, index) => (
-                                <td key={index} className="py-2 pr-4 pl-4 sm:pl-0">
-                                  {getSetValue(set, header, exercise)}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <WorkoutLogCard
+            key={log.id}
+            log={log}
+            onDelete={() => handleDeleteClick(log.id)}
+          />
         ))}
       </div>
 
