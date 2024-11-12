@@ -81,17 +81,14 @@ export const WorkoutSession: React.FC = () => {
 
   const handleCompleteWorkout = async () => {
     if (currentWorkout) {
-      const endTime = new Date().toISOString();
-      const duration = new Date(endTime).getTime() - new Date(currentWorkout.startTime).getTime();
-      const completed = {
-        ...currentWorkout,
-        name: workoutName,
-        endTime,
-        duration
-      };
-      await completeWorkout(workoutName);
-      setCompletedWorkout(completed);
-      setShowFinishConfirmation(false);
+      try {
+        const completed = await completeWorkout(workoutName);
+        setCompletedWorkout(completed);
+        setShowFinishConfirmation(false);
+      } catch (error) {
+        console.error('Error completing workout:', error);
+        // Handle error appropriately
+      }
     }
   };
 

@@ -10,6 +10,7 @@ import { WorkoutLogs } from './components/WorkoutLogs';
 import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
+import { MigrationStatus } from './components/MigrationStatus';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -69,6 +70,7 @@ const AppContent = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
+      <MigrationStatus />
     </div>
   );
 };

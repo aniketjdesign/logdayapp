@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, AuthResponse } from '@supabase/supabase-js';
+import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
 
@@ -12,8 +12,6 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const STORAGE_PREFIX = 'logday_';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -69,44 +67,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
-    try {
-      // Clear all local storage data
-      const localStorageKeys = Object.keys(localStorage);
-      localStorageKeys.forEach(key => {
-        localStorage.removeItem(key);
-      });
-
-      // Clear session cookies
-      document.cookie.split(';').forEach(cookie => {
-        document.cookie = cookie
-          .replace(/^ +/, '')
-          .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-      });
-
-      // Sign out from Supabase
-      await supabase.auth.signOut();
-
-      // Reset user state
-      setUser(null);
-      identifyUser(null);
-
-      // Clear IndexedDB data
-      const databases = await window.indexedDB.databases();
-      databases.forEach(db => {
-        if (db.name) {
-          window.indexedDB.deleteDatabase(db.name);
-        }
-      });
-
-      // Force a complete page reload and redirect
-      window.location.href = '/login';
-      window.location.reload(true);
-    } catch (error) {
-      console.error('Error during sign out:', error);
-      // Fallback: force reload even if there's an error
-      window.location.href = '/login';
-      window.location.reload(true);
-    }
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    identifyUser(null);
   };
 
   const signInWithGoogle = async () => {

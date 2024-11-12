@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Exercise, WorkoutLog, WorkoutExercise } from '../types/workout';
-import { saveWorkout, getWorkouts, searchWorkouts, deleteWorkoutLog } from '../db/database';
-import { useLocation } from 'react-router-dom';
+import { supabaseService } from '../services/supabaseService';
+import { useAuth } from './AuthContext';
+import { generateUUID } from '../utils/uuid';
 
 type View = 'exercises' | 'workout' | 'logs';
 
@@ -9,11 +10,13 @@ interface WorkoutContextType {
   selectedExercises: Exercise[];
   currentWorkout: WorkoutLog | null;
   workoutLogs: WorkoutLog[];
+  totalLogs: number;
+  currentPage: number;
   currentView: View;
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
   startWorkout: (exercises: Exercise[], name?: string) => void;
-  completeWorkout: (name: string) => Promise<void>;
+  completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
   deleteExercise: (exerciseId: string) => void;
@@ -21,83 +24,78 @@ interface WorkoutContextType {
   setCurrentView: (view: View) => void;
   searchLogs: (query: string) => void;
   clearWorkoutState: () => void;
+  setCurrentPage: (page: number) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 const STORAGE_PREFIX = 'logday_';
 const CURRENT_WORKOUT_KEY = `${STORAGE_PREFIX}currentWorkout`;
-const SELECTED_EXERCISES_KEY = `${STORAGE_PREFIX}selectedExercises`;
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutLog | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [totalLogs, setTotalLogs] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
   const [currentView, setCurrentView] = useState<View>('exercises');
-  const location = useLocation();
+  const { user } = useAuth();
 
+  // Load current workout from localStorage
   useEffect(() => {
     try {
       const savedWorkout = localStorage.getItem(CURRENT_WORKOUT_KEY);
-      const savedExercises = localStorage.getItem(SELECTED_EXERCISES_KEY);
 
       if (savedWorkout) {
         setCurrentWorkout(JSON.parse(savedWorkout));
-      }
-      if (savedExercises) {
-        setSelectedExercises(JSON.parse(savedExercises));
       }
     } catch (error) {
       console.error('Error loading persisted state:', error);
     }
   }, []);
 
+  // Save current workout to localStorage
   useEffect(() => {
     if (currentWorkout) {
       localStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(currentWorkout));
     }
   }, [currentWorkout]);
 
-  useEffect(() => {
-    if (selectedExercises.length > 0) {
-      localStorage.setItem(SELECTED_EXERCISES_KEY, JSON.stringify(selectedExercises));
-    }
-  }, [selectedExercises]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && currentWorkout) {
-        window.onbeforeunload = (e) => {
-          e.preventDefault();
-          e.returnValue = '';
-          return '';
-        };
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.onbeforeunload = null;
-    };
-  }, [currentWorkout]);
-
+  // Load workout logs from Supabase
   useEffect(() => {
     const loadWorkouts = async () => {
-      const logs = await getWorkouts();
-      setWorkoutLogs(logs);
+      if (user) {
+        const { data, count, error } = await supabaseService.getWorkoutLogs(currentPage);
+        if (!error) {
+          setWorkoutLogs(data);
+          setTotalLogs(count);
+        }
+      }
     };
     loadWorkouts();
-  }, []);
+  }, [user, currentPage]);
+
+  // Migrate localStorage data to Supabase
+  useEffect(() => {
+    const migrateData = async () => {
+      if (user) {
+        const { error } = await supabaseService.migrateLocalStorage();
+        if (error) {
+          console.error('Migration error:', error);
+        }
+      }
+    };
+    migrateData();
+  }, [user]);
 
   const startWorkout = (exercises: Exercise[], name: string = '') => {
     const workout: WorkoutLog = {
-      id: Date.now().toString(),
+      id: generateUUID(),
       name,
       exercises: exercises.map(exercise => ({
         exercise,
         sets: [{ 
-          id: '1', 
+          id: generateUUID(), 
           setNumber: 1, 
           targetReps: 0, 
           performedReps: '', 
@@ -114,21 +112,38 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCurrentView('workout');
   };
 
-  const completeWorkout = async (name: string) => {
-    if (currentWorkout) {
-      const endTime = new Date().toISOString();
-      const duration = new Date(endTime).getTime() - new Date(currentWorkout.startTime).getTime();
-      const completedWorkout = {
-        ...currentWorkout,
-        name,
-        endTime,
-        duration
-      };
-      await saveWorkout(completedWorkout);
-      setWorkoutLogs(prev => [completedWorkout, ...prev]);
-      clearWorkoutState();
-      setCurrentView('logs');
+  const completeWorkout = async (name: string): Promise<WorkoutLog> => {
+    if (!currentWorkout) {
+      throw new Error('No active workout to complete');
     }
+
+    const endTime = new Date().toISOString();
+    const duration = new Date(endTime).getTime() - new Date(currentWorkout.startTime).getTime();
+    
+    const completedWorkout: WorkoutLog = {
+      ...currentWorkout,
+      name,
+      endTime,
+      duration
+    };
+
+    const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
+    if (error) {
+      throw error;
+    }
+
+    // Refresh the logs
+    const { data, count } = await supabaseService.getWorkoutLogs(1);
+    setWorkoutLogs(data);
+    setTotalLogs(count);
+    setCurrentPage(1);
+    
+    // Clear current workout
+    localStorage.removeItem(CURRENT_WORKOUT_KEY);
+    setCurrentWorkout(null);
+    setCurrentView('logs');
+
+    return completedWorkout;
   };
 
   const updateWorkoutExercise = (exerciseId: string, data: WorkoutExercise) => {
@@ -151,7 +166,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const newExercises = exercises.map(exercise => ({
         exercise,
         sets: [{ 
-          id: Date.now().toString(), 
+          id: generateUUID(),
           setNumber: 1, 
           targetReps: 0, 
           performedReps: '', 
@@ -179,24 +194,25 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteLog = async (logId: string) => {
-    try {
-      await deleteWorkoutLog(logId);
-      setWorkoutLogs(prev => prev.filter(log => log.id !== logId));
-    } catch (error) {
-      console.error('Error deleting workout log:', error);
+    const { error } = await supabaseService.deleteWorkoutLog(logId);
+    if (!error) {
+      // Refresh the logs
+      const { data, count } = await supabaseService.getWorkoutLogs(currentPage);
+      setWorkoutLogs(data);
+      setTotalLogs(count);
     }
   };
 
   const searchLogs = async (query: string) => {
-    const results = await searchWorkouts(query);
-    setWorkoutLogs(results);
+    const { data, count } = await supabaseService.searchWorkoutLogs(query, currentPage);
+    setWorkoutLogs(data);
+    setTotalLogs(count);
   };
 
   const clearWorkoutState = () => {
     setCurrentWorkout(null);
     setSelectedExercises([]);
     localStorage.removeItem(CURRENT_WORKOUT_KEY);
-    localStorage.removeItem(SELECTED_EXERCISES_KEY);
   };
 
   return (
@@ -204,6 +220,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       selectedExercises,
       currentWorkout,
       workoutLogs,
+      totalLogs,
+      currentPage,
       currentView,
       setSelectedExercises,
       setCurrentWorkout,
@@ -215,7 +233,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       deleteLog,
       setCurrentView,
       searchLogs,
-      clearWorkoutState
+      clearWorkoutState,
+      setCurrentPage
     }}>
       {children}
     </WorkoutContext.Provider>

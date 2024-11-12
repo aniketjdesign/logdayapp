@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { WeightUnit, getSettings, saveSettings } from '../db/database';
+import { WeightUnit } from '../db/database';
+import { supabaseService } from '../services/supabaseService';
 
 interface SettingsContextType {
   weightUnit: WeightUnit;
@@ -14,13 +15,13 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const { user } = useAuth();
   const [weightUnit, setWeightUnitState] = useState<WeightUnit>('lbs');
 
-  // Load settings when user changes
+  // Load settings from Supabase
   useEffect(() => {
     const loadSettings = async () => {
       if (user?.id) {
-        const settings = await getSettings(user.id);
-        if (settings) {
-          setWeightUnitState(settings.weightUnit);
+        const { weightUnit: savedUnit, error } = await supabaseService.getUserSettings();
+        if (!error && savedUnit) {
+          setWeightUnitState(savedUnit);
         }
       }
     };
@@ -30,7 +31,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const setWeightUnit = async (unit: WeightUnit) => {
     setWeightUnitState(unit);
     if (user?.id) {
-      await saveSettings(user.id, unit);
+      await supabaseService.saveUserSettings(unit);
     }
   };
 
