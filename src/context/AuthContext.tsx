@@ -68,10 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      // Clear all localStorage data
+      // First, clear all app data
       const keysToKeep = ['vite-dummy']; // Add any keys that should not be cleared
       Object.keys(localStorage).forEach(key => {
         if (!keysToKeep.includes(key)) {
@@ -86,11 +83,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       identifyUser(null);
 
-      // Force reload to clear all app state
+      // Attempt to sign out from Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      // Even if there's an error, we want to force logout
+      if (error) {
+        console.error('Error during sign out:', error);
+        // Force clear Supabase session
+        await supabase.auth.clearSession();
+      }
+
+      // Force reload to clear all app state and redirect
       window.location.href = '/login';
     } catch (error) {
       console.error('Error during sign out:', error);
-      throw error;
+      // Force reload even if there's an error
+      window.location.href = '/login';
     }
   };
 
