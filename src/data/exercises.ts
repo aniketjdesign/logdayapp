@@ -185,4 +185,6 @@ export const exercises: Exercise[] = [
   { id: 'co8', name: 'Hanging Leg Raises', muscleGroup: 'Core' },
   { id: 'co9', name: 'Lying Leg Raises', muscleGroup: 'Core' },
   { id: 'co10', name: 'Plank', muscleGroup: 'Core' },
+  { id: 'co11', name: 'Crunches (Cable)', muscleGroup: 'Core' },
+
 ];
