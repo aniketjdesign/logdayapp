@@ -8,8 +8,8 @@ export const InstallAppToast: React.FC = () => {
   if (!isInstallable || !showInstallPrompt) return null;
 
   return (
-    <div className="bg-blue-50 border-b border-blue-100">
-      <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="bg-blue-50 border-b border-blue-100 mb-4">
+      <div className="max-w-2xl mx-auto px-4 py-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <h3 className="text-blue-800 font-semibold mb-2">To install Logday:</h3>

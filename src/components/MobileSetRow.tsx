@@ -164,7 +164,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         <div className={getColumnClass(false)}>-</div>
       ) : (
         <input
-          type="text"
+          type="number"
+          min="0"
           placeholder="0"
           className={getColumnClass(true)}
           value={set.performedReps}

@@ -154,8 +154,9 @@ export const SetRow: React.FC<SetRowProps> = ({ set, exercise, onUpdate, onDelet
           <div className={getColumnClass(false)}>-</div>
         ) : (
           <input
-            type="text"
-            placeholder="0"
+          type="number"
+          min="0"
+          placeholder="0"
             className={getColumnClass(true)}
             value={set.performedReps}
             onChange={(e) => onUpdate('performedReps', e.target.value)}
