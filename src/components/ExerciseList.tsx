@@ -1,17 +1,20 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Plus, ArrowLeft } from 'lucide-react';
+import { Search, Filter, Plus, ArrowLeft, Share, X } from 'lucide-react';
 import { Exercise, MuscleGroup } from '../types/workout';
 import { exercises } from '../data/exercises';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { generateWorkoutName } from '../utils/workoutNameGenerator';
 import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 export const ExerciseList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | 'All'>('All');
+  const [showInstallMessage, setShowInstallMessage] = useState(true);
   const navigate = useNavigate();
   const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout } = useWorkout();
+  const { isInstallable } = useInstallPrompt();
 
   const muscleGroups: ('All' | MuscleGroup)[] = [
     'All',
@@ -51,6 +54,31 @@ export const ExerciseList: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6">
+      {isInstallable && showInstallMessage && (
+        <div className="bg-blue-50 border-b border-blue-100 rounded-lg mb-6">
+          <div className="p-4">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-blue-800 font-semibold mb-2">To install Logday:</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center text-blue-600">
+                    <Share className="h-5 w-5 mr-2 flex-shrink-0" />
+                    <p className="text-sm">1. Tap the share button</p>
+                  </div>
+                  <p className="text-sm text-blue-600 ml-7">2. Scroll down and tap "Add to Home Screen"</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstallMessage(false)}
+                className="text-blue-600 hover:text-blue-700 p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {currentWorkout && <OngoingWorkoutMessage />}
 
       <div className="mb-6">

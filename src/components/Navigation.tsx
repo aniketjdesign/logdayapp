@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Download } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -26,7 +26,7 @@ export const Navigation: React.FC = () => {
     clearWorkoutState 
   } = useWorkout();
   const { user, signOut } = useAuth();
-  const { isInstallable, installApp } = useInstallPrompt();
+  const { isInstallable, isIOS } = useInstallPrompt();
   const cannyInitialized = useRef(false);
 
   useEffect(() => {
@@ -208,13 +208,17 @@ export const Navigation: React.FC = () => {
 
         <div className="border-t py-4 px-6 space-y-4">
           {isInstallable && (
-            <button
-              onClick={installApp}
-              className="w-full py-2 text-blue-600 hover:bg-blue-50 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors"
-            >
-              <Download size={20} />
-              <span>Install App</span>
-            </button>
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center text-blue-800 mb-2">
+                <Share size={18} className="mr-2 flex-shrink-0" />
+                <span className="text-sm font-medium">Install Logday App</span>
+              </div>
+              <p className="text-xs text-blue-600">
+                {isIOS ? 
+                  "Tap the share button in your browser and select 'Add to Home Screen'" :
+                  "Click the install button in your browser's address bar"}
+              </p>
+            </div>
           )}
           <div className="flex items-center space-x-3 text-gray-600">
             <User size={20} />

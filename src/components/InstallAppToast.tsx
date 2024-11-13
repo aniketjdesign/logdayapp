@@ -1,36 +1,32 @@
 import React from 'react';
-import { X, Download } from 'lucide-react';
+import { X, Share } from 'lucide-react';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 
 export const InstallAppToast: React.FC = () => {
-  const { showInstallPrompt, hideInstallPrompt, isInstallable, installApp } = useInstallPrompt();
+  const { showInstallPrompt, hideInstallPrompt, isInstallable, isIOS } = useInstallPrompt();
 
   if (!isInstallable || !showInstallPrompt) return null;
 
   return (
     <div className="bg-blue-50 border-b border-blue-100">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Download size={20} className="text-blue-600 mr-2" />
-            <span className="text-sm text-blue-800">
-              Install Logday for quick access and offline functionality
-            </span>
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="text-blue-800 font-semibold mb-2">To install Logday:</h3>
+            <div className="space-y-2">
+              <div className="flex items-center text-blue-600">
+                <Share className="h-5 w-5 mr-2 flex-shrink-0" />
+                <p className="text-sm">1. Tap the share button</p>
+              </div>
+              <p className="text-sm text-blue-600 ml-7">2. Scroll down and tap "Add to Home Screen"</p>
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={installApp}
-              className="text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              Install
-            </button>
-            <button
-              onClick={hideInstallPrompt}
-              className="text-blue-600 hover:text-blue-700"
-            >
-              <X size={20} />
-            </button>
-          </div>
+          <button
+            onClick={hideInstallPrompt}
+            className="text-blue-600 hover:text-blue-700 p-1"
+          >
+            <X size={20} />
+          </button>
         </div>
       </div>
     </div>
