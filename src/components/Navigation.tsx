@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
+import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { useNavigate } from 'react-router-dom';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
 import { LogDayLogo } from './LogDayLogo';
+import { InstallAppToast } from './InstallAppToast';
 
 declare global {
   interface Window {
@@ -24,6 +26,7 @@ export const Navigation: React.FC = () => {
     clearWorkoutState 
   } = useWorkout();
   const { user, signOut } = useAuth();
+  const { isInstallable, isIOS } = useInstallPrompt();
   const cannyInitialized = useRef(false);
 
   useEffect(() => {
@@ -148,6 +151,8 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>
 
+      <InstallAppToast />
+
       <div 
         className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${
           isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
@@ -202,6 +207,19 @@ export const Navigation: React.FC = () => {
         </div>
 
         <div className="border-t py-4 px-6 space-y-4">
+          {isInstallable && (
+            <div className="p-3 bg-blue-50 rounded-lg">
+              <div className="flex items-center text-blue-800 mb-2">
+                <Share size={18} className="mr-2 flex-shrink-0" />
+                <span className="text-sm font-medium">Install Logday App</span>
+              </div>
+              <p className="text-xs text-blue-600">
+                {isIOS ? 
+                  "Tap the share button in your browser and select 'Add to Home Screen'" :
+                  "Click the install button in your browser's address bar"}
+              </p>
+            </div>
+          )}
           <div className="flex items-center space-x-3 text-gray-600">
             <User size={20} />
             <span className="text-sm font-medium truncate">{user?.email}</span>
