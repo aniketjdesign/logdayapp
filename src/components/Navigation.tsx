@@ -151,7 +151,6 @@ export const Navigation: React.FC = () => {
         </div>
       </nav>
 
-      <InstallAppToast />
 
       <div 
         className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${
