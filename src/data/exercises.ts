@@ -207,6 +207,8 @@ export const exercises: Exercise[] = [
   { id: 'h7', name: 'Seated Leg Curl (Generic)', muscleGroup: 'Hamstrings' },
   { id: 'h9', name: 'Stiff-Legged Deadlifts (Barbell)', muscleGroup: 'Hamstrings' },
   { id: 'h10', name: 'Stiff-Legged Deadlifts (Dumbbell)', muscleGroup: 'Hamstrings' },
+  { id: 'h11', name: 'Iso Leg Curls (Hammer)', muscleGroup: 'Hamstrings' },
+
 
   // Triceps
   { id: 't1', name: 'Tricep Extensions (Cable - Straight bar)', muscleGroup: 'Triceps' },
