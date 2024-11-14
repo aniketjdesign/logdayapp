@@ -107,6 +107,8 @@ export const exercises: Exercise[] = [
   { id: 's26', name: 'Front Raises (Barbell)', muscleGroup: 'Shoulders' },
   { id: 's27', name: 'Facepulls (Rope Cable)', muscleGroup: 'Shoulders' },
   { id: 's28', name: 'Pike Pushups (Bodyweight)', muscleGroup: 'Shoulders' },
+  { id: 's29', name: 'Seated Front Raises (Dumbbells)', muscleGroup: 'Shoulders' },
+
 
   // Chest
   { id: 'c1', name: 'Pushups (Bodyweight)', muscleGroup: 'Chest' },
@@ -226,6 +228,7 @@ export const exercises: Exercise[] = [
   { id: 't13', name: 'Tricep Dips (Hammer)', muscleGroup: 'Triceps' },
   { id: 't14', name: 'Tricep Dips (Generic)', muscleGroup: 'Triceps' },
   { id: 't15', name: 'Tricep Extensions (V bar)', muscleGroup: 'Triceps' },
+  { id: 't16', name: 'Tricep Skullcrusher (EZ bar)', muscleGroup: 'Triceps' },
 
   // Biceps
   { id: 'bi1', name: 'Bicep Curls (Dumbbells)', muscleGroup: 'Biceps' },
@@ -243,6 +246,7 @@ export const exercises: Exercise[] = [
   { id: 'bi13', name: 'Hammer Curls (Dumbbells)', muscleGroup: 'Biceps' },
   { id: 'bi14', name: 'Hammer Curls (Cable - Rope)', muscleGroup: 'Biceps' },
   { id: 'bi15', name: 'Hammer Curls (Hex barbell)', muscleGroup: 'Biceps' },
+  { id: 'bi16', name: 'Concentration Curls (Dumbbells)', muscleGroup: 'Biceps' },
 
   // Glutes
   { id: 'g1', name: 'Hip Adductors', muscleGroup: 'Glutes' },
