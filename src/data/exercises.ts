@@ -108,6 +108,8 @@ export const exercises: Exercise[] = [
   { id: 's27', name: 'Facepulls (Rope Cable)', muscleGroup: 'Shoulders' },
   { id: 's28', name: 'Pike Pushups (Bodyweight)', muscleGroup: 'Shoulders' },
   { id: 's29', name: 'Seated Front Raises (Dumbbells)', muscleGroup: 'Shoulders' },
+  { id: 's30', name: 'Seated Iso Smith Shoulder Press (Hammer)', muscleGroup: 'Shoulders' },
+
 
 
   // Chest
@@ -178,6 +180,9 @@ export const exercises: Exercise[] = [
   { id: 'b33', name: 'Shrugs (Smith Machine)', muscleGroup: 'Back' },
   { id: 'b34', name: 'Shrugs (Barbell)', muscleGroup: 'Back' },
   { id: 'b35', name: 'Shrugs (Hammer)', muscleGroup: 'Back' },
+  { id: 'b36', name: 'T-bar Row (Hammer)', muscleGroup: 'Back' },
+  { id: 'b37', name: 'T-bar Row (Generic)', muscleGroup: 'Back' },
+
 
   // Quads
   { id: 'q1', name: 'Squats (Bodyweight)', muscleGroup: 'Quads' },
@@ -198,6 +203,18 @@ export const exercises: Exercise[] = [
   { id: 'q16', name: 'Iso Leg Extensions (Hammer)', muscleGroup: 'Quads' },
   { id: 'q17', name: 'Leg Press (Generic)', muscleGroup: 'Quads' },
   { id: 'q18', name: 'Leg Press (Hammer)', muscleGroup: 'Quads' },
+  { id: 'q19', name: 'Vertical Leg Press (Hammer)', muscleGroup: 'Quads' },
+  { id: 'q20', name: 'Spot Lunges (Dumbbells)', muscleGroup: 'Quads' },
+  { id: 'q21', name: 'Spot Lunges (Barbell)', muscleGroup: 'Quads' },
+  { id: 'q22', name: 'Spot Lunges (Kettlebells)', muscleGroup: 'Quads' },
+  { id: 'q23', name: 'Spot Lunges (Smith Machine)', muscleGroup: 'Quads' },
+  { id: 'q24', name: 'Spot Lunges (Plate loaded)', muscleGroup: 'Quads' },
+  { id: 'q25', name: 'Walking Lunges (Dumbbell)', muscleGroup: 'Quads' },
+  { id: 'q26', name: 'Walking Lunges (Barbell)', muscleGroup: 'Quads' },
+  { id: 'q27', name: 'Walking Lunges (Kettlebell)', muscleGroup: 'Quads' },
+  { id: 'q28', name: 'Walking Lunges (Weighted bag)', muscleGroup: 'Quads' },
+  { id: 'q29', name: 'Walking Lunges (Plate loaded)', muscleGroup: 'Quads' },
+
 
   // Hamstrings
   { id: 'h1', name: 'Lying Leg Curl (Generic)', muscleGroup: 'Hamstrings' },
