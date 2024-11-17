@@ -123,8 +123,123 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
   const bestSets = getBestSets();
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center p-4 z-50">
-      {/* Rest of the component remains unchanged */}
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="fixed inset-0 pointer-events-none z-[100]">
+        <div className="absolute inset-0 overflow-hidden">
+          <Lottie
+            animationData={confettiAnimation}
+            loop={false}
+            autoplay={true}
+            segments={[animationSegment]}
+            style={{
+              position: 'absolute',
+              width: '100%',
+              height: '100%',
+              top: '-10%',
+              transform: 'scale(2)',
+              pointerEvents: 'none'
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl max-w-2xl w-full my-8 max-h-[80vh] flex flex-col relative z-50">
+        <div className="p-6 border-b flex-shrink-0 bg-blue-600 text-white rounded-t-xl">
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold flex items-center">
+                <Trophy className="mr-2" /> Workout Complete!
+              </h2>
+              <p className="mt-1 text-blue-100">Great job crushing your workout! 💪</p>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-blue-500 rounded-full transition-colors -mr-2 -mt-2"
+            >
+              <X size={20} className="text-white" />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="text-blue-600 font-semibold">Duration</div>
+              <div className="text-2xl font-bold">{formatTime(duration)}</div>
+            </div>
+            {totalWeight > 0 && (
+              <div className="bg-purple-50 p-4 rounded-lg">
+                <div className="text-purple-600 font-semibold">Total Volume</div>
+                <div className="text-2xl font-bold">
+                  {totalWeight.toLocaleString()} {weightUnit}
+                </div>
+              </div>
+            )}
+            {totalDistance > 0 && (
+              <div className="bg-green-50 p-4 rounded-lg">
+                <div className="text-green-600 font-semibold">Total Distance</div>
+                <div className="text-2xl font-bold">{totalDistance.toLocaleString()} m</div>
+              </div>
+            )}
+            {totalTime > 0 && (
+              <div className="bg-indigo-50 p-4 rounded-lg">
+                <div className="text-indigo-600 font-semibold">Total Time</div>
+                <div className="text-2xl font-bold">{formatTime(totalTime)}</div>
+              </div>
+            )}
+            <div className="bg-green-50 p-4 rounded-lg">
+              <div className="text-green-600 font-semibold">Total Sets</div>
+              <div className="text-2xl font-bold">{totalSets}</div>
+            </div>
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <div className="text-yellow-600 font-semibold">PRs Achieved</div>
+              <div className="text-2xl font-bold">{totalPRs}</div>
+            </div>
+          </div>
+
+          {bestSets.length > 0 && (
+            <div className="mb-8">
+              <h3 className="text-lg font-bold mb-4 flex items-center">
+                <Medal className="mr-2 text-yellow-500" /> Best Sets
+              </h3>
+              <div className="space-y-3">
+                {bestSets.map(set => (
+                  <div
+                    key={set.exerciseId}
+                    className="bg-gray-50 p-4 rounded-lg flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="font-medium">{set.exerciseName}</div>
+                      <div className="text-sm text-gray-600">
+                        {set.weight} {weightUnit} × {set.reps} reps
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t flex-shrink-0">
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={handleGoToLogs}
+              className="flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <ClipboardList size={20} className="mr-2" />
+              View History
+            </button>
+            <button
+              onClick={handleStartNew}
+              className="flex items-center justify-center px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              <Plus size={20} className="mr-2" />
+              Start New
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
