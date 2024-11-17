@@ -8,6 +8,7 @@ import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
+import { useNavigate } from 'react-router-dom';
 
 interface MobileWorkoutViewProps {
   workout: WorkoutLog;
@@ -47,8 +48,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
-  const { clearWorkoutState } = useWorkout();
+  const { clearWorkoutState, searchLogs } = useWorkout();
   const { weightUnit } = useSettings();
+  const navigate = useNavigate();
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -92,10 +94,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     setShowWorkoutReview(true);
   };
 
-  const handleCloseReview = () => {
+  const handleCloseReview = async () => {
     setShowWorkoutReview(false);
     setCompletedWorkout(null);
     clearWorkoutState();
+    await searchLogs(''); // Refresh logs before navigating
     onCompleteWorkout();
   };
 
@@ -152,86 +155,105 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
       {/* Exercise List */}
       <div className="mt-36 px-4 space-y-6 pb-32">
-        {workout.exercises.map(({ exercise, sets }) => {
-          const isCardio = exercise.muscleGroup === 'Cardio';
-          const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
-          const isBodyweight = exercise.name.includes('(Bodyweight)');
-
-          return (
-            <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h3 className="font-semibold">{exercise.name}</h3>
-                <button
-                  onClick={() => onDeleteExercise(exercise.id)}
-                  className="text-red-500"
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-              <div className="p-4">
-                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
-                  <div>SET</div>
-                  {isCardio || isTimeBasedCore ? (
-                    <>
-                      <div>TIME</div>
-                      {exercise.metrics?.distance && <div>DISTANCE</div>}
-                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
-                      {exercise.metrics?.incline && <div>INCLINE</div>}
-                      {exercise.metrics?.pace && <div>PACE</div>}
-                      {exercise.metrics?.reps && <div>REPS</div>}
-                    </>
-                  ) : (
-                    <>
-                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                      <div>GOAL</div>
-                      <div>DONE</div>
-                    </>
-                  )}
-                  <div></div>
-                </div>
-                {sets.map((set) => (
-                  <MobileSetRow
-                    key={set.id}
-                    set={set}
-                    exercise={exercise}
-                    onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-                    onDelete={() => onDeleteSet(exercise.id, set.id)}
-                    onOpenNoteModal={() => setActiveNoteModal({
-                      exerciseId: exercise.id,
-                      setId: set.id,
-                      exerciseName: exercise.name,
-                      setNumber: set.setNumber
-                    })}
-                  />
-                ))}
-                <button
-                  onClick={() => onAddSet(exercise.id)}
-                  className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Set
-                </button>
-              </div>
+        {workout.exercises.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-md">
+            <div className="flex justify-center mb-4">
+              <Dumbbell className="h-16 w-16 text-gray-400" />
             </div>
-          );
-        })}
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">No exercises in your workout</h3>
+            <p className="text-gray-500 mb-6">Add some exercises to continue your workout</p>
+            <button
+              onClick={() => setShowExerciseModal(true)}
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus size={20} className="mr-2" />
+              Add Exercises
+            </button>
+          </div>
+        ) : (
+          <>
+            {workout.exercises.map(({ exercise, sets }) => {
+              const isCardio = exercise.muscleGroup === 'Cardio';
+              const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
+              const isBodyweight = exercise.name.includes('(Bodyweight)');
 
-        <div className="space-y-3 mb-6">
-          <button
-            onClick={() => setShowFinishConfirmation(true)}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
-          >
-            <CheckCheck size={20} className="mr-2" />
-            Finish Workout
-          </button>
-          <button
-            onClick={() => setShowCancelConfirmation(true)}
-            className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors flex items-center justify-center"
-          >
-            <X size={20} className="mr-2" />
-            Cancel Workout
-          </button>
-        </div>
+              return (
+                <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
+                  <div className="p-4 border-b flex justify-between items-center">
+                    <h3 className="font-semibold">{exercise.name}</h3>
+                    <button
+                      onClick={() => onDeleteExercise(exercise.id)}
+                      className="text-red-500"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                  <div className="p-4">
+                    <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 text-xs font-medium text-gray-500 mb-2">
+                      <div>SET</div>
+                      {isCardio || isTimeBasedCore ? (
+                        <>
+                          <div>TIME</div>
+                          {exercise.metrics?.distance && <div>DISTANCE</div>}
+                          {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
+                          {exercise.metrics?.incline && <div>INCLINE</div>}
+                          {exercise.metrics?.pace && <div>PACE</div>}
+                          {exercise.metrics?.reps && <div>REPS</div>}
+                        </>
+                      ) : (
+                        <>
+                          <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                          <div>GOAL</div>
+                          <div>DONE</div>
+                        </>
+                      )}
+                      <div></div>
+                    </div>
+                    {sets.map((set) => (
+                      <MobileSetRow
+                        key={set.id}
+                        set={set}
+                        exercise={exercise}
+                        onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+                        onDelete={() => onDeleteSet(exercise.id, set.id)}
+                        onOpenNoteModal={() => setActiveNoteModal({
+                          exerciseId: exercise.id,
+                          setId: set.id,
+                          exerciseName: exercise.name,
+                          setNumber: set.setNumber
+                        })}
+                      />
+                    ))}
+                    <button
+                      onClick={() => onAddSet(exercise.id)}
+                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Set
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="space-y-3 mb-6">
+              <button
+                onClick={() => setShowFinishConfirmation(true)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
+              >
+                <CheckCheck size={20} className="mr-2" />
+                Finish Workout
+              </button>
+              <button
+                onClick={() => setShowCancelConfirmation(true)}
+                className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors flex items-center justify-center"
+              >
+                <X size={20} className="mr-2" />
+                Cancel Workout
+              </button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Add Note Modal */}

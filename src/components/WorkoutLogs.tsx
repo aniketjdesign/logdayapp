@@ -13,10 +13,15 @@ export const WorkoutLogs: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    searchLogs(search);
+    const loadLogs = async () => {
+      await searchLogs(search);
+      setIsLoading(false);
+    };
+    loadLogs();
   }, [search]);
 
   const handleDeleteClick = (logId: string) => {
@@ -31,6 +36,34 @@ export const WorkoutLogs: React.FC = () => {
       setSelectedLogId(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
+        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
+        
+        {currentWorkout && <OngoingWorkoutMessage />}
+        
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+              <div className="flex justify-between items-start mb-4">
+                <div className="space-y-3 flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/4"></div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                <div className="h-3 bg-gray-200 rounded w-5/6"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (workoutLogs.length === 0) {
     return (

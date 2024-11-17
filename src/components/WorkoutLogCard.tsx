@@ -37,12 +37,12 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
-      <div 
-        className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
+      <div className="p-4">
         <div className="flex justify-between items-start mb-3">
-          <div>
+          <div 
+            className="flex-1 cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
             <h3 className="text-lg font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
             <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
               <div className="flex items-center">
@@ -61,42 +61,41 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="relative">
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu(!showMenu);
-              }}
-              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors relative"
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
             >
               <MoreVertical size={20} className="text-gray-500" />
-              {showMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-10"
-                    onClick={() => setShowMenu(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete();
-                        setShowMenu(false);
-                      }}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center"
-                    >
-                      <Trash2 size={16} className="mr-2" />
-                      Delete Log
-                    </button>
-                  </div>
-                </>
-              )}
             </button>
+            {showMenu && (
+              <>
+                <div 
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                  <div
+                    onClick={() => {
+                      onDelete();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
+                  >
+                    <Trash2 size={16} className="mr-2" />
+                    Delete Log
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         {/* Exercise Summary */}
-        <div className="flex flex-wrap gap-2">
+        <div 
+          className="flex flex-wrap gap-2 cursor-pointer"
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
           {log.exercises.map(({ exercise }) => (
             <span
               key={exercise.id}

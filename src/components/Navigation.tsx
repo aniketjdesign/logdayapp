@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share, RefreshCw } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
 import { LogDayLogo } from './LogDayLogo';
 import { InstallAppToast } from './InstallAppToast';
@@ -18,12 +18,15 @@ export const Navigation: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { 
     setSelectedExercises,
     setCurrentView,
     currentWorkout,
-    clearWorkoutState 
+    clearWorkoutState,
+    searchLogs 
   } = useWorkout();
   const { user, signOut } = useAuth();
   const { isInstallable, isIOS } = useInstallPrompt();
@@ -50,6 +53,20 @@ export const Navigation: React.FC = () => {
       });
     }
   }, [user]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    
+    // Handle refresh based on current route
+    if (location.pathname === '/logs') {
+      await searchLogs('');
+    } else if (location.pathname === '/') {
+      // Refresh exercise list by forcing a re-render
+      setSelectedExercises([]);
+    }
+    
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   const handleLogoutClick = () => {
     if (currentWorkout) {
@@ -141,16 +158,24 @@ export const Navigation: React.FC = () => {
             </div>
             <div className="flex items-center space-x-2">
               <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className={`px-2 py-1.5 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 text-sm ${
+                  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+              <button
                 data-canny-changelog
                 className="px-2 py-1.5 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
               >
-                🔔 What's new
+                🔔
               </button>
             </div>
           </div>
         </div>
       </nav>
-
 
       <div 
         className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${
