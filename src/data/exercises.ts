@@ -116,7 +116,7 @@ export const exercises: Exercise[] = [
   { id: 'c1', name: 'Pushups (Bodyweight)', muscleGroup: 'Chest' },
   { id: 'c2', name: 'Pushups (Weighted)', muscleGroup: 'Chest' },
   { id: 'c3', name: 'Wall Pushups (Bodyweight)', muscleGroup: 'Chest' },
-  { id: 'c4', name: 'Decline Pushups (Bodyweight)', muscleGroup: 'Chest' },
+  { id: 'c4', name: 'Decline Pushup (Bodyweight)', muscleGroup: 'Chest' },
   { id: 'c5', name: 'Knee Pushups', muscleGroup: 'Chest' },
   { id: 'c6', name: 'Flat Chest Press (Dumbbell)', muscleGroup: 'Chest' },
   { id: 'c7', name: 'Incline Chest Press (Dumbbell)', muscleGroup: 'Chest' },
