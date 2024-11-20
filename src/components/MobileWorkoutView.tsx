@@ -25,6 +25,7 @@ interface MobileWorkoutViewProps {
   onCancelWorkout: () => void;
 }
 
+
 export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   workout,
   duration,
