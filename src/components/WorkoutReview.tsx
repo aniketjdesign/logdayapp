@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trophy, X, Medal, ClipboardList, Plus } from 'lucide-react';
+import { Trophy, X, Medal, History, Plus } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
@@ -150,7 +150,7 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
               <h2 className="text-2xl font-bold flex items-center">
                 <Trophy className="mr-2" /> Workout Complete!
               </h2>
-              <p className="mt-1 text-blue-100">Great job crushing your workout! 💪</p>
+              <p className="mt-0.5 text-blue-100">Great job crushing your workout! 💪</p>
             </div>
             <button
               onClick={onClose}
@@ -227,14 +227,14 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
               onClick={handleGoToLogs}
               className="flex items-center justify-center px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <ClipboardList size={20} className="mr-2" />
-              View History
+              <History size={16} className="mr-2" />
+              View Log
             </button>
             <button
               onClick={handleStartNew}
-              className="flex items-center justify-center px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              className="flex items-center justify-center px-4 py-2.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
             >
-              <Plus size={20} className="mr-2" />
+              <Plus size={16} className="mr-2" />
               Start New
             </button>
           </div>

@@ -28,6 +28,8 @@ const AppContent = () => {
   const { currentWorkout } = useWorkout();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isWorkoutRoute = location.pathname === '/workout';
 
   useEffect(() => {
     // Allow time for auth and workout state to hydrate
@@ -58,10 +60,13 @@ const AppContent = () => {
     return <Navigate to="/login" replace />;
   }
 
+  // Hide navigation on mobile during workout
+  const showNavigation = !isMobile || (isMobile && (!currentWorkout || !isWorkoutRoute));
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
-      <div className="pt-16">
+      {showNavigation && <Navigation />}
+      <div className={showNavigation ? "pt-16" : ""}>
         <Routes>
           <Route path="/" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
