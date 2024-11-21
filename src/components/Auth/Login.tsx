@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
+import { AuthFooter } from './AuthFooter';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -131,6 +132,7 @@ export const Login: React.FC = () => {
           </p>
         </div>
       </div>
+      <AuthFooter />
     </div>
   );
 };

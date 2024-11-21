@@ -9,6 +9,13 @@
   }
 }
 
+/* Prevent iOS magnifying glass and text selection during drag */
+.select-none {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -69,13 +76,6 @@
     font-size: 0.875rem;
     padding-left: 0.75rem;
     padding-right: 0.75rem;
-  }
-}
-
-/* Safe area insets for modern mobile devices */
-@supports (padding-top: env(safe-area-inset-top)) {
-  .fixed {
-    padding-top: env(safe-area-inset-top);
   }
 }
 

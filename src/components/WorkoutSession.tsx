@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Timer, Plus, Trash2, Dumbbell, CheckCheck, X } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
@@ -10,6 +10,9 @@ import { SetRow } from './SetRow';
 import { MobileWorkoutView } from './MobileWorkoutView';
 import { Exercise } from '../types/workout';
 import { generateWorkoutName } from '../utils/workoutNameGenerator';
+
+const STORAGE_PREFIX = 'logday_';
+const WORKOUT_TIMER_KEY = `${STORAGE_PREFIX}workoutTimer`;
 
 export const WorkoutSession: React.FC = () => {
   const { 
@@ -25,11 +28,96 @@ export const WorkoutSession: React.FC = () => {
   const { weightUnit } = useSettings();
   const [workoutName, setWorkoutName] = useState(currentWorkout?.name || '');
   const [duration, setDuration] = useState(0);
+  const [isPaused, setIsPaused] = useState(true); // Start paused until we load state
   const [showExerciseModal, setShowExerciseModal] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState(null);
   const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const navigate = useNavigate();
+  const lastTickRef = useRef<number>(0);
+  const accumulatedTimeRef = useRef<number>(0);
+  const isInitializedRef = useRef<boolean>(false);
+
+  // Load accumulated time and pause state from localStorage on mount
+  useEffect(() => {
+    if (!currentWorkout?.startTime || isInitializedRef.current) return;
+
+    const savedTimer = localStorage.getItem(WORKOUT_TIMER_KEY);
+    if (savedTimer) {
+      try {
+        const { accumulated, lastTick, isPaused: savedPauseState } = JSON.parse(savedTimer);
+        accumulatedTimeRef.current = accumulated || 0;
+        
+        // If we have a saved pause state, use it
+        if (typeof savedPauseState === 'boolean') {
+          setIsPaused(savedPauseState);
+        } else {
+          // For new workouts, start automatically
+          setIsPaused(false);
+        }
+        
+        // Only update time if not paused
+        if (!savedPauseState && lastTick) {
+          const now = Date.now();
+          const timeElapsed = now - lastTick;
+          accumulatedTimeRef.current += timeElapsed;
+        }
+        
+        lastTickRef.current = Date.now();
+        setDuration(Math.floor(accumulatedTimeRef.current / 1000));
+      } catch (error) {
+        console.error('Error parsing timer state:', error);
+      }
+    } else {
+      // New workout - start automatically
+      setIsPaused(false);
+      const timeElapsed = Date.now() - new Date(currentWorkout.startTime).getTime();
+      accumulatedTimeRef.current = timeElapsed;
+      lastTickRef.current = Date.now();
+      setDuration(Math.floor(timeElapsed / 1000));
+    }
+
+    isInitializedRef.current = true;
+  }, [currentWorkout?.startTime]);
+
+  // Save timer state to localStorage
+  useEffect(() => {
+    if (!currentWorkout?.startTime) return;
+
+    const timerState = {
+      accumulated: accumulatedTimeRef.current,
+      lastTick: Date.now(),
+      isPaused
+    };
+    localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
+  }, [isPaused, currentWorkout?.startTime]);
+
+  // Update duration periodically
+  useEffect(() => {
+    if (!currentWorkout?.startTime || isPaused) {
+      return;
+    }
+
+    lastTickRef.current = Date.now();
+    const timer = setInterval(() => {
+      const now = Date.now();
+      const delta = now - lastTickRef.current;
+      lastTickRef.current = now;
+      accumulatedTimeRef.current += delta;
+      
+      // Save current state to localStorage
+      const timerState = {
+        accumulated: accumulatedTimeRef.current,
+        lastTick: now,
+        isPaused
+      };
+      localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
+      
+      setDuration(Math.floor(accumulatedTimeRef.current / 1000));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentWorkout?.startTime, isPaused]);
 
   useEffect(() => {
     if (currentWorkout) {
@@ -41,17 +129,6 @@ export const WorkoutSession: React.FC = () => {
       });
     }
   }, [currentWorkout?.exercises]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      if (currentWorkout?.startTime) {
-        const elapsed = Math.floor((Date.now() - new Date(currentWorkout.startTime).getTime()) / 1000);
-        setDuration(elapsed);
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [currentWorkout?.startTime]);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -85,6 +162,7 @@ export const WorkoutSession: React.FC = () => {
         const completed = await completeWorkout(workoutName);
         setCompletedWorkout(completed);
         setShowFinishConfirmation(false);
+        localStorage.removeItem(WORKOUT_TIMER_KEY);
       } catch (error) {
         console.error('Error completing workout:', error);
       }
@@ -93,6 +171,7 @@ export const WorkoutSession: React.FC = () => {
 
   const handleCancelWorkout = () => {
     clearWorkoutState();
+    localStorage.removeItem(WORKOUT_TIMER_KEY);
     navigate('/');
   };
 
@@ -163,6 +242,22 @@ export const WorkoutSession: React.FC = () => {
     setShowExerciseModal(false);
   };
 
+  const handlePauseResume = () => {
+    setIsPaused(!isPaused);
+    if (!isPaused) {
+      // Saving state when pausing
+      const timerState = {
+        accumulated: accumulatedTimeRef.current,
+        lastTick: Date.now(),
+        isPaused: true
+      };
+      localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
+    } else {
+      // Updating lastTick when resuming
+      lastTickRef.current = Date.now();
+    }
+  };
+
   // Mobile View
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
     if (!currentWorkout) {
@@ -198,6 +293,8 @@ export const WorkoutSession: React.FC = () => {
         onShowExerciseModal={handleAddExercises}
         onCompleteWorkout={handleCompleteWorkout}
         onCancelWorkout={handleCancelWorkout}
+        isPaused={isPaused}
+        onPauseResume={handlePauseResume}
       />
     );
   }
@@ -242,10 +339,20 @@ export const WorkoutSession: React.FC = () => {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-4">
-            <Timer size={24} className="text-gray-500" />
+            <Timer size={24} className={isPaused ? "text-yellow-500" : "text-gray-500"} />
             <span className="text-2xl font-bold">{formatTime(duration)}</span>
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={handlePauseResume}
+              className={`px-4 py-2 rounded-lg transition-colors text-sm ${
+                isPaused 
+                  ? 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+              }`}
+            >
+              {isPaused ? 'Resume' : 'Pause'}
+            </button>
             <button
               onClick={() => setShowExerciseModal(true)}
               className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"

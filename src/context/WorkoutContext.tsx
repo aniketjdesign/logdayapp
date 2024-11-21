@@ -31,6 +31,7 @@ const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 const STORAGE_PREFIX = 'logday_';
 const CURRENT_WORKOUT_KEY = `${STORAGE_PREFIX}currentWorkout`;
+const WORKOUT_TIMER_KEY = `${STORAGE_PREFIX}workoutTimer`;
 
 export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
@@ -110,6 +111,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     setCurrentWorkout(workout);
     setCurrentView('workout');
+
+    // Initialize timer state with auto-start (not paused)
+    const timerState = {
+      accumulated: 0,
+      lastTick: Date.now(),
+      isPaused: false
+    };
+    localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
   };
 
   const completeWorkout = async (name: string): Promise<WorkoutLog> => {
@@ -138,8 +147,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTotalLogs(count);
     setCurrentPage(1);
     
-    // Clear current workout
+    // Clear current workout and timer state
     localStorage.removeItem(CURRENT_WORKOUT_KEY);
+    localStorage.removeItem(WORKOUT_TIMER_KEY);
     setCurrentWorkout(null);
     setCurrentView('logs');
 
@@ -213,6 +223,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setCurrentWorkout(null);
     setSelectedExercises([]);
     localStorage.removeItem(CURRENT_WORKOUT_KEY);
+    localStorage.removeItem(WORKOUT_TIMER_KEY);
   };
 
   return (

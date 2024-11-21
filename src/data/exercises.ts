@@ -109,6 +109,8 @@ export const exercises: Exercise[] = [
   { id: 's28', name: 'Pike Pushups (Bodyweight)', muscleGroup: 'Shoulders' },
   { id: 's29', name: 'Seated Front Raises (Dumbbells)', muscleGroup: 'Shoulders' },
   { id: 's30', name: 'Seated Iso Smith Shoulder Press (Hammer)', muscleGroup: 'Shoulders' },
+  { id: 's31', name: 'Upright Rows (Barbell)', muscleGroup: 'Shoulders' },
+
 
 
 
@@ -143,6 +145,7 @@ export const exercises: Exercise[] = [
   { id: 'c28', name: 'Dips (Bodyweight)', muscleGroup: 'Chest' },
   { id: 'c29', name: 'Dips (Assistance)', muscleGroup: 'Chest' },
   { id: 'c30', name: 'Pullover (Dumbbells)', muscleGroup: 'Chest' },
+  { id: 'c31', name: 'Flat Bench Flies (Dumbbells)', muscleGroup: 'Chest' },
 
   // Back
   { id: 'b1', name: 'Lat Pulldown - Wide', muscleGroup: 'Back' },
