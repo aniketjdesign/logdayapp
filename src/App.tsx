@@ -11,6 +11,8 @@ import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
 import { MigrationStatus } from './components/MigrationStatus';
+import { UpdatePrompt } from './components/UpdatePrompt';
+import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -28,6 +30,7 @@ const AppContent = () => {
   const { currentWorkout } = useWorkout();
   const location = useLocation();
   const [isLoading, setIsLoading] = useState(true);
+  const { updateAvailable, updateServiceWorker } = useUpdatePrompt();
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isWorkoutRoute = location.pathname === '/workout';
 
@@ -76,6 +79,7 @@ const AppContent = () => {
         </Routes>
       </div>
       <MigrationStatus />
+      {updateAvailable && <UpdatePrompt onUpdate={updateServiceWorker} />}
     </div>
   );
 };
