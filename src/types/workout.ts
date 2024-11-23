@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface Exercise {
   id: string;
   name: string;
@@ -46,7 +48,8 @@ export type MuscleGroup =
   | 'Glutes'
   | 'Calves'
   | 'Core'
-  | 'Cardio';
+  | 'Cardio'
+  | 'Forearms';
 
 export interface ExerciseMetrics {
   time: boolean;

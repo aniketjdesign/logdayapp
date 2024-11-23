@@ -27,6 +27,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
     'Hamstrings',
     'Triceps',
     'Biceps',
+    'Forearms',
     'Glutes',
     'Calves',
     'Core',

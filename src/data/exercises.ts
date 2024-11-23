@@ -111,9 +111,6 @@ export const exercises: Exercise[] = [
   { id: 's30', name: 'Seated Iso Smith Shoulder Press (Hammer)', muscleGroup: 'Shoulders' },
   { id: 's31', name: 'Upright Rows (Barbell)', muscleGroup: 'Shoulders' },
 
-
-
-
   // Chest
   { id: 'c1', name: 'Pushup (Bodyweight)', muscleGroup: 'Chest' },
   { id: 'c2', name: 'Pushups (Weighted)', muscleGroup: 'Chest' },
@@ -186,7 +183,6 @@ export const exercises: Exercise[] = [
   { id: 'b36', name: 'T-bar Row (Hammer)', muscleGroup: 'Back' },
   { id: 'b37', name: 'T-bar Row (Generic)', muscleGroup: 'Back' },
 
-
   // Quads
   { id: 'q1', name: 'Squats (Bodyweight)', muscleGroup: 'Quads' },
   { id: 'q2', name: 'Sumo Squats (Bodyweight)', muscleGroup: 'Quads' },
@@ -218,7 +214,6 @@ export const exercises: Exercise[] = [
   { id: 'q28', name: 'Walking Lunges (Weighted bag)', muscleGroup: 'Quads' },
   { id: 'q29', name: 'Walking Lunges (Plate loaded)', muscleGroup: 'Quads' },
 
-
   // Hamstrings
   { id: 'h1', name: 'Lying Leg Curl (Generic)', muscleGroup: 'Hamstrings' },
   { id: 'h2', name: 'Lying Leg Curl (Hammer)', muscleGroup: 'Hamstrings' },
@@ -230,7 +225,6 @@ export const exercises: Exercise[] = [
   { id: 'h9', name: 'Stiff-Legged Deadlifts (Barbell)', muscleGroup: 'Hamstrings' },
   { id: 'h10', name: 'Stiff-Legged Deadlifts (Dumbbell)', muscleGroup: 'Hamstrings' },
   { id: 'h11', name: 'Iso Leg Curls (Hammer)', muscleGroup: 'Hamstrings' },
-
 
   // Triceps
   { id: 't1', name: 'Tricep Extensions (Cable - Straight bar)', muscleGroup: 'Triceps' },
@@ -300,4 +294,19 @@ export const exercises: Exercise[] = [
   { id: 'co12', name: 'Hanging Leg Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co13', name: 'Lying Leg Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co14', name: 'Plank (Time)', muscleGroup: 'Core', metrics: { time: true } },
+
+  // Forearms
+  { id: 'f1', name: 'Wrist Curls (Machine)', muscleGroup: 'Forearms' },
+  { id: 'f2', name: 'Wrist Curls (Cable)', muscleGroup: 'Forearms' },
+  { id: 'f3', name: 'Wrist Curls (Dumbbells)', muscleGroup: 'Forearms' },
+  { id: 'f4', name: 'Wrist Curls (Barbells)', muscleGroup: 'Forearms' },
+  { id: 'f5', name: 'Reverse Wrist Curls (Machine)', muscleGroup: 'Forearms' },
+  { id: 'f6', name: 'Reverse Wrist Curls (Cable)', muscleGroup: 'Forearms' },
+  { id: 'f7', name: 'Reverse Wrist Curls (Dumbbells)', muscleGroup: 'Forearms' },
+  { id: 'f8', name: 'Reverse Wrist Curls (Barbell)', muscleGroup: 'Forearms' },
+  { id: 'f9', name: 'Wrist Roller (Machine)', muscleGroup: 'Forearms' },
+  { id: 'f10', name: 'Wrist Roller (Resistance band & Plate loaded)', muscleGroup: 'Forearms' },
+  { id: 'f11', name: 'Reverse Curls (Dumbbells)', muscleGroup: 'Forearms' },
+  { id: 'f12', name: 'Reverse Curls (Barbell)', muscleGroup: 'Forearms' },
+  { id: 'f13', name: 'Reverse Curls (Cable)', muscleGroup: 'Forearms' },
 ];

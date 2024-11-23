@@ -23,6 +23,7 @@ export const ExerciseList: React.FC = () => {
     'Hamstrings',
     'Triceps',
     'Biceps',
+    'Forearms',
     'Glutes',
     'Calves',
     'Core',
