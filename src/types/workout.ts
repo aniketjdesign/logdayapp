@@ -30,6 +30,7 @@ export interface WorkoutSet {
 export interface WorkoutExercise {
   exercise: Exercise;
   sets: WorkoutSet[];
+  supersetWith?: string; // ID of the exercise this is supersetted with
 }
 
 export interface WorkoutLog {

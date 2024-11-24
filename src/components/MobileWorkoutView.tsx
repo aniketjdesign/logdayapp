@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical } from 'lucide-react';
-import { WorkoutLog, Exercise } from '../types/workout';
+import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2 } from 'lucide-react';
+import { WorkoutLog, Exercise, WorkoutExercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -8,6 +8,7 @@ import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
 import { CircularProgress } from './CircularProgress';
 import { ExerciseReorderModal } from './ExerciseReorderModal';
+import { SupersetModal } from './SupersetModal';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
@@ -57,6 +58,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
+  const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
+  const [showSupersetModal, setShowSupersetModal] = useState(false);
+  const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
   const { clearWorkoutState, searchLogs, setCurrentWorkout } = useWorkout();
   const { weightUnit } = useSettings();
   const navigate = useNavigate();
@@ -98,6 +102,57 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     };
   };
 
+  const handleExerciseMenuToggle = (exerciseId: string) => {
+    setActiveExerciseMenu(activeExerciseMenu === exerciseId ? null : exerciseId);
+  };
+
+  const handleSuperset = (exerciseId: string) => {
+    // If already in a superset, remove it
+    const exercise = workout.exercises.find(ex => ex.exercise.id === exerciseId);
+    if (exercise?.supersetWith) {
+      const updatedExercises = workout.exercises.map(ex => {
+        if (ex.exercise.id === exerciseId || ex.exercise.id === exercise.supersetWith) {
+          const { supersetWith, ...rest } = ex;
+          return rest;
+        }
+        return ex;
+      });
+  
+      setCurrentWorkout({
+        ...workout,
+        exercises: updatedExercises
+      });
+      setActiveExerciseMenu(null);
+    } else {
+      // Start new superset
+      setSelectedExerciseId(exerciseId);
+      setActiveExerciseMenu(null);
+      setShowSupersetModal(true);
+    }
+  };
+
+  const handleSupersetSelect = (targetExerciseId: string) => {
+    if (!selectedExerciseId) return;
+
+    const updatedExercises = workout.exercises.map(ex => {
+      if (ex.exercise.id === selectedExerciseId) {
+        return { ...ex, supersetWith: targetExerciseId };
+      }
+      if (ex.exercise.id === targetExerciseId) {
+        return { ...ex, supersetWith: selectedExerciseId };
+      }
+      return ex;
+    });
+
+    setCurrentWorkout({
+      ...workout,
+      exercises: updatedExercises
+    });
+
+    setShowSupersetModal(false);
+    setSelectedExerciseId(null);
+  };
+
   const handleMenuToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
     const button = event.currentTarget;
     const rect = button.getBoundingClientRect();
@@ -108,52 +163,15 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     setShowMenu(prev => !prev);
   };
 
-  const handleAddExercises = (selectedExercises: Exercise[]) => {
-    onShowExerciseModal(selectedExercises);
-    setShowExerciseModal(false);
-  };
-
   const handleCompleteWorkout = async () => {
     try {
       setShowFinishConfirmation(false);
-      const endTime = new Date().toISOString();
-      const completedWorkoutData = {
-        ...workout,
-        name: workoutName,
-        endTime,
-        duration: new Date(endTime).getTime() - new Date(workout.startTime).getTime()
-      };
-      
-      // First save the workout
       await onCompleteWorkout();
-      
-      // Then show the review modal
-      setCompletedWorkout(completedWorkoutData);
       setShowWorkoutReview(true);
     } catch (error) {
       console.error('Error completing workout:', error);
       alert('Failed to complete workout. Please try again.');
     }
-  };
-  
-
-  const handleCancelWorkout = () => {
-    try {
-      setShowCancelConfirmation(false);
-      onCancelWorkout();
-    } catch (error) {
-      console.error('Error canceling workout:', error);
-      alert('Failed to cancel workout. Please try again.');
-    }
-  };
-
-  const handleReorderExercises = (reorderedExercises: { exercise: Exercise }[]) => {
-    const updatedWorkout = {
-      ...workout,
-      exercises: reorderedExercises
-    };
-    setCurrentWorkout(updatedWorkout);
-    setShowReorderModal(false);
   };
 
   const stats = getWorkoutStats();
@@ -232,22 +250,65 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
       {/* Exercise List */}
       <div className="mt-32 px-4 space-y-6 pb-32">
-        {workout.exercises.map(({ exercise, sets }) => {
+        {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           const isBodyweight = exercise.name.includes('(Bodyweight)');
           const isCardio = exercise.muscleGroup === 'Cardio';
           const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
+          const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
+
+          // If this is the second part of a superset, skip rendering (it's handled with the first part)
+          if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
+            return null;
+          }
 
           return (
             <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
-              <div className="p-4 border-b flex justify-between items-center">
-                <h3 className="font-semibold">{exercise.name}</h3>
-                <button
-                  onClick={() => onDeleteExercise(exercise.id)}
-                  className="text-red-500 p-1.5 hover:bg-red-50 rounded-lg"
-                >
-                  <Trash2 size={18} />
-                </button>
+              <div className="p-4 border-b">
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <h3 className="font-semibold">{exercise.name}</h3>
+                    {supersetPartner && (
+                      <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
+                         <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+                        Superset w/ {supersetPartner.exercise.name}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => handleExerciseMenuToggle(exercise.id)}
+                    className="p-2 hover:bg-gray-100 rounded-lg ml-2"
+                  >
+                    <MoreVertical size={18} />
+                  </button>
+                </div>
+
+                {activeExerciseMenu === exercise.id && (
+                 <div className="absolute right-4 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+                 <button
+                   onClick={() => {
+                     handleSuperset(exercise.id);
+                   }}
+                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
+                 >
+                  <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+                   <span>
+                     {supersetWith ? 'Remove Superset' : 'Superset with'}
+                   </span>
+                 </button>
+                 <button
+                   onClick={() => {
+                     onDeleteExercise(exercise.id);
+                     setActiveExerciseMenu(null);
+                   }}
+                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-red-600"
+                 >
+                   <Trash2 size={16} className="mr-2" />
+                   <span>Remove Exercise</span>
+                 </button>
+               </div>
+                )}
               </div>
+
               <div className="p-4">
                 {/* Column Headers */}
                 <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
@@ -271,6 +332,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                   <div></div>
                 </div>
 
+                {/* Sets for current exercise */}
                 {sets.map((set) => (
                   <MobileSetRow
                     key={set.id}
@@ -286,19 +348,63 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                     })}
                   />
                 ))}
-                <button
-                  onClick={() => onAddSet(exercise.id)}
-                  className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Set
-                </button>
+
+                {/* Render superset partner if exists */}
+                {!supersetPartner && (
+                  <button
+                    onClick={() => onAddSet(exercise.id)}
+                    className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                  >
+                    <Plus size={16} className="mr-2" />
+                    Add Set
+                  </button>
+                )}
+
+                {/* Show superset section with Add Set buttons for both exercises */}
+                {supersetPartner && (
+                  <>
+                    <button
+                      onClick={() => onAddSet(exercise.id)}
+                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Set
+                    </button>
+
+                    <div className="my-4 border-t border-lime-500" />
+                    <div className="mb-2">
+                      <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
+                    </div>
+                    {supersetPartner.sets.map((set) => (
+                      <MobileSetRow
+                        key={set.id}
+                        set={set}
+                        exercise={supersetPartner.exercise}
+                        onUpdate={(field, value) => onUpdateSet(supersetPartner.exercise.id, set.id, field, value)}
+                        onDelete={() => onDeleteSet(supersetPartner.exercise.id, set.id)}
+                        onOpenNoteModal={() => setActiveNoteModal({
+                          exerciseId: supersetPartner.exercise.id,
+                          setId: set.id,
+                          exerciseName: supersetPartner.exercise.name,
+                          setNumber: set.setNumber
+                        })}
+                      />
+                    ))}
+                    <button
+                      onClick={() => onAddSet(supersetPartner.exercise.id)}
+                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                    >
+                      <Plus size={16} className="mr-2" />
+                      Add Set
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );
         })}
 
-        <div className="space-y-3 mt-6 mb-6">
+        <div className="space-y-3 mt-6">
           <button
             onClick={() => setShowFinishConfirmation(true)}
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
@@ -316,7 +422,82 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         </div>
       </div>
 
-      {/* Menu Modal */}
+      {/* Modals */}
+      {activeNoteModal && (
+        <AddNoteModal
+          exerciseName={activeNoteModal.exerciseName}
+          setNumber={activeNoteModal.setNumber}
+          currentNote={
+            workout.exercises
+              .find(e => e.exercise.id === activeNoteModal.exerciseId)
+              ?.sets.find(s => s.id === activeNoteModal.setId)
+              ?.comments || ''
+          }
+          onSave={(note) => {
+            onUpdateSet(activeNoteModal.exerciseId, activeNoteModal.setId, 'comments', note);
+            setActiveNoteModal(null);
+          }}
+          onClose={() => setActiveNoteModal(null)}
+        />
+      )}
+
+          {showExerciseModal && (
+      <ExerciseSelectionModal
+        onClose={() => setShowExerciseModal(false)}
+        onAdd={(selectedExercises) => {
+          onShowExerciseModal(selectedExercises);
+          setShowExerciseModal(false); // Close the modal after adding exercises
+        }}
+        currentExercises={workout.exercises.map(e => e.exercise)}
+      />
+    )}
+
+      {showSupersetModal && selectedExerciseId && (
+        <SupersetModal
+          onClose={() => {
+            setShowSupersetModal(false);
+            setSelectedExerciseId(null);
+          }}
+          onSelect={handleSupersetSelect}
+          exercises={workout.exercises}
+          currentExerciseId={selectedExerciseId}
+        />
+      )}
+
+      {showReorderModal && (
+        <ExerciseReorderModal
+          exercises={workout.exercises}
+          onClose={() => setShowReorderModal(false)}
+          onReorder={(exercises) => {
+            setCurrentWorkout({
+              ...workout,
+              exercises
+            });
+            setShowReorderModal(false);
+          }}
+        />
+      )}
+
+      <ConfirmationModal
+        isOpen={showFinishConfirmation}
+        onClose={() => setShowFinishConfirmation(false)}
+        onConfirm={handleCompleteWorkout}
+        title="Finish Workout?"
+        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets completed. Are you sure you want to finish this workout?`}
+        confirmText="Yes, Finish"
+        confirmButtonClass="bg-blue-600 hover:bg-blue-700"
+      />
+
+      <ConfirmationModal
+        isOpen={showCancelConfirmation}
+        onClose={() => setShowCancelConfirmation(false)}
+        onConfirm={onCancelWorkout}
+        title="Cancel Workout?"
+        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets that will be discarded. This action cannot be undone.`}
+        confirmText="Yes, Cancel"
+        confirmButtonClass="bg-red-600 hover:bg-red-700"
+      />
+
       {showMenu && (
         <>
           <div 
@@ -407,61 +588,6 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           </div>
         </>
       )}
-
-      {/* Modals */}
-      {activeNoteModal && (
-        <AddNoteModal
-          exerciseName={activeNoteModal.exerciseName}
-          setNumber={activeNoteModal.setNumber}
-          currentNote={
-            workout.exercises
-              .find(e => e.exercise.id === activeNoteModal.exerciseId)
-              ?.sets.find(s => s.id === activeNoteModal.setId)
-              ?.comments || ''
-          }
-          onSave={(note) => {
-            onUpdateSet(activeNoteModal.exerciseId, activeNoteModal.setId, 'comments', note);
-            setActiveNoteModal(null);
-          }}
-          onClose={() => setActiveNoteModal(null)}
-        />
-      )}
-
-      {showExerciseModal && (
-        <ExerciseSelectionModal
-          onClose={() => setShowExerciseModal(false)}
-          onAdd={handleAddExercises}
-          currentExercises={workout.exercises.map(e => e.exercise)}
-        />
-      )}
-
-      {showReorderModal && (
-        <ExerciseReorderModal
-          exercises={workout.exercises}
-          onClose={() => setShowReorderModal(false)}
-          onReorder={handleReorderExercises}
-        />
-      )}
-
-      <ConfirmationModal
-        isOpen={showFinishConfirmation}
-        onClose={() => setShowFinishConfirmation(false)}
-        onConfirm={handleCompleteWorkout}
-        title="Finish Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets completed. Are you sure you want to finish this workout?`}
-        confirmText="Yes, Finish"
-        confirmButtonClass="bg-blue-600 hover:bg-blue-700"
-      />
-
-      <ConfirmationModal
-        isOpen={showCancelConfirmation}
-        onClose={() => setShowCancelConfirmation(false)}
-        onConfirm={handleCancelWorkout}
-        title="Cancel Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets that will be discarded. This action cannot be undone.`}
-        confirmText="Yes, Cancel"
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
-      />
     </div>
   );
 };

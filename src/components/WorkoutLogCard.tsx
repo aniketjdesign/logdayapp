@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MoreVertical, Trash2, Medal } from 'lucide-react';
+import { Calendar, Clock, MoreVertical, Trash2, Medal, Link2 } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 import { ExerciseSetList } from './ExerciseSetList';
@@ -33,6 +33,21 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   const totalPRs = log.exercises.reduce((total, { sets }) => 
     total + sets.filter(set => set.isPR).length, 0
   );
+
+  // Group exercises by superset
+  const exerciseGroups = log.exercises.reduce((groups, exercise, index) => {
+    if (exercise.supersetWith) {
+      // If this exercise is part of a superset and comes first
+      const partnerIndex = log.exercises.findIndex(ex => ex.exercise.id === exercise.supersetWith);
+      if (index < partnerIndex) {
+        groups.push([exercise, log.exercises[partnerIndex]]);
+      }
+    } else if (!log.exercises.some(ex => ex.supersetWith === exercise.exercise.id)) {
+      // If this exercise is not part of any superset
+      groups.push([exercise]);
+    }
+    return groups;
+  }, [] as Array<Array<typeof log.exercises[0]>>);
 
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -96,26 +111,50 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           className="flex flex-wrap gap-2 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          {log.exercises.map(({ exercise }) => (
-            <span
-              key={exercise.id}
-              className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700"
-            >
-              {exercise.name}
-            </span>
+          {exerciseGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className="flex items-center">
+              {group.length === 2 ? (
+                <div className="flex items-center bg-lime-50 rounded-lg p-1">
+                  <span className="flex items-center px-2 py-1 text-xs font-medium text-lime-700">
+                    <div className="w-2 h-2 mr-2 rounded-full bg-lime-500" />
+                    {group[0].exercise.name}
+                  </span>
+                  <span className="w-px h-4 bg-lime-200 mx-1" />
+                  <span className="px-2 py-1 text-xs font-medium text-lime-700">
+                    {group[1].exercise.name}
+                  </span>
+                </div>
+              ) : (
+                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
+                  {group[0].exercise.name}
+                </span>
+              )}
+            </div>
           ))}
         </div>
       </div>
 
       {/* Expanded Details */}
       {isExpanded && (
-        <div className="border-t">
-          {log.exercises.map(({ exercise, sets }) => (
-            <ExerciseSetList
-              key={exercise.id}
-              exercise={exercise}
-              sets={sets}
-            />
+        <div className="border-t divide-y">
+          {exerciseGroups.map((group, groupIndex) => (
+            <div key={groupIndex} className={group.length === 2 ? 'bg-lime-50/30' : ''}>
+              {group.length === 2 ? (
+                <ExerciseSetList
+                  exercise={group[0].exercise}
+                  sets={group[0].sets}
+                  supersetPartner={{
+                    exercise: group[1].exercise,
+                    sets: group[1].sets
+                  }}
+                />
+              ) : (
+                <ExerciseSetList
+                  exercise={group[0].exercise}
+                  sets={group[0].sets}
+                />
+              )}
+            </div>
           ))}
         </div>
       )}
