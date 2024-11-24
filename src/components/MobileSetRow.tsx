@@ -21,28 +21,23 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
-  const isTimeOnly = exercise.metrics?.time && !exercise.metrics?.distance && !exercise.metrics?.difficulty && !exercise.metrics?.incline && !exercise.metrics?.pace && !exercise.metrics?.reps;
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     
-    // Handle backspace and deletion
     if (value.length < (set.time || '').length) {
       onUpdate('time', value);
       return;
     }
 
-    // Remove non-digits
     const digits = value.replace(/\D/g, '');
     
     if (digits.length <= 2) {
-      // Less than 2 digits - treat as seconds
       const seconds = parseInt(digits || '0');
       if (seconds < 60) {
         onUpdate('time', `0:${digits.padStart(2, '0')}`);
       }
     } else {
-      // More than 2 digits - treat as MMSS
       const minutes = parseInt(digits.slice(0, -2));
       const seconds = parseInt(digits.slice(-2));
       if (seconds < 60) {
@@ -54,13 +49,60 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const getColumnClass = (hasValue: boolean) => 
     `px-2 py-1.5 border ${hasValue ? 'border-gray-300' : 'border-gray-200'} rounded-lg text-sm w-full ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
 
+  const handleSetTypeUpdate = (type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR', value: boolean) => {
+    onUpdate(type, value);
+  };
+
+  // Check if any non-warmup type is selected
+  const hasNonWarmupType = set.isPR || set.isDropset || set.isFailure;
+
+  const NewTag = () => (
+    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-600">
+      NEW
+    </span>
+  );
+
+  const getSetTypeButton = (
+    type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR',
+    label: string,
+    color: string,
+    isNew: boolean = false,
+    disabled: boolean = false
+  ) => (
+    <button
+      onClick={() => {
+        handleSetTypeUpdate(type, !set[type]);
+        setShowMenu(false);
+      }}
+      disabled={disabled}
+      className={`w-full px-4 py-3 text-left text-base flex items-center justify-between ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+      } rounded-lg`}
+    >
+      <div className="flex items-center">
+        <div className={`w-3 h-3 rounded-full ${color} mr-3`} />
+        <span>{set[type] ? `Remove ${label}` : `Mark as ${label}`}</span>
+      </div>
+      {isNew && <NewTag />}
+    </button>
+  );
+
   return (
     <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 items-center py-1 relative">
       <div className="flex items-center">
         <span className="text-sm font-medium text-gray-600 mr-1">{set.setNumber}</span>
         <div className="relative flex -space-x-1">
+          {set.isWarmup && (
+            <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
+          )}
           {set.isPR && (
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+          )}
+          {set.isFailure && (
+            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+          )}
+          {set.isDropset && (
+            <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
           )}
           {set.comments && (
             <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
@@ -68,7 +110,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         </div>
       </div>
 
-      {/* First Column */}
+      {/* Weight/Time Column */}
       {isCardio || isTimeBasedCore ? (
         <input
           type="text"
@@ -91,7 +133,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         />
       )}
 
-      {/* Second Column */}
+      {/* Target Column */}
       {isCardio ? (
         exercise.metrics?.distance ? (
           <input
@@ -127,7 +169,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         />
       )}
 
-      {/* Third Column */}
+      {/* Actual Column */}
       {isCardio ? (
         exercise.metrics?.difficulty ? (
           <input
@@ -188,17 +230,27 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           />
           <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl z-50 animate-slide-up">
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto my-3" />
+            
+            {/* Header */}
+            <div className="px-4 pb-4 border-b">
+              <h3 className="font-semibold text-lg">{exercise.name}</h3>
+              <p className="text-sm text-gray-600">Set {set.setNumber}</p>
+            </div>
+            
             <div className="p-4 space-y-2">
-              <button
-                onClick={() => {
-                  onUpdate('isPR', !set.isPR);
-                  setShowMenu(false);
-                }}
-                className="w-full px-4 py-3 text-left text-base flex items-center space-x-3 hover:bg-gray-50 rounded-lg"
-              >
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <span>{set.isPR ? 'Remove PR' : 'Mark as PR'}</span>
-              </button>
+              {/* Warmup Set */}
+              {getSetTypeButton('isWarmup', 'Warmup', 'bg-orange-500', true, hasNonWarmupType)}
+              
+              {/* PR Set */}
+              {getSetTypeButton('isPR', 'PR', 'bg-yellow-400', false, set.isWarmup)}
+              
+              {/* Failure Set */}
+              {getSetTypeButton('isFailure', 'Failure', 'bg-red-500', true, set.isWarmup)}
+              
+              {/* Drop Set */}
+              {getSetTypeButton('isDropset', 'Dropset', 'bg-purple-500', true, set.isWarmup)}
+              
+              {/* Add Note */}
               <button
                 onClick={() => {
                   onOpenNoteModal();
@@ -209,6 +261,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                 <div className="w-3 h-3 rounded-full bg-blue-500" />
                 <span>Add Note</span>
               </button>
+              
+              {/* Delete Set */}
               <button
                 onClick={() => {
                   onDelete();

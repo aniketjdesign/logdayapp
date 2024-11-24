@@ -102,43 +102,49 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     const button = event.currentTarget;
     const rect = button.getBoundingClientRect();
     setMenuPosition({
-      top: rect.top + rect.height + 4, // 4px gap between button and menu
+      top: rect.top + rect.height + 4,
       right: window.innerWidth - rect.right
     });
     setShowMenu(prev => !prev);
   };
-  
 
   const handleAddExercises = (selectedExercises: Exercise[]) => {
     onShowExerciseModal(selectedExercises);
     setShowExerciseModal(false);
   };
 
-  const handleCompleteWorkout = () => {
-    setShowFinishConfirmation(false);
-    const endTime = new Date().toISOString();
-    const completedWorkoutData = {
-      ...workout,
-      name: workoutName,
-      endTime,
-      duration: new Date(endTime).getTime() - new Date(workout.startTime).getTime()
-    };
-    setCompletedWorkout(completedWorkoutData);
-    setShowWorkoutReview(true);
+  const handleCompleteWorkout = async () => {
+    try {
+      setShowFinishConfirmation(false);
+      const endTime = new Date().toISOString();
+      const completedWorkoutData = {
+        ...workout,
+        name: workoutName,
+        endTime,
+        duration: new Date(endTime).getTime() - new Date(workout.startTime).getTime()
+      };
+      
+      // First save the workout
+      await onCompleteWorkout();
+      
+      // Then show the review modal
+      setCompletedWorkout(completedWorkoutData);
+      setShowWorkoutReview(true);
+    } catch (error) {
+      console.error('Error completing workout:', error);
+      alert('Failed to complete workout. Please try again.');
+    }
   };
-
-  const handleCloseReview = async () => {
-    setShowWorkoutReview(false);
-    setCompletedWorkout(null);
-    clearWorkoutState();
-    await searchLogs('');
-    onCompleteWorkout();
-  };
+  
 
   const handleCancelWorkout = () => {
-    setShowCancelConfirmation(false);
-    clearWorkoutState();
-    onCancelWorkout();
+    try {
+      setShowCancelConfirmation(false);
+      onCancelWorkout();
+    } catch (error) {
+      console.error('Error canceling workout:', error);
+      alert('Failed to cancel workout. Please try again.');
+    }
   };
 
   const handleReorderExercises = (reorderedExercises: { exercise: Exercise }[]) => {
@@ -156,7 +162,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     return (
       <WorkoutReview
         workout={completedWorkout}
-        onClose={handleCloseReview}
+        onClose={() => {
+          setCompletedWorkout(null);
+          navigate('/');
+        }}
       />
     );
   }
@@ -319,12 +328,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               position: 'fixed',
               top: `${menuPosition.top}px`,
               right: `${menuPosition.right}px`,
-              maxHeight: 'calc(100vh - 64px)', // Prevent menu from going off screen
+              maxHeight: 'calc(100vh - 64px)',
               overflowY: 'auto'
             }}
             className="bg-white rounded-lg shadow-lg z-50 min-w-[200px] py-1"
           >
-
             <button
               onClick={() => {
                 setShowMenu(false);

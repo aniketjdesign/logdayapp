@@ -106,7 +106,6 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
 
   const handleGoToLogs = async () => {
     clearWorkoutState();
-    // Trigger a refresh of the logs before navigating
     await searchLogs('');
     onClose();
     navigate('/logs');

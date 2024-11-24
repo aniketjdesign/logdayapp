@@ -15,6 +15,10 @@ export interface WorkoutSet {
   weight?: number;
   comments: string;
   isPR: boolean;
+  // New set type flags
+  isWarmup: boolean;
+  isDropset: boolean;
+  isFailure: boolean;
   // Cardio specific metrics
   time?: string;
   distance?: number;

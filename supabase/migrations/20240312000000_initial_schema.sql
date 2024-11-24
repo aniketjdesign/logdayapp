@@ -26,7 +26,16 @@ CREATE INDEX IF NOT EXISTS workout_logs_exercises_idx ON workout_logs USING gin(
 ALTER TABLE workout_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_settings ENABLE ROW LEVEL SECURITY;
 
--- Create policies
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Users can view their own workout logs" ON workout_logs;
+DROP POLICY IF EXISTS "Users can insert their own workout logs" ON workout_logs;
+DROP POLICY IF EXISTS "Users can update their own workout logs" ON workout_logs;
+DROP POLICY IF EXISTS "Users can delete their own workout logs" ON workout_logs;
+DROP POLICY IF EXISTS "Users can view their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can insert their own settings" ON user_settings;
+DROP POLICY IF EXISTS "Users can update their own settings" ON user_settings;
+
+-- Create updated policies
 CREATE POLICY "Users can view their own workout logs"
     ON workout_logs FOR SELECT
     USING (auth.uid() = user_id);

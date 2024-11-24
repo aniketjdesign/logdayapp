@@ -22,7 +22,7 @@ interface WorkoutContextType {
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
-  searchLogs: (query: string) => void;
+  searchLogs: (query: string) => Promise<void>;
   clearWorkoutState: () => void;
   setCurrentPage: (page: number) => void;
 }
@@ -46,7 +46,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     try {
       const savedWorkout = localStorage.getItem(CURRENT_WORKOUT_KEY);
-
       if (savedWorkout) {
         setCurrentWorkout(JSON.parse(savedWorkout));
       }
@@ -75,19 +74,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     loadWorkouts();
   }, [user, currentPage]);
-
-  // Migrate localStorage data to Supabase
-  useEffect(() => {
-    const migrateData = async () => {
-      if (user) {
-        const { error } = await supabaseService.migrateLocalStorage();
-        if (error) {
-          console.error('Migration error:', error);
-        }
-      }
-    };
-    migrateData();
-  }, [user]);
 
   const startWorkout = (exercises: Exercise[], name: string = '') => {
     const workout: WorkoutLog = {
@@ -136,24 +122,28 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       duration
     };
 
-    const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
-    if (error) {
+    try {
+      const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
+      if (error) {
+        throw error;
+      }
+
+      // Clear current workout state immediately after successful save
+      localStorage.removeItem(CURRENT_WORKOUT_KEY);
+      localStorage.removeItem(WORKOUT_TIMER_KEY);
+      setCurrentWorkout(null);
+
+      // Refresh the logs
+      const { data, count } = await supabaseService.getWorkoutLogs(1);
+      setWorkoutLogs(data);
+      setTotalLogs(count);
+      setCurrentPage(1);
+      
+      return completedWorkout;
+    } catch (error) {
+      console.error('Error saving workout:', error);
       throw error;
     }
-
-    // Refresh the logs
-    const { data, count } = await supabaseService.getWorkoutLogs(1);
-    setWorkoutLogs(data);
-    setTotalLogs(count);
-    setCurrentPage(1);
-    
-    // Clear current workout and timer state
-    localStorage.removeItem(CURRENT_WORKOUT_KEY);
-    localStorage.removeItem(WORKOUT_TIMER_KEY);
-    setCurrentWorkout(null);
-    setCurrentView('logs');
-
-    return completedWorkout;
   };
 
   const updateWorkoutExercise = (exerciseId: string, data: WorkoutExercise) => {
@@ -204,19 +194,28 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteLog = async (logId: string) => {
-    const { error } = await supabaseService.deleteWorkoutLog(logId);
-    if (!error) {
+    try {
+      const { error } = await supabaseService.deleteWorkoutLog(logId);
+      if (error) throw error;
+
       // Refresh the logs
       const { data, count } = await supabaseService.getWorkoutLogs(currentPage);
       setWorkoutLogs(data);
       setTotalLogs(count);
+    } catch (error) {
+      console.error('Error deleting workout log:', error);
+      throw error;
     }
   };
 
   const searchLogs = async (query: string) => {
-    const { data, count } = await supabaseService.searchWorkoutLogs(query, currentPage);
-    setWorkoutLogs(data);
-    setTotalLogs(count);
+    try {
+      const { data, count } = await supabaseService.searchWorkoutLogs(query, currentPage);
+      setWorkoutLogs(data);
+      setTotalLogs(count);
+    } catch (error) {
+      console.error('Error searching workout logs:', error);
+    }
   };
 
   const clearWorkoutState = () => {

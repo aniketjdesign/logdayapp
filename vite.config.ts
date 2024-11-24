@@ -10,7 +10,7 @@ export default defineConfig({
     react(),
     // Only enable PWA in production or non-StackBlitz environments
     !isStackBlitz && VitePWA({
-      registerType: 'prompt',
+      registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Logday - Workout Tracker',
@@ -82,9 +82,6 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        clientsClaim: true,
-        skipWaiting: true,
-        cleanupOutdatedCaches: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -131,12 +128,12 @@ export default defineConfig({
         ]
       },
       devOptions: {
-        enabled: true // Enable in development for testing
+        enabled: false // Disable in development
       }
     })
   ].filter(Boolean),
   optimizeDeps: {
-    exclude: ['lucide-react'],
+    exclude: ['lucide-react']
   },
   build: {
     outDir: 'dist',
@@ -144,9 +141,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-        },
-      },
-    },
-  },
+          vendor: ['react', 'react-dom', 'react-router-dom']
+        }
+      }
+    }
+  }
 });

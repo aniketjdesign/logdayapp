@@ -57,6 +57,45 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
     return ['Weight', 'Goal', 'Actual'];
   };
 
+  const getSetIndicators = (set: WorkoutSet) => {
+    const indicators = [];
+    
+    if (set.isWarmup) {
+      indicators.push(
+        <span key="warmup" className="inline-flex items-center text-orange-600">
+          <div className="w-2 h-2 rounded-full bg-orange-500 mr-1" />
+          Warmup
+        </span>
+      );
+    }
+    if (set.isPR) {
+      indicators.push(
+        <span key="pr" className="inline-flex items-center text-yellow-600">
+          <div className="w-2 h-2 rounded-full bg-yellow-400 mr-1" />
+          PR
+        </span>
+      );
+    }
+    if (set.isFailure) {
+      indicators.push(
+        <span key="failure" className="inline-flex items-center text-red-600">
+          <div className="w-2 h-2 rounded-full bg-red-500 mr-1" />
+          Failure
+        </span>
+      );
+    }
+    if (set.isDropset) {
+      indicators.push(
+        <span key="dropset" className="inline-flex items-center text-purple-600">
+          <div className="w-2 h-2 rounded-full bg-purple-500 mr-1" />
+          Dropset
+        </span>
+      );
+    }
+    
+    return indicators;
+  };
+
   return (
     <div className="p-4 border-b last:border-b-0">
       <h4 className="font-medium text-gray-900 mb-3">{exercise.name}</h4>
@@ -70,7 +109,7 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
               {getHeaders().map(header => (
                 <th key={header} className="pr-4 font-medium">{header}</th>
               ))}
-              <th className="pr-4 font-medium">Notes</th>
+              <th className="pr-4 font-medium">Notes & Indicators</th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -83,15 +122,10 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
                   </td>
                 ))}
                 <td className="py-2 pr-4">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {getSetIndicators(set)}
                     {set.comments && (
                       <span className="text-gray-600">{set.comments}</span>
-                    )}
-                    {set.isPR && (
-                      <span className="inline-flex items-center text-yellow-600">
-                        <Medal size={16} className="mr-1" />
-                        PR
-                      </span>
                     )}
                   </div>
                 </td>
@@ -107,17 +141,16 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
           <div 
             key={set.id}
             className={`p-3 rounded-lg ${
-              set.isPR ? 'bg-yellow-50 border border-yellow-100' : 'bg-gray-50'
+              set.isWarmup ? 'bg-orange-50 border border-orange-100' :
+              set.isPR ? 'bg-yellow-50 border border-yellow-100' :
+              'bg-gray-50'
             }`}
           >
             <div className="flex justify-between items-start mb-2">
               <span className="font-medium text-gray-700">Set {index + 1}</span>
-              {set.isPR && (
-                <span className="inline-flex items-center text-yellow-600 text-sm">
-                  <Medal size={14} className="mr-1" />
-                  PR
-                </span>
-              )}
+              <div className="flex gap-2">
+                {getSetIndicators(set)}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {getHeaders().map(header => (
