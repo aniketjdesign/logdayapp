@@ -30,7 +30,7 @@ export const SupersetModal: React.FC<SupersetModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
-      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl animate-slide-up max-h-[85vh] flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl animate-slide-up h-[75vh] max-h-[85vh] flex flex-col">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="text-lg font-bold">Select Exercise for Superset</h3>
           <button

@@ -48,7 +48,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 touch-none">
-      <div className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-xl flex flex-col animate-slide-up">
+      <div className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-xl flex flex-col animate-slide-up overflow-auto">
         <div className="flex items-center justify-between p-4 border-b bg-white">
           <h2 className="text-lg font-bold select-none">Reorder Exercises</h2>
           <button
