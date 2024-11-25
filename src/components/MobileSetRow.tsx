@@ -58,6 +58,17 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   // Check if any non-warmup type is selected
   const hasNonWarmupType = set.isPR || set.isDropset || set.isFailure;
 
+  const handlePerformedRepsChange = (value: string) => {
+    onUpdate('performedReps', value);
+  };
+
+  const handlePerformedRepsBlur = () => {
+    // Only trigger rest timer if there's a valid value
+    if (set.performedReps && onSetComplete) {
+      onSetComplete();
+    }
+  };
+
   const NewTag = () => (
     <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-600">
       NEW
@@ -88,14 +99,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       {isNew && <NewTag />}
     </button>
   );
-
-  const handlePerformedRepsChange = (value: string) => {
-    onUpdate('performedReps', value);
-    // Only trigger onSetComplete if we have a valid number of reps
-    if (value && onSetComplete) {
-      onSetComplete();
-    }
-  };
 
   return (
     <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 items-center py-1 relative">
@@ -162,6 +165,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             className={getColumnClass(true)}
             value={set.performedReps || ''}
             onChange={(e) => handlePerformedRepsChange(e.target.value)}
+            onBlur={handlePerformedRepsBlur}
           />
         ) : (
           <div className={getColumnClass(false)}>-</div>
@@ -222,6 +226,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           className={getColumnClass(true)}
           value={set.performedReps}
           onChange={(e) => handlePerformedRepsChange(e.target.value)}
+          onBlur={handlePerformedRepsBlur}
         />
       )}
 
