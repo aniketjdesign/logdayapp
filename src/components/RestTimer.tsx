@@ -92,7 +92,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
             <div className="flex items-center justify-center mb-6">
               <button
                 onClick={() => adjustTime(-10)}
-                className="w-16 h-100 bg-gray-100 rounded-2xl flex items-center justify-center active:bg-gray-200 transition-colors"
+                className="w-16 h-20 bg-gray-100 rounded-2xl flex items-center justify-center active:bg-gray-200 transition-colors"
               >
                 <Minus size={20} className="text-gray-700" />
               </button>
@@ -103,7 +103,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
 
               <button
                 onClick={() => adjustTime(10)}
-                className="w-16 h-full bg-gray-100 rounded-2xl flex items-center justify-center active:bg-gray-200 transition-colors"
+                className="w-16 h-20 bg-gray-100 rounded-2xl flex items-center justify-center active:bg-gray-200 transition-colors"
               >
                 <Plus size={20} className="text-gray-700" />
               </button>
