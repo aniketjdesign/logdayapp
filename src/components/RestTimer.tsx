@@ -8,7 +8,7 @@ interface RestTimerProps {
 }
 
 const motivationalMessages = [
-  'Woah that was a great! Rest up 💪',
+  'Yeahhh Buddy, Lightweight! Rest up 💪',
   'Great work! Take a breather 🔥',
   'Beast mode! Time to recover 💯',
   'Crushing it! Rest and reload 🚀',
