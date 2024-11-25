@@ -8,6 +8,7 @@ interface MobileSetRowProps {
   onUpdate: (field: string, value: any) => void;
   onDelete: () => void;
   onOpenNoteModal: () => void;
+  onSetComplete?: () => void;
 }
 
 export const MobileSetRow: React.FC<MobileSetRowProps> = ({
@@ -16,6 +17,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onUpdate,
   onDelete,
   onOpenNoteModal,
+  onSetComplete,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const isCardio = exercise.muscleGroup === 'Cardio';
@@ -87,6 +89,14 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     </button>
   );
 
+  const handlePerformedRepsChange = (value: string) => {
+    onUpdate('performedReps', value);
+    // Only trigger onSetComplete if we have a valid number of reps
+    if (value && onSetComplete) {
+      onSetComplete();
+    }
+  };
+
   return (
     <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 items-center py-1 relative">
       <div className="flex items-center">
@@ -151,7 +161,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             placeholder="Reps"
             className={getColumnClass(true)}
             value={set.performedReps || ''}
-            onChange={(e) => onUpdate('performedReps', e.target.value)}
+            onChange={(e) => handlePerformedRepsChange(e.target.value)}
           />
         ) : (
           <div className={getColumnClass(false)}>-</div>
@@ -211,7 +221,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           placeholder="0"
           className={getColumnClass(true)}
           value={set.performedReps}
-          onChange={(e) => onUpdate('performedReps', e.target.value)}
+          onChange={(e) => handlePerformedRepsChange(e.target.value)}
         />
       )}
 

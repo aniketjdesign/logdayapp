@@ -5,6 +5,10 @@ export interface Exercise {
   name: string;
   muscleGroup: MuscleGroup;
   metrics?: ExerciseMetrics;
+  restTimer?: {
+    enabled: boolean;
+    duration: number;
+  };
 }
 
 export interface WorkoutSet {

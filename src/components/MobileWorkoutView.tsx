@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2 } from 'lucide-react';
-import { WorkoutLog, Exercise, WorkoutExercise } from '../types/workout';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock } from 'lucide-react';
+import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
 import { ConfirmationModal } from './ConfirmationModal';
@@ -9,6 +9,7 @@ import { WorkoutReview } from './WorkoutReview';
 import { CircularProgress } from './CircularProgress';
 import { ExerciseReorderModal } from './ExerciseReorderModal';
 import { SupersetModal } from './SupersetModal';
+import { RestTimer } from './RestTimer';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
@@ -61,8 +62,17 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-  const { clearWorkoutState, searchLogs, setCurrentWorkout } = useWorkout();
-  const { weightUnit } = useSettings();
+  const [showRestTimer, setShowRestTimer] = useState(false);
+  // Initialize rest timer as enabled for all exercises by default
+  const [restTimerEnabled, setRestTimerEnabled] = useState<{ [key: string]: boolean}>(() => {
+    const initialState: { [key: string]: boolean } = {};
+    workout.exercises.forEach(({ exercise }) => {
+      initialState[exercise.id] = true;
+    });
+    return initialState;
+  });
+
+  const { setCurrentWorkout } = useWorkout();
   const navigate = useNavigate();
 
   const formatTime = (seconds: number) => {
@@ -106,8 +116,20 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     setActiveExerciseMenu(activeExerciseMenu === exerciseId ? null : exerciseId);
   };
 
+  const handleSetComplete = (exerciseId: string) => {
+    if (restTimerEnabled[exerciseId]) {
+      setShowRestTimer(true);
+    }
+  };
+
+  const toggleRestTimer = (exerciseId: string) => {
+    setRestTimerEnabled(prev => ({
+      ...prev,
+      [exerciseId]: !prev[exerciseId]
+    }));
+  };
+
   const handleSuperset = (exerciseId: string) => {
-    // If already in a superset, remove it
     const exercise = workout.exercises.find(ex => ex.exercise.id === exerciseId);
     if (exercise?.supersetWith) {
       const updatedExercises = workout.exercises.map(ex => {
@@ -124,7 +146,6 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       });
       setActiveExerciseMenu(null);
     } else {
-      // Start new superset
       setSelectedExerciseId(exerciseId);
       setActiveExerciseMenu(null);
       setShowSupersetModal(true);
@@ -174,23 +195,51 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     }
   };
 
-  const stats = getWorkoutStats();
-
-  if (showWorkoutReview && completedWorkout) {
-    return (
-      <WorkoutReview
-        workout={completedWorkout}
-        onClose={() => {
-          setCompletedWorkout(null);
-          navigate('/');
+  const renderExerciseMenu = (exerciseId: string) => (
+    <div className="absolute right-4 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+      <button
+        onClick={() => {
+          toggleRestTimer(exerciseId);
+          setActiveExerciseMenu(null);
         }}
-      />
-    );
-  }
+        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
+      >
+        <Clock size={16} className="text-blue-500" />
+        <span>
+          {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
+        </span>
+      </button>
+      <button
+        onClick={() => {
+          handleSuperset(exerciseId);
+        }}
+        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
+      >
+        <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+        <span>
+          {workout.exercises.find(ex => ex.exercise.id === exerciseId)?.supersetWith
+            ? 'Remove Superset'
+            : 'Superset with'}
+        </span>
+      </button>
+      <button
+        onClick={() => {
+          onDeleteExercise(exerciseId);
+          setActiveExerciseMenu(null);
+        }}
+        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-red-600"
+      >
+        <Trash2 size={16} className="mr-2" />
+        <span>Remove Exercise</span>
+      </button>
+    </div>
+  );
+
+  const stats = getWorkoutStats();
 
   return (
     <div className="md:hidden min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
         {/* First Row - Workout Name and Actions */}
         <div className="flex items-center justify-between p-4 gap-4">
@@ -256,7 +305,6 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
           const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
 
-          // If this is the second part of a superset, skip rendering (it's handled with the first part)
           if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
             return null;
           }
@@ -269,7 +317,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                     <h3 className="font-semibold">{exercise.name}</h3>
                     {supersetPartner && (
                       <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
-                         <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+                        <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
                         Superset w/ {supersetPartner.exercise.name}
                       </div>
                     )}
@@ -282,57 +330,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                   </button>
                 </div>
 
-                {activeExerciseMenu === exercise.id && (
-                 <div className="absolute right-4 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
-                 <button
-                   onClick={() => {
-                     handleSuperset(exercise.id);
-                   }}
-                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
-                 >
-                  <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
-                   <span>
-                     {supersetWith ? 'Remove Superset' : 'Superset with'}
-                   </span>
-                 </button>
-                 <button
-                   onClick={() => {
-                     onDeleteExercise(exercise.id);
-                     setActiveExerciseMenu(null);
-                   }}
-                   className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-red-600"
-                 >
-                   <Trash2 size={16} className="mr-2" />
-                   <span>Remove Exercise</span>
-                 </button>
-               </div>
-                )}
+                {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
               </div>
 
               <div className="p-4">
-                {/* Column Headers */}
-                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
-                  <div>SET</div>
-                  {isCardio || isTimeBasedCore ? (
-                    <>
-                      <div>TIME</div>
-                      {exercise.metrics?.distance && <div>DISTANCE</div>}
-                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
-                      {exercise.metrics?.incline && <div>INCLINE</div>}
-                      {exercise.metrics?.pace && <div>PACE</div>}
-                      {exercise.metrics?.reps && <div>REPS</div>}
-                    </>
-                  ) : (
-                    <>
-                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                      <div>GOAL</div>
-                      <div>DONE</div>
-                    </>
-                  )}
-                  <div></div>
-                </div>
-
-                {/* Sets for current exercise */}
                 {sets.map((set) => (
                   <MobileSetRow
                     key={set.id}
@@ -346,10 +347,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                       exerciseName: exercise.name,
                       setNumber: set.setNumber
                     })}
+                    onSetComplete={() => handleSetComplete(exercise.id)}
                   />
                 ))}
 
-                {/* Render superset partner if exists */}
                 {!supersetPartner && (
                   <button
                     onClick={() => onAddSet(exercise.id)}
@@ -360,7 +361,6 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                   </button>
                 )}
 
-                {/* Show superset section with Add Set buttons for both exercises */}
                 {supersetPartner && (
                   <>
                     <button
@@ -388,6 +388,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                           exerciseName: supersetPartner.exercise.name,
                           setNumber: set.setNumber
                         })}
+                        onSetComplete={() => handleSetComplete(supersetPartner.exercise.id)}
                       />
                     ))}
                     <button
@@ -441,16 +442,16 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         />
       )}
 
-          {showExerciseModal && (
-      <ExerciseSelectionModal
-        onClose={() => setShowExerciseModal(false)}
-        onAdd={(selectedExercises) => {
-          onShowExerciseModal(selectedExercises);
-          setShowExerciseModal(false); // Close the modal after adding exercises
-        }}
-        currentExercises={workout.exercises.map(e => e.exercise)}
-      />
-    )}
+      {showExerciseModal && (
+        <ExerciseSelectionModal
+          onClose={() => setShowExerciseModal(false)}
+          onAdd={(selectedExercises) => {
+            onShowExerciseModal(selectedExercises);
+            setShowExerciseModal(false);
+          }}
+          currentExercises={workout.exercises.map(e => e.exercise)}
+        />
+      )}
 
       {showSupersetModal && selectedExerciseId && (
         <SupersetModal
@@ -498,6 +499,14 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />
 
+      {/* Rest Timer */}
+      <RestTimer
+        isOpen={showRestTimer}
+        onClose={() => setShowRestTimer(false)}
+        defaultDuration={120}
+      />
+
+      {/* Menu */}
       {showMenu && (
         <>
           <div 
