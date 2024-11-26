@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Search, Filter, X } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, X } from 'lucide-react';
 import { Exercise, MuscleGroup } from '../types/workout';
 import { exercises } from '../data/exercises';
 
@@ -17,6 +17,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | 'All'>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
 
   const muscleGroups: ('All' | MuscleGroup)[] = [
     'All',
@@ -31,8 +32,19 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
     'Glutes',
     'Calves',
     'Core',
-    'Cardio'
+    'Cardio',
+    'Olympic Lifts'
   ];
+
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    exercises.forEach(exercise => {
+      if (exercise.category) {
+        cats.add(exercise.category);
+      }
+    });
+    return ['All', ...Array.from(cats)].sort();
+  }, []);
 
   const toggleExerciseSelection = (exercise: Exercise) => {
     setSelectedExercises(prev => 
@@ -53,10 +65,13 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
       const searchTerms = search.toLowerCase().split(' ').filter(term => term.length > 0);
       const matchesSearch = searchTerms.length === 0 || searchTerms.every(term =>
         exercise.name.toLowerCase().includes(term) ||
-        exercise.muscleGroup.toLowerCase().includes(term)
+        exercise.muscleGroup.toLowerCase().includes(term) ||
+        exercise.category?.toLowerCase().includes(term) ||
+        exercise.instruction?.toLowerCase().includes(term)
       );
       const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
-      return matchesSearch && matchesMuscleGroup;
+      const matchesCategory = selectedCategory === 'All' || exercise.category === selectedCategory;
+      return matchesSearch && matchesMuscleGroup && matchesCategory;
     });
 
   return (
@@ -86,21 +101,42 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
               />
             </div>
             
-            <div className="flex items-center space-x-2 overflow-x-auto pb-2">
-              <Filter size={20} className="text-gray-500 flex-shrink-0" />
-              {muscleGroups.map(group => (
-                <button
-                  key={group}
-                  onClick={() => setSelectedMuscleGroup(group)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0
-                    ${selectedMuscleGroup === group
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                >
-                  {group}
-                </button>
-              ))}
+            <div className="flex flex-col gap-4">
+              {/* Muscle Groups Filter */}
+              <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+                {muscleGroups.map(group => (
+                  <button
+                    key={group}
+                    onClick={() => setSelectedMuscleGroup(group)}
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors
+                      ${selectedMuscleGroup === group
+                        ? 'bg-blue-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                  >
+                    {group}
+                  </button>
+                ))}
+              </div>
+
+              {/* Categories Filter */}
+              {categories.length > 1 && (
+                <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+                  {categories.map(category => (
+                    <button
+                      key={category}
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors
+                        ${selectedCategory === category
+                          ? 'bg-green-500 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }`}
+                    >
+                      {category}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -116,7 +152,16 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
                   }`}
               >
                 <div className="font-medium">{exercise.name}</div>
-                <div className="text-sm text-gray-500">{exercise.muscleGroup}</div>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <span className="text-sm text-gray-600">
+                    {exercise.instruction || exercise.muscleGroup}
+                  </span>
+                  {exercise.category && (
+                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                      {exercise.category}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -161,21 +206,25 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
             />
           </div>
 
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
-            <Filter size={18} className="text-gray-500 flex-shrink-0" />
-            {muscleGroups.map(group => (
-              <button
-                key={group}
-                onClick={() => setSelectedMuscleGroup(group)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0
-                  ${selectedMuscleGroup === group
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-              >
-                {group}
-              </button>
-            ))}
+          <div className="flex flex-col gap-4">
+            {/* Muscle Groups Filter */}
+            <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+              {muscleGroups.map(group => (
+                <button
+                  key={group}
+                  onClick={() => setSelectedMuscleGroup(group)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors
+                    ${selectedMuscleGroup === group
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                >
+                  {group}
+                </button>
+              ))}
+            </div>
+
+
           </div>
         </div>
 
@@ -192,7 +241,16 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
                   }`}
               >
                 <div className="font-medium">{exercise.name}</div>
-                <div className="text-sm text-gray-500">{exercise.muscleGroup}</div>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <span className="text-sm text-gray-600">
+                    {exercise.instruction || exercise.muscleGroup}
+                  </span>
+                  {exercise.category && (
+                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                      {exercise.category}
+                    </span>
+                  )}
+                </div>
               </div>
             ))}
           </div>

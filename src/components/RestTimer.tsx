@@ -23,7 +23,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   const [message] = useState(
     () => motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)]
   );
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<number>();
   const initialDurationRef = useRef(defaultDuration);
 
   // Reset timer when opened
@@ -31,44 +31,48 @@ export const RestTimer: React.FC<RestTimerProps> = ({
     if (isOpen) {
       setTimeLeft(defaultDuration);
       initialDurationRef.current = defaultDuration;
+      startTimer(defaultDuration);
     }
+
+    return () => {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+      }
+    };
   }, [isOpen, defaultDuration]);
 
-  // Handle timer countdown
-  useEffect(() => {
-    if (isOpen && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current);
-            onClose();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      return () => {
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-        }
-      };
+  const startTimer = (duration: number) => {
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
     }
-  }, [isOpen, onClose, timeLeft]);
+
+    const startTime = Date.now();
+    timerRef.current = window.setInterval(() => {
+      const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+      const remaining = Math.max(0, duration - elapsedSeconds);
+      
+      setTimeLeft(remaining);
+      
+      if (remaining <= 0) {
+        if (timerRef.current) {
+          window.clearInterval(timerRef.current);
+        }
+        onClose();
+      }
+    }, 200);
+  };
+
+  const adjustTime = (seconds: number) => {
+    const newDuration = Math.max(0, Math.min(timeLeft + seconds, 600)); // Max 10 minutes
+    setTimeLeft(newDuration);
+    initialDurationRef.current = Math.max(initialDurationRef.current, newDuration);
+    startTimer(newDuration);
+  };
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const adjustTime = (seconds: number) => {
-    const newTime = Math.max(0, Math.min(timeLeft + seconds, 600)); // Max 10 minutes
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-    }
-    setTimeLeft(newTime);
-    initialDurationRef.current = Math.max(initialDurationRef.current, newTime);
   };
 
   const progress = ((initialDurationRef.current - timeLeft) / initialDurationRef.current) * 100;
@@ -112,7 +116,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
             {/* Progress Bar */}
             <div className="w-full h-3 bg-gray-200 rounded-full mb-6 overflow-hidden">
               <div
-                className="h-full bg-blue-500 transition-all duration-1000 ease-linear rounded-full"
+                className="h-full bg-blue-500 transition-all duration-200 ease-linear rounded-full"
                 style={{ width: `${100 - progress}%` }}
               />
             </div>

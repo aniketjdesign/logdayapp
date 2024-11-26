@@ -1,7 +1,42 @@
 import { Exercise } from '../types/workout';
 
 export const exercises: Exercise[] = [
-  // Cardio
+  // Olympic Lifts
+  { id: 'ol1', name: 'Full Snatch', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Snatch' },
+  { id: 'ol2', name: 'Power Snatch', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Snatch - catch above parallel' },
+  { id: 'ol3', name: 'Hang Snatch', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Snatch - start from the hang position' },
+  { id: 'ol4', name: 'Snatch Balance', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Drop into an overhead squat from the bar on the back' },
+  { id: 'ol5', name: 'Overhead Squat', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Foundation for the snatch' },
+  { id: 'ol6', name: 'Full Clean', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean' },
+  { id: 'ol7', name: 'Power Clean', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean - catch above parallel' },
+  { id: 'ol8', name: 'Hang Clean', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean - start from the hang position' },
+  { id: 'ol9', name: 'Split Jerk', muscleGroup: 'Olympic Lifts', category: 'Jerk', instruction: 'Jerk - one foot forward, one back' },
+  { id: 'ol10', name: 'Power Jerk', muscleGroup: 'Olympic Lifts', category: 'Jerk', instruction: 'Jerk - catch with feet parallel' },
+  { id: 'ol11', name: 'Push Jerk', muscleGroup: 'Olympic Lifts', category: 'Jerk', instruction: 'Jerk - dip and drive with less depth' },
+  { id: 'ol12', name: 'Clean and Press', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean with overhead press instead of a jerk' },
+  { id: 'ol13', name: 'Snatch Pull', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Pull the bar high after extension - snatch grip' },
+  { id: 'ol14', name: 'Snatch High Pull', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Focus on pulling the bar high - snatch grip' },
+  { id: 'ol15', name: 'Snatch Deadlift', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Deadlift with snatch grip and form' },
+  { id: 'ol16', name: 'Clean Pull', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Pull the bar high after extension - clean grip' },
+  { id: 'ol17', name: 'Clean High Pull', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Focus on pulling the bar high - clean grip' },
+  { id: 'ol18', name: 'Clean Deadlift', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Deadlift with clean grip and form' },
+  { id: 'ol19', name: 'Snatch from Deficit', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Snatch - bar starts lower than usual' },
+  { id: 'ol20', name: 'Clean from Deficit', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean - bar starts lower than usual' },
+  { id: 'ol21', name: 'Snatch from Blocks', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Bar starts on blocks instead of the floor - snatch grip' },
+  { id: 'ol22', name: 'Clean from Blocks', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Bar starts on blocks instead of the floor - clean grip' },
+  { id: 'ol23', name: 'Muscle Snatch', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Snatch - pull without rebending knees' },
+  { id: 'ol24', name: 'Drop Snatch', muscleGroup: 'Olympic Lifts', category: 'Snatch', instruction: 'Drop under the bar into an overhead squat' },
+  { id: 'ol25', name: 'Muscle Clean', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Clean - pull without rebending knees' },
+  { id: 'ol26', name: 'Tall Clean', muscleGroup: 'Olympic Lifts', category: 'Clean', instruction: 'Emphasizes quick drop under the bar' },
+  { id: 'ol27', name: 'Jerk Balance', muscleGroup: 'Olympic Lifts', category: 'Jerk', instruction: 'Focus on footwork and balance in split jerk' },
+  { id: 'ol28', name: 'Jerk Recovery', muscleGroup: 'Olympic Lifts', category: 'Jerk', instruction: 'Stabilize in split position with bar overhead' },
+  { id: 'ol29', name: 'Push Press', muscleGroup: 'Olympic Lifts', category: 'Press', instruction: 'Strict dip and drive overhead without rebending knees' },
+  { id: 'ol30', name: 'Front Squat', muscleGroup: 'Olympic Lifts', category: 'Squat', instruction: 'Supports clean recovery' },
+  { id: 'ol31', name: 'Romanian Deadlift (RDL)', muscleGroup: 'Olympic Lifts', category: 'Deadlift', instruction: 'Posterior chain development' },
+  { id: 'ol32', name: 'Overhead Barbell Hold', muscleGroup: 'Olympic Lifts', category: 'Stability', instruction: 'Improves stability for snatch and jerk' },
+  { id: 'ol33', name: 'Overhead Barbell Walk', muscleGroup: 'Olympic Lifts', category: 'Stability', instruction: 'Develops overhead strength and mobility' },
+
+
   { 
     id: 'crd1', 
     name: 'Rowing', 

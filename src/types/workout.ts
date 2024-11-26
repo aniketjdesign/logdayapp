@@ -4,6 +4,8 @@ export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
+  category?: string;
+  instruction?: string;
   metrics?: ExerciseMetrics;
   restTimer?: {
     enabled: boolean;
@@ -58,7 +60,8 @@ export type MuscleGroup =
   | 'Calves'
   | 'Core'
   | 'Cardio'
-  | 'Forearms';
+  | 'Forearms'
+  | 'Olympic Lifts';
 
 export interface ExerciseMetrics {
   time: boolean;

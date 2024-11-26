@@ -62,6 +62,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+    const { weightUnit } = useSettings();
   const [showRestTimer, setShowRestTimer] = useState(false);
   // Initialize rest timer as enabled for all exercises by default
   const [restTimerEnabled, setRestTimerEnabled] = useState<{ [key: string]: boolean}>(() => {
@@ -298,7 +299,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </div>
 
       {/* Exercise List */}
-      <div className="mt-32 px-4 space-y-6 pb-32">
+      <div className="mt-32 px-4 space-y-6 pt-4 pb-32">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           const isBodyweight = exercise.name.includes('(Bodyweight)');
           const isCardio = exercise.muscleGroup === 'Cardio';
@@ -333,7 +334,31 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                 {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
               </div>
 
-              <div className="p-4">
+
+
+              
+  <div className="p-4">
+                {/* Column Headers */}
+                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
+                  <div>SET</div>
+                  {isCardio || isTimeBasedCore ? (
+                    <>
+                      <div>TIME</div>
+                      {exercise.metrics?.distance && <div>DISTANCE</div>}
+                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
+                      {exercise.metrics?.incline && <div>INCLINE</div>}
+                      {exercise.metrics?.pace && <div>PACE</div>}
+                      {exercise.metrics?.reps && <div>REPS</div>}
+                    </>
+                  ) : (
+                    <>
+                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                      <div>GOAL</div>
+                      <div>DONE</div>
+                    </>
+                  )}
+                  <div></div>
+                </div>
                 {sets.map((set) => (
                   <MobileSetRow
                     key={set.id}

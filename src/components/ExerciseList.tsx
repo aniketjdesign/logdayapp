@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Plus, ArrowLeft } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
 import { Exercise, MuscleGroup } from '../types/workout';
 import { exercises } from '../data/exercises';
 import { useWorkout } from '../context/WorkoutContext';
@@ -11,6 +11,7 @@ import { InstallAppToast } from './InstallAppToast';
 export const ExerciseList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | 'All'>('All');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const navigate = useNavigate();
   const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout } = useWorkout();
 
@@ -27,8 +28,19 @@ export const ExerciseList: React.FC = () => {
     'Glutes',
     'Calves',
     'Core',
-    'Cardio'
+    'Cardio',
+    'Olympic Lifts'
   ];
+
+  const categories = useMemo(() => {
+    const cats = new Set<string>();
+    exercises.forEach(exercise => {
+      if (exercise.category) {
+        cats.add(exercise.category);
+      }
+    });
+    return ['All', ...Array.from(cats)].sort();
+  }, []);
 
   const filteredExercises = useMemo(() => {
     const searchTerms = search.toLowerCase().split(' ').filter(term => term.length > 0);
@@ -36,12 +48,15 @@ export const ExerciseList: React.FC = () => {
     return exercises.filter(exercise => {
       const matchesSearch = searchTerms.length === 0 || searchTerms.every(term =>
         exercise.name.toLowerCase().includes(term) ||
-        exercise.muscleGroup.toLowerCase().includes(term)
+        exercise.muscleGroup.toLowerCase().includes(term) ||
+        exercise.category?.toLowerCase().includes(term) ||
+        exercise.instruction?.toLowerCase().includes(term)
       );
       const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
-      return matchesSearch && matchesMuscleGroup;
+      const matchesCategory = selectedCategory === 'All' || exercise.category === selectedCategory;
+      return matchesSearch && matchesMuscleGroup && matchesCategory;
     });
-  }, [search, selectedMuscleGroup]);
+  }, [search, selectedMuscleGroup, selectedCategory]);
 
   const handleStartWorkout = () => {
     if (selectedExercises.length > 0 && !currentWorkout) {
@@ -87,21 +102,23 @@ export const ExerciseList: React.FC = () => {
           </button>
         </div>
         
-        <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin mt-4">
-          <Filter size={18} className="text-gray-500 flex-shrink-0" />
-          {muscleGroups.map(group => (
-            <button
-              key={group}
-              onClick={() => setSelectedMuscleGroup(group)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors
-                ${selectedMuscleGroup === group
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
-            >
-              {group}
-            </button>
-          ))}
+        <div className="flex flex-col gap-4 mt-4">
+          {/* Muscle Groups Filter */}
+          <div className="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-thin">
+            {muscleGroups.map(group => (
+              <button
+                key={group}
+                onClick={() => setSelectedMuscleGroup(group)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap flex-shrink-0 transition-colors
+                  ${selectedMuscleGroup === group
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+              >
+                {group}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -127,7 +144,16 @@ export const ExerciseList: React.FC = () => {
             }`}
           >
             <h3 className="font-medium text-gray-900 text-sm sm:text-base">{exercise.name}</h3>
-            <span className="text-xs sm:text-sm text-gray-500">{exercise.muscleGroup}</span>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <span className="text-xs sm:text-sm text-gray-500">
+                {exercise.instruction || exercise.muscleGroup}
+              </span>
+              {exercise.category && (
+                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                  {exercise.category}
+                </span>
+              )}
+            </div>
           </div>
         ))}
       </div>
