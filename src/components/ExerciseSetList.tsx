@@ -25,7 +25,7 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
           : `${weight} ${weightUnit}`;
       case 'Goal':
         return set.targetReps || '-';
-      case 'Actual':
+      case 'Done':
         return set.performedReps || '-';
       case 'Time':
         return set.time || '-';
