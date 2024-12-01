@@ -125,7 +125,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                     className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center cursor-pointer"
                   >
                     <Play size={16} className="mr-2" />
-                    Restart Workout
+                    Repeat Workout
                   </div>
                   <div
                     onClick={() => {
