@@ -62,16 +62,25 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-    const { weightUnit } = useSettings();
+  const { weightUnit } = useSettings();
+  const [workoutRestTimer, setWorkoutRestTimer] = useState<boolean>(true);
   const [showRestTimer, setShowRestTimer] = useState(false);
   // Initialize rest timer as enabled for all exercises by default
   const [restTimerEnabled, setRestTimerEnabled] = useState<{ [key: string]: boolean}>(() => {
     const initialState: { [key: string]: boolean } = {};
     workout.exercises.forEach(({ exercise }) => {
-      initialState[exercise.id] = true;
+      // Use the saved state from workout if available, otherwise default to true
+      initialState[exercise.id] = workout.restTimerSettings?.[exercise.id] ?? true;
     });
     return initialState;
   });
+  
+  // Initialize workout-level rest timer from saved state
+  useEffect(() => {
+    if (workout.workoutRestTimer !== undefined) {
+      setWorkoutRestTimer(workout.workoutRestTimer);
+    }
+  }, [workout.workoutRestTimer]);
 
   const { setCurrentWorkout } = useWorkout();
   const navigate = useNavigate();
@@ -118,16 +127,34 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const handleSetComplete = (exerciseId: string) => {
-    if (restTimerEnabled[exerciseId]) {
+    if (workoutRestTimer && restTimerEnabled[exerciseId]) {
       setShowRestTimer(true);
     }
   };
 
   const toggleRestTimer = (exerciseId: string) => {
-    setRestTimerEnabled(prev => ({
-      ...prev,
-      [exerciseId]: !prev[exerciseId]
-    }));
+    const newSettings = {
+      ...restTimerEnabled,
+      [exerciseId]: !restTimerEnabled[exerciseId]
+    };
+    setRestTimerEnabled(newSettings);
+    
+    // Update workout state to persist settings
+    setCurrentWorkout({
+      ...workout,
+      restTimerSettings: newSettings
+    });
+  };
+  
+  const toggleWorkoutRestTimer = () => {
+    const newValue = !workoutRestTimer;
+    setWorkoutRestTimer(newValue);
+    
+    // Update workout state to persist the setting
+    setCurrentWorkout({
+      ...workout,
+      workoutRestTimer: newValue
+    });
   };
 
   const handleSuperset = (exerciseId: string) => {
@@ -203,9 +230,12 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           toggleRestTimer(exerciseId);
           setActiveExerciseMenu(null);
         }}
-        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
+        className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 ${
+          !workoutRestTimer ? 'opacity-50 cursor-not-allowed' : ''
+        }`}
+        disabled={!workoutRestTimer}
       >
-        <Clock size={16} className="text-blue-500" />
+        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-blue-500" : "text-gray-400"} />
         <span>
           {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
         </span>
@@ -334,10 +364,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                 {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
               </div>
 
-
-
-              
-  <div className="p-4">
+              <div className="p-4">
                 {/* Column Headers */}
                 <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
                   <div>SET</div>
@@ -588,6 +615,18 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               <span className="text-sm font-medium">Reorder Exercises</span>
             </button>
             <div className="w-full h-px bg-gray-100"/>
+            <button
+              onClick={() => {
+                toggleWorkoutRestTimer();
+                setShowMenu(false);
+              }}
+              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
+            >
+              <Clock size={18} className={`mr-3 ${workoutRestTimer ? "text-gray-600" : "text-gray-600"}`} />
+              <span className="text-sm font-medium">
+                {workoutRestTimer ? 'Disable Rest Timers' : 'Enable Rest Timers'}
+              </span>
+            </button>
             <button
               onClick={() => {
                 setShowMenu(false);

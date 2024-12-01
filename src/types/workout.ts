@@ -46,6 +46,8 @@ export interface WorkoutLog {
   startTime: string;
   endTime: string;
   duration: number;
+  restTimerSettings?: { [key: string]: boolean };
+  workoutRestTimer?: boolean;
 }
 
 export type MuscleGroup = 
