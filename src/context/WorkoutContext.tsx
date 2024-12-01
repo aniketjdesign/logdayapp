@@ -15,7 +15,7 @@ interface WorkoutContextType {
   currentView: View;
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
-  startWorkout: (exercises: Exercise[], name?: string) => void;
+  startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => void;
   completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
@@ -75,11 +75,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadWorkouts();
   }, [user, currentPage]);
 
-  const startWorkout = (exercises: Exercise[], name: string = '') => {
-    const workout: WorkoutLog = {
-      id: generateUUID(),
-      name,
-      exercises: exercises.map(exercise => ({
+  const startWorkout = (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
+    let workoutExercises;
+    
+    if (existingExercises) {
+      workoutExercises = existingExercises;
+    } else {
+      workoutExercises = exercises.map(exercise => ({
         exercise,
         sets: [{ 
           id: generateUUID(), 
@@ -88,13 +90,23 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
           performedReps: '', 
           weight: 0, 
           comments: '', 
-          isPR: false 
+          isPR: false,
+          isWarmup: false,
+          isDropset: false,
+          isFailure: false
         }]
-      })),
+      }));
+    }
+
+    const workout: WorkoutLog = {
+      id: generateUUID(),
+      name,
+      exercises: workoutExercises,
       startTime: new Date().toISOString(),
       endTime: '',
       duration: 0
     };
+    
     setCurrentWorkout(workout);
     setCurrentView('workout');
 

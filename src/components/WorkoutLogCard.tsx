@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MoreVertical, Trash2, Medal, Link2 } from 'lucide-react';
+import { Calendar, Clock, MoreVertical, Trash2, Medal, Link2, Play } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 import { ExerciseSetList } from './ExerciseSetList';
+import { useWorkout } from '../context/WorkoutContext';
+import { useNavigate } from 'react-router-dom';
+import { generateUUID } from '../utils/uuid';
 
 interface WorkoutLogCardProps {
   log: WorkoutLog;
@@ -12,6 +15,8 @@ interface WorkoutLogCardProps {
 export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const { startWorkout } = useWorkout();
+  const navigate = useNavigate();
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -48,6 +53,28 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
     }
     return groups;
   }, [] as Array<Array<typeof log.exercises[0]>>);
+
+  const handleRestartWorkout = () => {
+    // Create new workout with same exercises and sets
+    const exercises = log.exercises.map(({ exercise, sets, supersetWith }) => ({
+      exercise,
+      supersetWith,
+      sets: sets.map(set => {
+        // Preserve all set data except performed values
+        const newSet = {
+          ...set,
+          id: generateUUID(),
+          performedReps: '',  // Clear performed reps
+          comments: '',       // Clear comments
+          isPR: false        // Reset PR status
+        };
+        return newSet;
+      })
+    }));
+
+    startWorkout(exercises.map(e => e.exercise), log.name, exercises);
+    navigate('/workout');
+  };
 
   return (
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
@@ -90,6 +117,16 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                   onClick={() => setShowMenu(false)}
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                  <div
+                    onClick={() => {
+                      handleRestartWorkout();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center cursor-pointer"
+                  >
+                    <Play size={16} className="mr-2" />
+                    Restart Workout
+                  </div>
                   <div
                     onClick={() => {
                       onDelete();
