@@ -11,6 +11,7 @@ export default defineConfig({
     // Only enable PWA in production or non-StackBlitz environments
     !isStackBlitz && VitePWA({
       registerType: 'autoUpdate',
+      manifest: {
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Logday - Workout Tracker',
@@ -131,11 +132,13 @@ export default defineConfig({
         ]
       },
       // Increase version to force update
-      registerType: 'prompt',
-      injectRegister: 'script',
+      injectRegister: 'auto',
+      minify: true,
       devOptions: {
         enabled: false // Disable in development
-      }
+      },
+      // Configure update notification behavior
+      useNotifyOnUpdate: true
     })
   ].filter(Boolean),
   optimizeDeps: {

@@ -38,7 +38,7 @@ export const AuthFooter: React.FC = () => {
             className="flex items-center text-gray-600 hover:text-gray-900 text-sm"
           >
             <MessageCircleMore className="h-4 w-4 mr-1.5" />
-            <span className="hidden sm:inline">r/logdayapp</span>
+            <span className="hidden sm:inline">Reddit</span>
           </a>
         </div>
       </div>
