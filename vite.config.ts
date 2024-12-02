@@ -83,12 +83,13 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         clientsClaim: true,
-        skipWaiting: true,
-        // Add build timestamp to force cache busting
-        buildId: Date.now().toString(),
+        skipWaiting: false,
+        // Use content hash for cache busting
+        buildId: 'v1',
         // Ensure CSS changes are immediately visible
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
+        sourcemap: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -124,28 +125,24 @@ export default defineConfig({
             options: {
               cacheName: 'api-cache',
               expiration: {
-                maxEntries: 100,
-                maxAgeSeconds: 60 * 5 // 5 minutes
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 2 // 2 minutes
               },
               cacheableResponse: {
                 statuses: [0, 200]
-              }
+              },
+              networkTimeoutSeconds: 10
             }
           }
         ]
       },
-      // Increase version to force update
       injectRegister: 'auto',
       minify: true,
-      // Force reload on new content
-      strategies: 'injectManifest',
-      injectManifest: {
-        injectionPoint: undefined,
-        rollupFormat: 'iife',
-      },
+      registerType: 'prompt',
       devOptions: {
         enabled: false // Disable in development
-      }
+      },
+      filename: 'sw.js'
     })
   ].filter(Boolean),
   optimizeDeps: {
