@@ -39,7 +39,7 @@ export const WorkoutLogs: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
         <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
         <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
         
@@ -67,7 +67,7 @@ export const WorkoutLogs: React.FC = () => {
 
   if (workoutLogs.length === 0) {
     return (
-      <div className="max-w-4xl mx-auto p-4 sm:p-6">
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
         <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
         <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
 
@@ -81,7 +81,7 @@ export const WorkoutLogs: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6">
+    <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
       {currentWorkout && <OngoingWorkoutMessage />}
 
       <div className="mb-6">

@@ -80,6 +80,33 @@
 }
 
 /* Prevent content from being hidden under fixed navigation */
-.pt-16 {
-  padding-top: 4rem;
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.app-header {
+  flex-shrink: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: white;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom, 120px);
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure content doesn't get cut off at the bottom on mobile */
+@supports (-webkit-touch-callout: none) {
+  .app-content {
+    padding-bottom: calc(env(safe-area-inset-bottom, 120px) + 120px);
+  }
 }

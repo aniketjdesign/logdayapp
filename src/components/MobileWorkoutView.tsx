@@ -269,7 +269,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const stats = getWorkoutStats();
 
   return (
-    <div className="md:hidden min-h-screen bg-gray-50">
+    <div className="md:hidden app-layout bg-gray-50">
       {/* Fixed Header */}
       <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
         {/* First Row - Workout Name and Actions */}
@@ -332,7 +332,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </div>
 
       {/* Exercise List */}
-      <div className="px-4 space-y-6 pt-28 pb-32">
+      <div className="px-4 space-y-6 pt-16 pb-40">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           const isBodyweight = exercise.name.includes('(Bodyweight)');
           const isCardio = exercise.muscleGroup === 'Cardio';
@@ -460,7 +460,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           );
         })}
 
-        <div className="space-y-3 mt-6">
+        <div className="space-y-3 mt-6 mb-20">
           <button
             onClick={() => setShowFinishConfirmation(true)}
             className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"

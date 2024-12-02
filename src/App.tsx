@@ -69,7 +69,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {showNavigation && <Navigation />}
-      <div className={showNavigation ? "pt-16" : ""}>
+      <div className="pt-16">
         <Routes>
           <Route path="/" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
@@ -86,13 +86,17 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <SettingsProvider>
-        <WorkoutProvider>
-          <AppContent />
-        </WorkoutProvider>
-      </SettingsProvider>
-    </AuthProvider>
+    <div className="app-layout bg-gray-50">
+      <AuthProvider>
+        <SettingsProvider>
+          <WorkoutProvider>
+            <div className="app-content">
+              <AppContent />
+            </div>
+          </WorkoutProvider>
+        </SettingsProvider>
+      </AuthProvider>
+    </div>
   );
 }
 
