@@ -271,9 +271,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   return (
     <div className="md:hidden min-h-screen bg-gray-50">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
+      <div className="fixed top-0 left-0 right-0 bg-white border-b z-40 safe-top">
         {/* First Row - Workout Name and Actions */}
-        <div className="flex items-center justify-between p-4 gap-4">
+        <div className="flex items-center justify-between p-4 gap-4 fixed-header">
           <input
             type="text"
             placeholder="Workout Name"
@@ -299,12 +299,15 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
         {/* Second Row - Stats */}
         <div className="flex items-center justify-between px-4 pt-2 pb-4">
-          <div className="flex w-1/4 items-center space-x-1">
+          <button 
+            onClick={onPauseResume}
+            className={`flex items-center space-x-1 ${isPaused ? "text-yellow-600" : "text-gray-600"}`}
+          >
             <Timer size={18} className={isPaused ? "text-yellow-600" : "text-gray-500"} />
             <span className={`text-sm font-medium ${isPaused ? "text-yellow-600" : "text-gray-600"}`}>
               {formatTime(duration)}
             </span>
-          </div>
+          </button>
           <div className="separator w-px h-4 bg-gray-200"/>
           <div className="flex items-center space-x-2">
             <CircularProgress 
@@ -329,7 +332,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </div>
 
       {/* Exercise List */}
-      <div className="mt-32 px-4 space-y-6 pt-4 pb-32">
+      <div className="header-offset px-4 space-y-6 pt-12 pb-32 safe-bottom">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           const isBodyweight = exercise.name.includes('(Bodyweight)');
           const isCardio = exercise.muscleGroup === 'Cardio';

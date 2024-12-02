@@ -107,18 +107,17 @@ export const supabaseService = {
       const start = (page - 1) * ITEMS_PER_PAGE;
       const end = start + ITEMS_PER_PAGE - 1;
 
-      let queryBuilder = supabase
+      const queryBuilder = supabase
         .from('workout_logs')
         .select('*', { count: 'exact' })
-        .eq('user_id', session.user.id);
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
 
       if (query) {
-        queryBuilder = queryBuilder.or(`name.ilike.%${query}%,exercises.ilike.%${query}%`);
+        queryBuilder.filter('name', 'ilike', `%${query}%`);
       }
 
-      const { data, error, count } = await queryBuilder
-        .order('created_at', { ascending: false })
-        .range(start, end);
+      const { data, error, count } = await queryBuilder.range(start, end);
 
       if (error) throw error;
 

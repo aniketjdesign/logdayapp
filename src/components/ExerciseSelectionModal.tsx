@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Search, X } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Search, X, ChevronUp } from 'lucide-react';
 import { Exercise, MuscleGroup } from '../types/workout';
 import { exercises } from '../data/exercises';
 
@@ -18,6 +18,17 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | 'All'>('All');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const exerciseListRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to top button visibility
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setShowScrollTop(e.currentTarget.scrollTop > 300);
+  };
+
+  const scrollToTop = () => {
+    exerciseListRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const muscleGroups: ('All' | MuscleGroup)[] = [
     'All',
@@ -72,7 +83,21 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
       const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
       const matchesCategory = selectedCategory === 'All' || exercise.category === selectedCategory;
       return matchesSearch && matchesMuscleGroup && matchesCategory;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Group exercises by first letter
+  const groupedExercises = useMemo(() => {
+    const groups: { [key: string]: Exercise[] } = {};
+    filteredExercises.forEach(exercise => {
+      const firstLetter = exercise.name[0].toUpperCase();
+      if (!groups[firstLetter]) {
+        groups[firstLetter] = [];
+      }
+      groups[firstLetter].push(exercise);
     });
+    return groups;
+  }, [filteredExercises]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50">
@@ -183,7 +208,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
       </div>
 
       {/* Mobile View - Curtain Style */}
-      <div className="md:hidden w-full h-[85vh] bg-white rounded-t-xl fixed bottom-0 flex flex-col animate-slide-up">
+      <div className="md:hidden rounded-t-lg w-full h-[90vh] bg-white rounded-t-xl fixed bottom-0 flex flex-col animate-slide-up ">
         <div className="flex justify-between items-center p-4 border-b">
           <h3 className="text-lg font-bold">Add Exercises</h3>
           <button
@@ -223,37 +248,64 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
                 </button>
               ))}
             </div>
-
-
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4">
-          <div className="space-y-2">
-            {filteredExercises.map(exercise => (
-              <div
-                key={exercise.id}
-                onClick={() => toggleExerciseSelection(exercise)}
-                className={`p-4 rounded-lg cursor-pointer transition-all
-                  ${selectedExercises.find(e => e.id === exercise.id)
-                    ? 'bg-blue-50 border-2 border-blue-500'
-                    : 'hover:bg-gray-50 border border-gray-200'
-                  }`}
-              >
-                <div className="font-medium">{exercise.name}</div>
-                <div className="flex flex-wrap gap-2 mt-1">
-                  <span className="text-sm text-gray-600">
-                    {exercise.instruction || exercise.muscleGroup}
-                  </span>
-                  {exercise.category && (
-                    <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
-                      {exercise.category}
-                    </span>
-                  )}
+        <div 
+          className="flex-1 overflow-y-auto"
+          onScroll={handleScroll}
+          ref={exerciseListRef}
+        >
+          {Object.keys(groupedExercises).length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No available exercises for superset
+            </div>
+          ) : (
+            <div>
+              {Object.entries(groupedExercises).map(([letter, exercises]) => (
+                <div key={letter} className="mb-6">
+                  <div className="sticky top-0 bg-gray-100 px-4 py-2 mb-2 z-10">
+                    <h2 className="text-lg font-semibold text-gray-700">{letter}</h2>
+                  </div>
+                  <div className="space-y-2 px-4">
+                    {exercises.map(exercise => (
+                      <div
+                        key={exercise.id}
+                        onClick={() => toggleExerciseSelection(exercise)}
+                        className={`p-4 rounded-lg cursor-pointer transition-all
+                          ${selectedExercises.find(e => e.id === exercise.id)
+                            ? 'bg-blue-50 border-2 border-blue-500'
+                            : 'hover:bg-gray-50 border border-gray-200'
+                          }`}
+                      >
+                        <div className="font-medium">{exercise.name}</div>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          <span className="text-sm text-gray-600">
+                            {exercise.instruction || exercise.muscleGroup}
+                          </span>
+                          {exercise.category && (
+                            <span className="text-xs px-2 py-0.5 bg-green-100 text-green-800 rounded-full">
+                              {exercise.category}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Scroll to top button */}
+          {showScrollTop && (
+            <button
+              onClick={scrollToTop}
+              className="fixed bottom-20 right-4 p-3 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+            >
+              <ChevronUp size={24} />
+            </button>
+          )}
         </div>
 
         <div className="p-4 border-t bg-white">

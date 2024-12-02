@@ -1,5 +1,5 @@
 import React from 'react';
-import { Medal, Link2 } from 'lucide-react';
+import { Medal, Link2, Target } from 'lucide-react';
 import { Exercise, WorkoutSet } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 
@@ -15,6 +15,17 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
 
+  const formatSetDisplay = (set: WorkoutSet) => {
+    if (isCardio || isTimeBasedCore) {
+      return set.time || '-';
+    }
+    
+    const weight = isBodyweight ? 'BW' : `${set.weight || 0} ${weightUnit}`;
+    const reps = set.performedReps || '-';
+    
+    return { weight, reps, target: set.targetReps };
+  };
+
   const getSetValue = (set: WorkoutSet, field: string) => {
     switch (field) {
       case 'Weight':
@@ -25,8 +36,8 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
           : `${weight} ${weightUnit}`;
       case 'Goal':
         return set.targetReps || '-';
-      case 'Done':
-        return set.performedReps || '-';
+      case 'Actual':
+        return set.performedReps?.toString() || '-';
       case 'Time':
         return set.time || '-';
       case 'Distance':
@@ -138,34 +149,43 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
 
       {/* Mobile View */}
       <div className="sm:hidden space-y-3">
-        {sets.map((set, index) => (
-          <div 
-            key={set.id}
-            className={`p-3 rounded-lg ${
-              isSecondary ? 'bg-lime-50/50' : 'bg-gray-50'
-            }`}
-          >
-            <div className="flex justify-between items-center mb-2">
-              <div className="flex items-center gap-1">
-                <span className="font-medium text-gray-700">Set {index + 1}</span>
-                {getSetTags(set)}
-              </div>
+        <div className="text-sm">
+          {sets.map((set, index) => (
+          <div key={set.id} className="flex items-center gap-2 py-2">
+            <span className="w-6 text-gray-500">{index + 1}</span>
+            <span className="flex-1 font-medium">
+              {(() => {
+                const display = formatSetDisplay(set);
+                return (
+                  <div className="flex items-center gap-2">
+                    <span>{display.weight} × {display.reps}</span>
+                    {display.target && (
+                      <div className="flex items-center text-gray-500 text-xs">
+                        <Target size={12} className="mr-0.5" />
+                        {display.target}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </span>
+            <div className="flex items-center gap-1">
+              {set.isPR && (
+                <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">PR</span>
+              )}
+              {set.isWarmup && (
+                <span className="text-xs font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">W</span>
+              )}
+              {set.isDropset && (
+                <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">D</span>
+              )}
+              {set.isFailure && (
+                <span className="text-xs font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded">F</span>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              {getHeaders().map(header => (
-                <div key={header}>
-                  <span className="text-gray-500">{header}:</span>{' '}
-                  <span className="font-medium">{getSetValue(set, header)}</span>
-                </div>
-              ))}
-            </div>
-            {set.comments && (
-              <div className="mt-2 text-sm text-gray-600 bg-white/50 p-2 rounded">
-                {set.comments}
-              </div>
-            )}
           </div>
-        ))}
+          ))}
+        </div>
       </div>
     </>
   );

@@ -6,6 +6,7 @@ import { ExerciseSetList } from './ExerciseSetList';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../utils/uuid';
+import { WorkoutDetailsModal } from './WorkoutDetailsModal';
 
 interface WorkoutLogCardProps {
   log: WorkoutLog;
@@ -15,29 +16,63 @@ interface WorkoutLogCardProps {
 export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { startWorkout } = useWorkout();
   const navigate = useNavigate();
+  const { weightUnit, convertWeight } = useSettings();
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
+    const date = new Date(dateString);
+    const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+    const formattedDate = date.toLocaleDateString('en-US', {
+      month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      year: 'numeric',
     });
+    const time = date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+    return `${day}, ${formattedDate} at ${time}`;
   };
 
   const formatDuration = (ms: number) => {
     const minutes = Math.floor(ms / (1000 * 60));
     const hours = Math.floor(minutes / 60);
     const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
+    return hours > 0 ? `${hours}h ${remainingMinutes}m` : `${remainingMinutes}m`;
   };
 
-  const totalPRs = log.exercises.reduce((total, { sets }) => 
-    total + sets.filter(set => set.isPR).length, 0
-  );
+  const getWorkoutStats = () => {
+    let totalVolume = 0;
+    let totalPRs = 0;
+    let totalSets = 0;
+
+    log.exercises.forEach(({ exercise, sets }) => {
+      const isBodyweight = exercise.name.includes('(Bodyweight)');
+      sets.forEach(set => {
+        if (!isBodyweight && set.weight && set.performedReps) {
+          const weight = weightUnit === 'lb' 
+            ? convertWeight(set.weight, 'kg', 'lb')
+            : set.weight;
+          totalVolume += weight * parseInt(set.performedReps);
+        }
+        if (set.isPR) totalPRs++;
+        totalSets++;
+      });
+    });
+
+    return {
+      volume: Math.round(totalVolume),
+      prs: totalPRs,
+      exercises: log.exercises.length,
+      sets: totalSets
+    };
+  };
+
+  const stats = getWorkoutStats();
 
   // Group exercises by superset
   const exerciseGroups = log.exercises.reduce((groups, exercise, index) => {
@@ -80,32 +115,36 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
     <div className="bg-white rounded-lg shadow-sm overflow-hidden">
       {/* Header */}
       <div className="p-4">
-        <div className="flex justify-between items-start mb-3">
+        <div className="flex justify-between items-start mb-4">
           <div 
-            className="flex-1 cursor-pointer"
-            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex-1"
+            onClick={() => {
+              if (window.innerWidth < 768) {
+                setShowDetailsModal(true);
+              } else {
+                setIsExpanded(!isExpanded);
+              }
+            }}
           >
             <h3 className="text-lg font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
-            <div className="flex flex-wrap gap-3 mt-2 text-sm text-gray-600">
+            <div className="mt-2 text-sm text-gray-600">
               <div className="flex items-center">
                 <Calendar size={16} className="mr-1.5" />
                 {formatDate(log.startTime)}
               </div>
-              <div className="flex items-center">
-                <Clock size={16} className="mr-1.5" />
-                {formatDuration(log.duration)}
-              </div>
-              {totalPRs > 0 && (
-                <div className="flex items-center text-yellow-600">
-                  <Medal size={16} className="mr-1.5" />
-                  {totalPRs} PR{totalPRs > 1 ? 's' : ''}
-                </div>
-              )}
             </div>
           </div>
           <div className="relative">
             <button
-              onClick={() => setShowMenu(!showMenu)}
+              onClick={(e) => {
+                const button = e.currentTarget;
+                const rect = button.getBoundingClientRect();
+                setMenuPosition({
+                  top: rect.bottom + window.scrollY,
+                  left: rect.left + window.scrollX - 200 + rect.width
+                });
+                setShowMenu(!showMenu);
+              }}
               className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
             >
               <MoreVertical size={20} className="text-gray-500" />
@@ -116,7 +155,15 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                   className="fixed inset-0 z-10"
                   onClick={() => setShowMenu(false)}
                 />
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border">
+                <div 
+                  style={{
+                    position: 'fixed',
+                    top: `${menuPosition.top}px`,
+                    left: `${menuPosition.left}px`,
+                    zIndex: 20
+                  }}
+                  className="w-48 bg-white rounded-md shadow-lg border"
+                >
                   <div
                     onClick={() => {
                       handleRestartWorkout();
@@ -143,39 +190,55 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           </div>
         </div>
 
-        {/* Exercise Summary */}
-        <div 
-          className="flex flex-wrap gap-2 cursor-pointer"
-          onClick={() => setIsExpanded(!isExpanded)}
-        >
-          {exerciseGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className="flex items-center">
-              {group.length === 2 ? (
-                <div className="flex items-center bg-lime-50 rounded-lg p-1">
-                  <span className="flex items-center px-2 py-1 text-xs font-medium text-lime-700">
-                    <div className="w-2 h-2 mr-2 rounded-full bg-lime-500" />
-                    {group[0].exercise.name}
-                  </span>
-                  <span className="w-px h-4 bg-lime-200 mx-1" />
-                  <span className="px-2 py-1 text-xs font-medium text-lime-700">
-                    {group[1].exercise.name}
-                  </span>
-                </div>
-              ) : (
-                <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-700">
-                  {group[0].exercise.name}
-                </span>
-              )}
+        {/* Workout Stats */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">Time Spent</div>
+            <div className="flex items-center text-sm font-medium">
+                <Clock size={16} className="mr-1.5" />
+                {formatDuration(log.duration)}
             </div>
-          ))}
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">Volume</div>
+            <div className="text-sm font-medium">
+              {stats.volume.toLocaleString()} {weightUnit}
+            </div>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">Sets</div>
+            <div className="text-sm font-medium">
+              {stats.exercises} exercises, {stats.sets} sets
+            </div>
+          </div>
+          <div className="bg-gray-50 p-3 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">PRs</div>
+            <div className="flex items-center text-sm font-medium text-yellow-600">
+              <Medal size={16} className="mr-1.5" />
+              {stats.prs}
+            </div>
+          </div>
         </div>
+
+        {/* Exercise Summary */}
+        {window.innerWidth >= 768 && (
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+          >
+            {isExpanded ? 'Hide Details' : 'Show Details'}
+          </button>
+        )}
       </div>
 
-      {/* Expanded Details */}
-      {isExpanded && (
+      {/* Expanded Details - Desktop Only */}
+      {isExpanded && window.innerWidth >= 768 && (
         <div className="border-t divide-y">
           {exerciseGroups.map((group, groupIndex) => (
-            <div key={groupIndex} className={group.length === 2 ? 'bg-lime-50/30' : ''}>
+            <div key={groupIndex} className={`${group.length === 2 ? 'bg-lime-50/30' : ''} p-4`}>
+              <div className="text-sm text-gray-500 mb-2">
+                {group[0].exercise.muscleGroup}
+              </div>
               {group.length === 2 ? (
                 <ExerciseSetList
                   exercise={group[0].exercise}
@@ -194,6 +257,15 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
             </div>
           ))}
         </div>
+      )}
+
+      {/* Mobile Details Modal */}
+      {showDetailsModal && (
+        <WorkoutDetailsModal
+          log={log}
+          onDelete={onDelete}
+          onClose={() => setShowDetailsModal(false)}
+        />
       )}
     </div>
   );

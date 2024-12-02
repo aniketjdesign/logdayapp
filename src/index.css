@@ -16,6 +16,27 @@
   user-select: none;
 }
 
+/* Safe area insets for PWA */
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+
+/* Fixed header with safe area */
+.fixed-header {
+  padding-top: max(16px, env(safe-area-inset-top));
+  padding-bottom: max(16px, env(safe-area-inset-top));
+}
+
+/* Content padding for fixed header */
+.header-offset {
+  padding-top: calc(130px + env(safe-area-inset-top));
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;

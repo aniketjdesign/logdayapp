@@ -143,9 +143,9 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-50">
+      <nav className="fixed top-0 left-0 right-0 bg-white shadow-md z-50 safe-top">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 fixed-header">
             <div className="flex items-center">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -178,7 +178,7 @@ export const Navigation: React.FC = () => {
       </nav>
 
       <div 
-        className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 ${
+        className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 safe-top ${
           isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsMenuOpen(false)}
