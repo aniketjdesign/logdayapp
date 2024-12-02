@@ -84,8 +84,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
         clientsClaim: true,
         skipWaiting: false,
-        // Use content hash for cache busting
-        buildId: 'v1',
+        // Use cache ID for versioning
+        cacheId: 'logday-v1',
         // Ensure CSS changes are immediately visible
         navigateFallbackDenylist: [/^\/api/],
         cleanupOutdatedCaches: true,
