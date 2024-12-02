@@ -82,6 +82,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+        // Force service worker update check on each page load
+        clientsClaim: true,
+        skipWaiting: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
@@ -127,6 +130,9 @@ export default defineConfig({
           }
         ]
       },
+      // Increase version to force update
+      registerType: 'prompt',
+      injectRegister: 'script',
       devOptions: {
         enabled: false // Disable in development
       }
