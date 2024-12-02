@@ -271,9 +271,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   return (
     <div className="md:hidden min-h-screen bg-gray-50">
       {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b z-40 safe-top">
+      <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
         {/* First Row - Workout Name and Actions */}
-        <div className="flex items-center justify-between p-4 gap-4 fixed-header">
+        <div className="flex items-center justify-between p-4 gap-4">
           <input
             type="text"
             placeholder="Workout Name"
@@ -332,7 +332,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </div>
 
       {/* Exercise List */}
-      <div className="header-offset px-4 space-y-6 pt-12 pb-32 safe-bottom">
+      <div className="px-4 space-y-6 pt-28 pb-32">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           const isBodyweight = exercise.name.includes('(Bodyweight)');
           const isCardio = exercise.muscleGroup === 'Cardio';
