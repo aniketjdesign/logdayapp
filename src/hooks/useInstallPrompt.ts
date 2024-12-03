@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '../services/analytics';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -76,6 +77,7 @@ export const useInstallPrompt = () => {
       if (outcome === 'accepted') {
         setIsInstalled(true);
         setDeferredPrompt(null);
+        Analytics.appInstalled();
         setShowInstallPrompt(false);
       }
     } catch (error) {

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
+import { Analytics } from '../services/analytics';
 
 interface AuthContextType {
   user: User | null;
@@ -23,8 +24,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         userId: user.id,
         createdAt: user.created_at
       });
+      Analytics.identify(user.id, {
+        email: user.email,
+        created_at: user.created_at
+      });
     } else {
       zipy.anonymize();
+      Analytics.reset();
     }
   };
 
@@ -53,6 +59,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (error) throw error;
     identifyUser(data.user);
+    Analytics.userSignedIn({
+      userId: data.user.id,
+      email: data.user.email || ''
+    });
   };
 
   const signUp = async (email: string, password: string): Promise<AuthResponse> => {
@@ -62,12 +72,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
     if (response.data.user) {
       identifyUser(response.data.user);
+      Analytics.userSignedUp({
+        userId: response.data.user.id,
+        email: response.data.user.email || '',
+        createdAt: response.data.user.created_at
+      });
     }
     return response;
   };
 
   const signOut = async () => {
     try {
+      Analytics.userSignedOut();
       // First, clear all app data
       const keysToKeep = ['vite-dummy']; // Add any keys that should not be cleared
       Object.keys(localStorage).forEach(key => {

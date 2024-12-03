@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { WeightUnit } from '../db/database';
 import { supabaseService } from '../services/supabaseService';
+import { Analytics } from '../services/analytics';
 
 interface SettingsContextType {
   weightUnit: WeightUnit;
@@ -30,6 +31,11 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const setWeightUnit = async (unit: WeightUnit) => {
     setWeightUnitState(unit);
+    Analytics.settingsChanged({
+      setting: 'weightUnit',
+      value: unit,
+      previousValue: weightUnit
+    });
     if (user?.id) {
       await supabaseService.saveUserSettings(unit);
     }

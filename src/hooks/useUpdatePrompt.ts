@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Analytics } from '../services/analytics';
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
@@ -40,6 +41,10 @@ export const useUpdatePrompt = () => {
       if (registration.waiting) {
         // Send message to service worker to skip waiting
         registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        Analytics.appUpdated({
+          fromVersion: registration.waiting.scriptURL || 'unknown',
+          toVersion: registration.active?.scriptURL || 'new'
+        });
       }
     }
   };

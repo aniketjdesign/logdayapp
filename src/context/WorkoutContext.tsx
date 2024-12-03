@@ -3,6 +3,7 @@ import { Exercise, WorkoutLog, WorkoutExercise } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
 import { generateUUID } from '../utils/uuid';
+import { Analytics } from '../services/analytics';
 
 type View = 'exercises' | 'workout' | 'logs';
 
@@ -108,6 +109,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     
     setCurrentWorkout(workout);
+    Analytics.workoutStarted({
+      exercises: exercises.length,
+      name: name
+    });
     setCurrentView('workout');
 
     // Initialize timer state with auto-start (not paused)
@@ -133,6 +138,15 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       endTime,
       duration
     };
+
+    const stats = calculateWorkoutStats(completedWorkout);
+    Analytics.workoutCompleted({
+      duration: completedWorkout.duration,
+      exercises: completedWorkout.exercises.length,
+      sets: stats.totalSets,
+      volume: stats.totalVolume,
+      prs: stats.totalPRs
+    });
 
     try {
       const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
@@ -173,6 +187,13 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const addExercisesToWorkout = (exercises: Exercise[]) => {
     if (!currentWorkout) return;
+    exercises.forEach(exercise => {
+      Analytics.exerciseAdded({
+        exerciseId: exercise.id,
+        exerciseName: exercise.name,
+        muscleGroup: exercise.muscleGroup
+      });
+    });
     setCurrentWorkout(prev => {
       if (!prev) return null;
       const newExercises = exercises.map(exercise => ({
@@ -196,6 +217,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteExercise = (exerciseId: string) => {
     if (!currentWorkout) return;
+    const exercise = currentWorkout.exercises.find(ex => ex.exercise.id === exerciseId);
+    if (exercise) {
+      Analytics.exerciseRemoved({
+        exerciseId: exercise.exercise.id,
+        exerciseName: exercise.exercise.name,
+        muscleGroup: exercise.exercise.muscleGroup
+      });
+    }
     setCurrentWorkout(prev => {
       if (!prev) return null;
       return {
