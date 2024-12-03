@@ -329,6 +329,8 @@ export const exercises: Exercise[] = [
   { id: 'co12', name: 'Hanging Leg Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co13', name: 'Lying Leg Raises (Bodyweight)', muscleGroup: 'Core' },
   { id: 'co14', name: 'Plank (Time)', muscleGroup: 'Core', metrics: { time: true } },
+  { id: 'co15', name: 'Pallof Press', muscleGroup: 'Core' },
+
 
   // Forearms
   { id: 'f1', name: 'Wrist Curls (Machine)', muscleGroup: 'Forearms' },
