@@ -2,9 +2,8 @@ import { supabase } from '../config/supabase';
 
 interface InviteCode {
   code: string;
-  used: boolean;
-  used_by: string | null;
-  used_at: string | null;
+  max_uses: number;
+  remaining_uses: number;
   created_at: string;
 }
 
@@ -31,10 +30,10 @@ export const validateInviteCode = async (code: string): Promise<{
       };
     }
 
-    if (data.used) {
+    if (data.remaining_uses <= 0) {
       return { 
         valid: false, 
-        message: 'This invite code has already been used' 
+        message: 'This invite code has reached its usage limit' 
       };
     }
 
@@ -56,19 +55,32 @@ export const markInviteCodeAsUsed = async (code: string, userId: string): Promis
   message: string;
 }> => {
   try {
-    const { error } = await supabase
+    // First, get the current state of the invite code
+    const { data: inviteCode, error: fetchError } = await supabase
+      .from('invite_codes')
+      .select('remaining_uses')
+      .eq('code', code.toUpperCase())
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!inviteCode) throw new Error('Invite code not found');
+    
+    if (inviteCode.remaining_uses <= 0) {
+      return {
+        success: false,
+        message: 'This invite code has reached its usage limit'
+      };
+    }
+
+    // Update the invite code
+    const { error: updateError } = await supabase
       .from('invite_codes')
       .update({ 
-        used: true,
-        used_by: userId,
-        used_at: new Date().toISOString()
+        remaining_uses: inviteCode.remaining_uses - 1
       })
       .eq('code', code.toUpperCase());
 
-    if (error) {
-      console.error('Error marking invite code as used:', error);
-      throw error;
-    }
+    if (updateError) throw updateError;
 
     return {
       success: true,
