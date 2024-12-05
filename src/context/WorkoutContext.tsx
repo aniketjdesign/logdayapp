@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Exercise, WorkoutLog, WorkoutExercise } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
+import { calculateWorkoutStats } from '../utils/workoutStats';
 import { generateUUID } from '../utils/uuid';
 import { Analytics } from '../services/analytics';
 
@@ -139,20 +140,23 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       duration
     };
 
-    const stats = calculateWorkoutStats(completedWorkout);
-    Analytics.workoutCompleted({
-      duration: completedWorkout.duration,
-      exercises: completedWorkout.exercises.length,
-      sets: stats.totalSets,
-      volume: stats.totalVolume,
-      prs: stats.totalPRs
-    });
+    try {
+      const stats = calculateWorkoutStats(completedWorkout);
+      Analytics.workoutCompleted({
+        duration: completedWorkout.duration,
+        exercises: completedWorkout.exercises.length,
+        sets: stats.totalSets,
+        volume: stats.totalVolume,
+        prs: stats.totalPRs
+      });
+    } catch (error) {
+      console.error('Error calculating workout stats:', error);
+      // Continue with saving even if stats calculation fails
+    }
 
     try {
       const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       // Clear current workout state immediately after successful save
       localStorage.removeItem(CURRENT_WORKOUT_KEY);
@@ -164,7 +168,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setWorkoutLogs(data);
       setTotalLogs(count);
       setCurrentPage(1);
-      
+
       return completedWorkout;
     } catch (error) {
       console.error('Error saving workout:', error);

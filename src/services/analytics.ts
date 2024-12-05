@@ -1,38 +1,85 @@
 import mixpanel from 'mixpanel-browser';
 
-// Initialize Mixpanel
-mixpanel.init(import.meta.env.VITE_MIXPANEL_TOKEN, {
-  debug: import.meta.env.DEV,
-  track_pageview: true,
-  persistence: 'localStorage'
-});
+const MIXPANEL_TOKEN = '672e7aa3fb3f5695ec02ebee';
+
+let isInitialized = false;
+
+const initMixpanel = () => {
+  if (!isInitialized && MIXPANEL_TOKEN) {
+    try {
+      mixpanel.init(MIXPANEL_TOKEN, {
+        debug: import.meta.env.DEV,
+        track_pageview: true,
+        persistence: 'localStorage'
+      });
+      isInitialized = true;
+    } catch (error) {
+      console.error('Failed to initialize Mixpanel:', error);
+    }
+  }
+};
 
 export const Analytics = {
   identify: (userId: string, traits?: Record<string, any>) => {
-    mixpanel.identify(userId);
-    if (traits) {
-      mixpanel.people.set(traits);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.identify(userId);
+        if (traits) {
+          mixpanel.people.set(traits);
+        }
+      }
+    } catch (error) {
+      console.error('Analytics identify error:', error);
     }
   },
 
   track: (event: string, properties?: Record<string, any>) => {
-    mixpanel.track(event, properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track(event, properties);
+      }
+    } catch (error) {
+      console.error('Analytics track error:', error);
+    }
   },
 
   page: (name: string, properties?: Record<string, any>) => {
-    mixpanel.track('Page View', {
-      page: name,
-      ...properties
-    });
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Page View', {
+          page: name,
+          ...properties
+        });
+      }
+    } catch (error) {
+      console.error('Analytics page error:', error);
+    }
   },
 
   reset: () => {
-    mixpanel.reset();
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.reset();
+      }
+    } catch (error) {
+      console.error('Analytics reset error:', error);
+    }
   },
 
   // Workout Events
   workoutStarted: (properties: { exercises: number; name?: string }) => {
-    mixpanel.track('Workout Started', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Workout Started', properties);
+      }
+    } catch (error) {
+      console.error('Analytics workoutStarted error:', error);
+    }
   },
 
   workoutCompleted: (properties: { 
@@ -42,7 +89,14 @@ export const Analytics = {
     volume: number;
     prs: number;
   }) => {
-    mixpanel.track('Workout Completed', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Workout Completed', properties);
+      }
+    } catch (error) {
+      console.error('Analytics workoutCompleted error:', error);
+    }
   },
 
   workoutCancelled: (properties: {
@@ -50,7 +104,14 @@ export const Analytics = {
     exercises: number;
     completedSets: number;
   }) => {
-    mixpanel.track('Workout Cancelled', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Workout Cancelled', properties);
+      }
+    } catch (error) {
+      console.error('Analytics workoutCancelled error:', error);
+    }
   },
 
   exerciseAdded: (properties: {
@@ -58,7 +119,14 @@ export const Analytics = {
     exerciseName: string;
     muscleGroup: string;
   }) => {
-    mixpanel.track('Exercise Added', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Exercise Added', properties);
+      }
+    } catch (error) {
+      console.error('Analytics exerciseAdded error:', error);
+    }
   },
 
   exerciseRemoved: (properties: {
@@ -66,7 +134,14 @@ export const Analytics = {
     exerciseName: string;
     muscleGroup: string;
   }) => {
-    mixpanel.track('Exercise Removed', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Exercise Removed', properties);
+      }
+    } catch (error) {
+      console.error('Analytics exerciseRemoved error:', error);
+    }
   },
 
   setCompleted: (properties: {
@@ -76,7 +151,14 @@ export const Analytics = {
     reps?: number;
     isPR: boolean;
   }) => {
-    mixpanel.track('Set Completed', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Set Completed', properties);
+      }
+    } catch (error) {
+      console.error('Analytics setCompleted error:', error);
+    }
   },
 
   // User Events
@@ -85,18 +167,39 @@ export const Analytics = {
     email: string;
     createdAt: string;
   }) => {
-    mixpanel.track('User Signed Up', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('User Signed Up', properties);
+      }
+    } catch (error) {
+      console.error('Analytics userSignedUp error:', error);
+    }
   },
 
   userSignedIn: (properties: {
     userId: string;
     email: string;
   }) => {
-    mixpanel.track('User Signed In', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('User Signed In', properties);
+      }
+    } catch (error) {
+      console.error('Analytics userSignedIn error:', error);
+    }
   },
 
   userSignedOut: () => {
-    mixpanel.track('User Signed Out');
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('User Signed Out');
+      }
+    } catch (error) {
+      console.error('Analytics userSignedOut error:', error);
+    }
   },
 
   // Settings Events
@@ -105,19 +208,40 @@ export const Analytics = {
     value: any;
     previousValue?: any;
   }) => {
-    mixpanel.track('Settings Changed', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Settings Changed', properties);
+      }
+    } catch (error) {
+      console.error('Analytics settingsChanged error:', error);
+    }
   },
 
   // App Events
   appInstalled: () => {
-    mixpanel.track('App Installed');
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('App Installed');
+      }
+    } catch (error) {
+      console.error('Analytics appInstalled error:', error);
+    }
   },
 
   appUpdated: (properties: {
     fromVersion: string;
     toVersion: string;
   }) => {
-    mixpanel.track('App Updated', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('App Updated', properties);
+      }
+    } catch (error) {
+      console.error('Analytics appUpdated error:', error);
+    }
   },
 
   error: (properties: {
@@ -125,6 +249,13 @@ export const Analytics = {
     context?: string;
     metadata?: Record<string, any>;
   }) => {
-    mixpanel.track('Error Occurred', properties);
+    try {
+      initMixpanel();
+      if (isInitialized) {
+        mixpanel.track('Error Occurred', properties);
+      }
+    } catch (error) {
+      console.error('Analytics error track error:', error);
+    }
   }
 };
