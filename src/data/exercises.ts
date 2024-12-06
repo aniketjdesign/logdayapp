@@ -248,6 +248,7 @@ export const exercises: Exercise[] = [
   { id: 'q27', name: 'Walking Lunges (Kettlebell)', muscleGroup: 'Quads' },
   { id: 'q28', name: 'Walking Lunges (Weighted bag)', muscleGroup: 'Quads' },
   { id: 'q29', name: 'Walking Lunges (Plate loaded)', muscleGroup: 'Quads' },
+  { id: 'q30', name: 'Reverse Lunges ', muscleGroup: 'Quads' },
 
   // Hamstrings
   { id: 'h1', name: 'Lying Leg Curl (Generic)', muscleGroup: 'Hamstrings' },
