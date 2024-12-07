@@ -124,15 +124,14 @@ export const ExerciseList: React.FC = () => {
         </button>
       </div>
 
-      {isAddModalOpen && (
-        <AddExerciseModal
-          onClose={() => setIsAddModalOpen(false)}
-          onExerciseAdded={() => {
-            loadCustomExercises();
-            setIsAddModalOpen(false);
-          }}
-        />
-      )}
+      <AddExerciseModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onExerciseAdded={(exercise) => {
+          loadCustomExercises();
+          setIsAddModalOpen(false);
+        }}
+      />
     </div>
   );
 };
