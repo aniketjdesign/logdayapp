@@ -231,5 +231,36 @@ export const supabaseService = {
       console.error('Error migrating localStorage data:', error);
       return { error };
     }
+  },
+
+  async getRecentExercises(limit: number = 10) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('exercises')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      // Extract unique exercises from recent workouts
+      const recentExercises = new Map();
+      data?.forEach(log => {
+        log.exercises.forEach(({ exercise }) => {
+          if (!recentExercises.has(exercise.id)) {
+            recentExercises.set(exercise.id, exercise);
+          }
+        });
+      });
+
+      return Array.from(recentExercises.values()).slice(0, limit);
+    } catch (error) {
+      console.error('Error fetching recent exercises:', error);
+      return [];
+    }
   }
 };

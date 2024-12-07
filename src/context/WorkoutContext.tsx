@@ -17,7 +17,7 @@ interface WorkoutContextType {
   currentView: View;
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
-  startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => void;
+  startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
   completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
@@ -77,7 +77,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadWorkouts();
   }, [user, currentPage]);
 
-  const startWorkout = (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
+  const startWorkout = async (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
     let workoutExercises;
     
     if (existingExercises) {
@@ -109,13 +109,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       duration: 0
     };
     
-    setCurrentWorkout(workout);
-    Analytics.workoutStarted({
-      exercises: exercises.length,
-      name: name
-    });
-    setCurrentView('workout');
-
     // Initialize timer state with auto-start (not paused)
     const timerState = {
       accumulated: 0,
@@ -123,6 +116,30 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isPaused: false
     };
     localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
+    localStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(workout));
+    
+    // Update all states in the correct order and wait for them to complete
+    await Promise.all([
+      new Promise<void>(resolve => {
+        setCurrentWorkout(workout);
+        resolve();
+      }),
+      new Promise<void>(resolve => {
+        setSelectedExercises([]);
+        resolve();
+      }),
+      new Promise<void>(resolve => {
+        setCurrentView('workout');
+        resolve();
+      })
+    ]);
+    
+    Analytics.workoutStarted({
+      exercises: exercises.length,
+      name: name
+    });
+
+    return workout;
   };
 
   const completeWorkout = async (name: string): Promise<WorkoutLog> => {
