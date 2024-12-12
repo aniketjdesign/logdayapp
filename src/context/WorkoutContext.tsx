@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { calculateWorkoutStats } from '../utils/workoutStats';
 import { generateUUID } from '../utils/uuid';
 import { Analytics } from '../services/analytics';
+import { exerciseService } from '../services/exerciseService';
 
 type View = 'exercises' | 'workout' | 'logs';
 
@@ -15,12 +16,14 @@ interface WorkoutContextType {
   totalLogs: number;
   currentPage: number;
   currentView: View;
+  customExercises: Exercise[];
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
   startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
   completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
+  addCustomExercise: (exercise: Exercise) => void;
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
@@ -42,6 +45,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [totalLogs, setTotalLogs] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentView, setCurrentView] = useState<View>('exercises');
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const { user } = useAuth();
 
   // Load current workout from localStorage
@@ -76,6 +80,21 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
     loadWorkouts();
   }, [user, currentPage]);
+
+  // Load custom exercises
+  useEffect(() => {
+    const loadCustomExercises = async () => {
+      if (user) {
+        try {
+          const exercises = await exerciseService.getUserExercises();
+          setCustomExercises(exercises);
+        } catch (error) {
+          console.error('Failed to load custom exercises:', error);
+        }
+      }
+    };
+    loadCustomExercises();
+  }, [user]);
 
   const startWorkout = async (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
     let workoutExercises;
@@ -236,6 +255,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const addCustomExercise = (exercise: Exercise) => {
+    setCustomExercises(prev => [exercise, ...prev]);
+  };
+
   const deleteExercise = (exerciseId: string) => {
     if (!currentWorkout) return;
     const exercise = currentWorkout.exercises.find(ex => ex.exercise.id === exerciseId);
@@ -295,12 +318,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       totalLogs,
       currentPage,
       currentView,
+      customExercises,
       setSelectedExercises,
       setCurrentWorkout,
       startWorkout,
       completeWorkout,
       updateWorkoutExercise,
       addExercisesToWorkout,
+      addCustomExercise,
       deleteExercise,
       deleteLog,
       setCurrentView,

@@ -37,6 +37,9 @@ export const WorkoutSession: React.FC = () => {
   const lastTickRef = useRef<number>(0);
   const accumulatedTimeRef = useRef<number>(0);
   const isInitializedRef = useRef<boolean>(false);
+  const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [isLoadingExercises, setIsLoadingExercises] = useState(true);
 
   useEffect(() => {
     if (!currentWorkout?.startTime || isInitializedRef.current) return;
@@ -121,6 +124,21 @@ export const WorkoutSession: React.FC = () => {
       });
     }
   }, [currentWorkout?.exercises]);
+
+  useEffect(() => {
+    const loadCustomExercises = async () => {
+      try {
+        const exercises = await exerciseService.getUserExercises();
+        setCustomExercises(exercises);
+      } catch (error) {
+        console.error('Failed to load custom exercises:', error);
+      } finally {
+        setIsLoadingExercises(false);
+      }
+    };
+
+    loadCustomExercises();
+  }, []);
 
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
@@ -358,7 +376,7 @@ export const WorkoutSession: React.FC = () => {
               {isPaused ? 'Resume' : 'Pause'}
             </button>
             <button
-              onClick={() => setShowExerciseModal(true)}
+              onClick={() => setIsExerciseModalOpen(true)}
               className="flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm"
             >
               <Plus size={18} className="mr-2" />
@@ -389,7 +407,7 @@ export const WorkoutSession: React.FC = () => {
           <h3 className="text-xl font-semibold text-gray-700 mb-2">No exercises in your workout</h3>
           <p className="text-gray-500 mb-6">Add some exercises to continue your workout</p>
           <button
-            onClick={() => setShowExerciseModal(true)}
+            onClick={() => setIsExerciseModalOpen(true)}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
           >
             <Plus size={20} className="mr-2" />
@@ -479,11 +497,15 @@ export const WorkoutSession: React.FC = () => {
         </>
       )}
 
-      {showExerciseModal && (
+      {isExerciseModalOpen && (
         <ExerciseSelectionModal
-          onClose={() => setShowExerciseModal(false)}
+          onClose={() => setIsExerciseModalOpen(false)}
           onAdd={handleAddExercises}
           currentExercises={currentWorkout.exercises.map(e => e.exercise)}
+          customExercises={customExercises}
+          onCustomExerciseAdded={(exercise) => {
+            setCustomExercises(prev => [exercise, ...prev]);
+          }}
         />
       )}
 

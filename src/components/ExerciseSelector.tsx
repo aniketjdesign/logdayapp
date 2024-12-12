@@ -64,18 +64,38 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
 
   const filteredCustomExercises = customExercises.filter(exercise => {
     const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
-    const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
+    const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscle_group === selectedMuscleGroup;
     return matchesSearch && matchesMuscleGroup;
   });
 
-  const filteredRecentExercises = recentExercises.filter(exercise => {
-    const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
-    const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
-    return matchesSearch && matchesMuscleGroup;
-  });
+  const filteredRecentExercises = recentExercises
+    .filter(exercise => {
+      const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
+      const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
+      return matchesSearch && matchesMuscleGroup;
+    })
+    .slice(0, 8); // Limit to 8 most recent exercises
+
+  const getFilteredExercises = () => {
+    const defaultExercises = Object.entries(allExercises)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .reduce((acc, [letter, exercises]) => {
+        const filtered = exercises.filter(exercise => {
+          const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
+          const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
+          return matchesSearch && matchesMuscleGroup;
+        });
+        if (filtered.length > 0) {
+          acc[letter] = filtered;
+        }
+        return acc;
+      }, {} as typeof allExercises);
+
+    return defaultExercises;
+  };
 
   return (
-    <div className="pb-4">
+    <div className="pb-32">
       <div className="px-4">
         <div className="relative mb-5 flex gap-x-2">
           <input
@@ -110,7 +130,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
           <div 
             ref={scrollContainerRef}
             onScroll={handleScrollMuscleGroups}
-            className="flex gap-2 overflow-x-auto scrollbar-none"
+            className="flex gap-2 overflow-x-auto scrollbar-none pb-3"
           >
             {muscleGroups.map(group => (
               <button
@@ -205,48 +225,37 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
       <div className="bg-white">
         <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">All Exercises</h2>
         <div className="space-y-0">
-          {Object.entries(allExercises)
-            .sort(([a], [b]) => a.localeCompare(b))
-            .map(([letter, exercises]) => {
-              const filteredExercises = exercises.filter(exercise => {
-                const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
-                const matchesMuscleGroup = selectedMuscleGroup === 'All' || exercise.muscleGroup === selectedMuscleGroup;
-                return matchesSearch && matchesMuscleGroup;
-              });
-              
-              if (filteredExercises.length === 0) return null;
-              
-              return (
-                <div key={letter}>
-                  <div className="px-4 py-1 border-b border-gray-100 bg-gray-50">
-                    <span className="text-xs font-medium text-gray-400">{letter}</span>
-                  </div>
-                  {filteredExercises.map(exercise => (
-                    <div
-                      key={exercise.id}
-                      onClick={() => !currentWorkout && onExerciseSelect(exercise)}
-                      className={`flex items-center justify-between px-4 py-2 cursor-pointer border-b
-                        ${selectedExercises.find(e => e.id === exercise.id)
-                          ? 'bg-blue-50 border-blue-300'
-                          : 'border-gray-100 hover:bg-gray-50'
-                        }`}
-                    >
-                      <div>
-                        <h3 className="text-sm font-medium">{exercise.name}</h3>
-                        <p className="text-xs text-gray-500">{exercise.muscleGroup}</p>
-                      </div>
-                      <div className={`${selectedExercises.find(e => e.id === exercise.id) ? 'text-blue-600' : 'text-gray-500'}`}>
-                        {selectedExercises.find(e => e.id === exercise.id) ? (
-                          <Check size={14} />
-                        ) : (
-                          <Plus size={0} />
-                        )}
-                      </div>
-                    </div>
-                  ))}
+          {Object.entries(getFilteredExercises())
+            .map(([letter, exercises]) => (
+              <div key={letter}>
+                <div className="px-4 py-1 border-b border-gray-100 bg-gray-50">
+                  <span className="text-xs font-medium text-gray-400">{letter}</span>
                 </div>
-              );
-            })}
+                {exercises.map(exercise => (
+                  <div
+                    key={exercise.id}
+                    onClick={() => !currentWorkout && onExerciseSelect(exercise)}
+                    className={`flex items-center justify-between px-4 py-2 cursor-pointer border-b
+                      ${selectedExercises.find(e => e.id === exercise.id)
+                        ? 'bg-blue-50 border-blue-300'
+                        : 'border-gray-100 hover:bg-gray-50'
+                      }`}
+                  >
+                    <div>
+                      <h3 className="text-sm font-medium">{exercise.name}</h3>
+                      <p className="text-xs text-gray-500">{exercise.muscleGroup}</p>
+                    </div>
+                    <div className={`${selectedExercises.find(e => e.id === exercise.id) ? 'text-blue-600' : 'text-gray-500'}`}>
+                      {selectedExercises.find(e => e.id === exercise.id) ? (
+                        <Check size={14} />
+                      ) : (
+                        <Plus size={0} />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
         </div>
       </div>
     </div>

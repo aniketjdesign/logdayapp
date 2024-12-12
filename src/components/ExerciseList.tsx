@@ -86,11 +86,12 @@ export const ExerciseList: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full">
+    <div className="h-full max-w-3xl mx-auto">
       {currentWorkout && <OngoingWorkoutMessage />}
       <InstallAppToast />
-      
-      <div className="px-4">
+     
+      <div className= {`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+      <div className= "px-4">
         <div className="heading-wrapper flex-col gap-y-2 pt-6 pb-4">
           <h1 className="text-lg font-bold">Quick Start</h1>
           <p className="text-sm text-gray-500">Select your exercises and click Start Workout</p>
@@ -107,17 +108,14 @@ export const ExerciseList: React.FC = () => {
         currentWorkout={currentWorkout}
       />
 
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+      <div className={`fixed max-w-3xl mx-auto bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-white border-t ${currentWorkout ? 'opacity-100' : ''}`}>
         <button
-          onClick={(e) => {
-            console.log('Button clicked', { selectedExercises, currentWorkout }); // Debug log
-            handleStartWorkout();
-          }}
-          disabled={selectedExercises.length === 0 || !!currentWorkout}
-          className={`w-full py-3 px-4 rounded-lg font-medium text-sm
+          onClick={handleStartWorkout}
+          disabled={currentWorkout || selectedExercises.length === 0}
+          className={`w-full py-3 px-4 rounded-xl text-white font-medium 
             ${selectedExercises.length === 0 || currentWorkout
-              ? 'bg-gray-100 text-gray-400'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
+              ? 'bg-gray-300 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
             }`}
         >
           Start Workout ({selectedExercises.length} Exercise{selectedExercises.length !== 1 ? 's' : ''})
@@ -132,6 +130,7 @@ export const ExerciseList: React.FC = () => {
           setIsAddModalOpen(false);
         }}
       />
+    </div>
     </div>
   );
 };
