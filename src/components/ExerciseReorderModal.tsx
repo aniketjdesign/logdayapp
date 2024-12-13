@@ -21,7 +21,9 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        delay: 250,
+        distance: 10,
+        tolerance: 10,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -47,9 +49,9 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 touch-none">
-      <div className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-xl flex flex-col animate-slide-up overflow-auto">
-        <div className="flex items-center justify-between p-4 border-b bg-white">
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+      <div className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-xl flex flex-col animate-slide-up">
+        <div className="flex items-center justify-between p-4 border-b bg-white sticky top-0 z-10">
           <h2 className="text-lg font-bold select-none">Reorder Exercises</h2>
           <button
             onClick={handleSave}
@@ -59,7 +61,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto overscroll-none">
+        <div className="flex-1 overflow-y-auto touch-pan-y">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -69,12 +71,17 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
               items={items.map(item => item.exercise.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div className="touch-none select-none">
+              <div className="pb-safe">
                 {items.map(({ exercise }) => (
                   <SortableItem key={exercise.id} id={exercise.id}>
-                    <div className="flex items-center px-4 py-3 bg-white border-b touch-none select-none">
-                      <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
-                      <span className="text-gray-900">{exercise.name}</span>
+                    <div className="flex items-center px-4 py-3 bg-white border-b">
+                      <div 
+                        className="touch-none select-none cursor-grab active:cursor-grabbing p-2 -m-2"
+                        data-drag-handle
+                      >
+                        <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                      </div>
+                      <span className="text-gray-900 pointer-events-none">{exercise.name}</span>
                     </div>
                   </SortableItem>
                 ))}
