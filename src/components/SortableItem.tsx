@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 interface SortableItemProps {
   id: string;
-  children: React.ReactNode;
+  children: (listeners: Record<string, any>) => React.ReactNode;
 }
 
 export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
@@ -14,19 +14,18 @@ export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id });
+  } = useSortable({ 
+    id,
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children(listeners)}
     </div>
   );
 };
