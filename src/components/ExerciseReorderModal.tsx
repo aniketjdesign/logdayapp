@@ -21,7 +21,8 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 5,
+        delay: 150,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
@@ -59,7 +60,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-none">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -69,20 +70,13 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
               items={items.map(item => item.exercise.id)}
               strategy={verticalListSortingStrategy}
             >
-              <div>
+              <div className="select-none">
                 {items.map(({ exercise }) => (
                   <SortableItem key={exercise.id} id={exercise.id}>
-                    {(listeners) => (
-                      <div className="flex items-center px-4 py-3 bg-white border-b">
-                        <div 
-                          {...listeners}
-                          className="p-2 -m-2 cursor-grab active:cursor-grabbing"
-                        >
-                          <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
-                        </div>
-                        <span className="text-gray-900">{exercise.name}</span>
-                      </div>
-                    )}
+                    <div className="flex items-center px-4 py-3 bg-white border-b select-none">
+                      <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                      <span className="text-gray-900">{exercise.name}</span>
+                    </div>
                   </SortableItem>
                 ))}
               </div>
