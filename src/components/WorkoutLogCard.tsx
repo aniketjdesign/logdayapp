@@ -17,7 +17,6 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { startWorkout } = useWorkout();
   const navigate = useNavigate();
   const { weightUnit, convertWeight } = useSettings();
@@ -137,12 +136,6 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           <div className="relative">
             <button
               onClick={(e) => {
-                const button = e.currentTarget;
-                const rect = button.getBoundingClientRect();
-                setMenuPosition({
-                  top: rect.bottom + window.scrollY,
-                  left: rect.left + window.scrollX - 200 + rect.width
-                });
                 setShowMenu(!showMenu);
               }}
               className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
@@ -156,13 +149,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                   onClick={() => setShowMenu(false)}
                 />
                 <div 
-                  style={{
-                    position: 'fixed',
-                    top: `${menuPosition.top}px`,
-                    left: `${menuPosition.left}px`,
-                    zIndex: 20
-                  }}
-                  className="w-48 bg-white rounded-md shadow-lg border"
+                  className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg border z-20"
                 >
                   <div
                     onClick={() => {

@@ -11,15 +11,16 @@ export const supabaseService = {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE - 1;
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const { data, error, count } = await supabase
         .from('workout_logs')
         .select('*', { count: 'exact' })
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .range(start, end);
+        .gte('start_time', thirtyDaysAgo.toISOString())
+        .order('start_time', { ascending: false });
 
       if (error) throw error;
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock } from 'lucide-react';
+import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, MoreHorizontal, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock, BarChart2 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
@@ -19,6 +20,7 @@ interface MobileWorkoutViewProps {
   duration: number;
   workoutName: string;
   isPaused: boolean;
+  exerciseHistory?: { [exerciseId: string]: WorkoutLog[] };
   onNameChange: (name: string) => void;
   onUpdateSet: (exerciseId: string, setId: string, field: string, value: any) => void;
   onDeleteSet: (exerciseId: string, setId: string) => void;
@@ -35,6 +37,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   duration,
   workoutName,
   isPaused,
+  exerciseHistory,
   onNameChange,
   onUpdateSet,
   onDeleteSet,
@@ -62,6 +65,10 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<{ [key: string]: 'log' | 'previous' }>({});
+  const [tabContentHeights, setTabContentHeights] = useState<{ [key: string]: number }>({});
+  const logTabRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const [showChart, setShowChart] = useState<{ [key: string]: boolean }>({});
   const { weightUnit } = useSettings();
   const [workoutRestTimer, setWorkoutRestTimer] = useState<boolean>(true);
   const [showRestTimer, setShowRestTimer] = useState(false);
@@ -223,8 +230,26 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     }
   };
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: true,
+    }).format(date);
+  };
+
+  const formatSet = (set: WorkoutSet, exercise: Exercise) => {
+    if (exercise.metrics?.time) {
+      return `${set.time}${set.distance ? ` | ${set.distance}km` : ''}`;
+    }
+    return `${set.weight}${weightUnit} x ${set.performedReps}`;
+  };
+
   const renderExerciseMenu = (exerciseId: string) => (
-    <div className="absolute right-4 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+    <div className="absolute right-4 mt-2 w-52 bg-white rounded-lg shadow-lg border z-10">
       <button
         onClick={() => {
           toggleRestTimer(exerciseId);
@@ -235,7 +260,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         }`}
         disabled={!workoutRestTimer}
       >
-        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-blue-500" : "text-gray-400"} />
+        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-gray-500" : "text-gray-400"} />
         <span>
           {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
         </span>
@@ -268,6 +293,60 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
   const stats = getWorkoutStats();
 
+  const getExerciseProgressionData = (exerciseId: string) => {
+    if (!exerciseHistory?.[exerciseId]) return [];
+    
+    return exerciseHistory[exerciseId]
+      .map(workout => {
+        const exerciseData = workout.exercises.find(e => e.exercise.id === exerciseId);
+        if (!exerciseData) return null;
+        
+        // Get the maximum weight and corresponding reps
+        const maxWeightSet = exerciseData.sets.reduce((maxSet, currentSet) => {
+          const currentWeight = currentSet.weight || 0;
+          const maxWeight = maxSet ? maxSet.weight || 0 : 0;
+          return currentWeight > maxWeight ? currentSet : maxSet;
+        }, exerciseData.sets[0]);
+
+        const movementNumber = workout.exercises.findIndex(e => e.exercise.id === exerciseId) + 1;
+        const totalMovements = workout.exercises.length;
+        
+        return {
+          date: new Date(workout.startTime),
+          formattedDate: new Intl.DateTimeFormat('en-US', {
+            month: 'short',
+            day: 'numeric',
+          }).format(new Date(workout.startTime)),
+          weight: maxWeightSet?.weight || 0,
+          reps: maxWeightSet?.performedReps || '0',
+          movementInfo: `Movement #${movementNumber} of ${totalMovements}`
+        };
+      })
+      .filter(data => data !== null && data.weight > 0)
+      .sort((a, b) => a!.date.getTime() - b!.date.getTime());
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="bg-white p-3 shadow-lg rounded-lg border">
+          <p className="text-sm font-medium text-gray-900">{label}</p>
+          <p className="text-sm text-gray-600">
+            Weight: {data.weight}{weightUnit}
+          </p>
+          <p className="text-sm text-gray-600">
+            Reps: {data.reps}
+          </p>
+          <p className="text-sm text-gray-600">
+            {data.movementInfo}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <div className="md:hidden app-layout bg-gray-50">
       {/* Fixed Header */}
@@ -286,13 +365,13 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               onClick={handleMenuToggle}
               className="p-2.5 bg-blue-50 rounded-lg"
             >
-              <MoreVertical size={16} className="text-blue-600"/>
+              <MoreVertical strokeWidth={1.33} size={16} className="font-normal text-blue-600"/>
             </button>
             <button
               onClick={() => setShowExerciseModal(true)}
-              className="p-2.5 bg-blue-600 text-white rounded-lg"
+              className="p-2.5 bg-blue-600 text-white rounded-lg text-white"
             >
-              <Plus size={16} />
+              <Plus strokeWidth={1.33} size={16} />
             </button>
           </div>
         </div>
@@ -345,115 +424,264 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
           return (
             <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
-              <div className="p-4 border-b">
+              <div className="border-b px-3 py-2 border-gray-100">
                 <div className="flex justify-between items-center">
                   <div className="flex-1">
-                    <h3 className="font-semibold">{exercise.name}</h3>
+                    <h3 className="font-bold text-base">{exercise.name}</h3>
                     {supersetPartner && (
                       <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
                         <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
                         Superset w/ {supersetPartner.exercise.name}
                       </div>
                     )}
+                  
                   </div>
                   <button
                     onClick={() => handleExerciseMenuToggle(exercise.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg ml-2"
+                    className="p-2 hover:bg-gray-100 text-gray-900 rounded-lg"
                   >
-                    <MoreVertical size={18} />
+                    <MoreHorizontal  strokeWidth={1.33}  size={16} />
                   </button>
                 </div>
-
                 {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
               </div>
+              {/* Tab Navigation */}
+              <div className="flex border-b border-gray-100">
+                      <button
+                        className={`px-3 py-1.5 text-sm font-medium ${
+                          (!activeTab[exercise.id] || activeTab[exercise.id] === 'log')
+                            ? 'text-gray-900 border-b-2 border-gray-200 bg-gray-50'
+                            : 'text-gray-500 hover:text-gray-500'
+                        }`}
+                        onClick={() => setActiveTab(prev => ({ ...prev, [exercise.id]: 'log' }))}
+                      >
+                        Log
+                      </button>
+                      <button
+                        className={`px-3 py-1.5 text-sm font-medium ${
+                          activeTab[exercise.id] === 'previous'
+                            ? 'text-gray-900 border-b-2 border-gray-200 bg-gray-50'
+                            : 'text-gray-500 hover:text-gray-500'
+                        }`}
+                        onClick={() => setActiveTab(prev => ({ ...prev, [exercise.id]: 'previous' }))}
+                      >
+                        Previous
+                      </button>
+                    </div>
 
               <div className="p-4">
-                {/* Column Headers */}
-                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
-                  <div>SET</div>
-                  {isCardio || isTimeBasedCore ? (
-                    <>
-                      <div>TIME</div>
-                      {exercise.metrics?.distance && <div>DISTANCE</div>}
-                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
-                      {exercise.metrics?.incline && <div>INCLINE</div>}
-                      {exercise.metrics?.pace && <div>PACE</div>}
-                      {exercise.metrics?.reps && <div>REPS</div>}
-                    </>
-                  ) : (
-                    <>
-                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                      <div>GOAL</div>
-                      <div>DONE</div>
-                    </>
-                  )}
-                  <div></div>
-                </div>
-                {sets.map((set) => (
-                  <MobileSetRow
-                    key={set.id}
-                    set={set}
-                    exercise={exercise}
-                    onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-                    onDelete={() => onDeleteSet(exercise.id, set.id)}
-                    onOpenNoteModal={() => setActiveNoteModal({
-                      exerciseId: exercise.id,
-                      setId: set.id,
-                      exerciseName: exercise.name,
-                      setNumber: set.setNumber
-                    })}
-                    onSetComplete={() => handleSetComplete(exercise.id)}
-                  />
-                ))}
-
-                {!supersetPartner && (
-                  <button
-                    onClick={() => onAddSet(exercise.id)}
-                    className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Set
-                  </button>
-                )}
-
-                {supersetPartner && (
+                {(!activeTab[exercise.id] || activeTab[exercise.id] === 'log') ? (
                   <>
-                    <button
-                      onClick={() => onAddSet(exercise.id)}
-                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                    {/* Existing Log View Content */}
+                    <div 
+                      ref={el => {
+                        logTabRefs.current[exercise.id] = el;
+                        if (el && (!tabContentHeights[exercise.id] || tabContentHeights[exercise.id] !== el.scrollHeight)) {
+                          setTabContentHeights(prev => ({
+                            ...prev,
+                            [exercise.id]: el.scrollHeight
+                          }));
+                        }
+                      }}
                     >
-                      <Plus size={16} className="mr-2" />
-                      Add Set
-                    </button>
+                      <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
+                        <div>SET</div>
+                        {isCardio || isTimeBasedCore ? (
+                          <>
+                            <div>TIME</div>
+                            {exercise.metrics?.distance && <div>DISTANCE</div>}
+                            {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
+                            {exercise.metrics?.incline && <div>INCLINE</div>}
+                            {exercise.metrics?.pace && <div>PACE</div>}
+                            {exercise.metrics?.reps && <div>REPS</div>}
+                          </>
+                        ) : (
+                          <>
+                            <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
+                            <div>GOAL</div>
+                            <div>DONE</div>
+                          </>
+                        )}
+                        <div></div>
+                      </div>
+                      {sets.map((set) => (
+                        <MobileSetRow
+                          key={set.id}
+                          set={set}
+                          exercise={exercise}
+                          onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+                          onDelete={() => onDeleteSet(exercise.id, set.id)}
+                          onOpenNoteModal={() => setActiveNoteModal({
+                            exerciseId: exercise.id,
+                            setId: set.id,
+                            exerciseName: exercise.name,
+                            setNumber: set.setNumber
+                          })}
+                          onSetComplete={() => handleSetComplete(exercise.id)}
+                        />
+                      ))}
 
-                    <div className="my-4 border-t border-lime-500" />
-                    <div className="mb-2">
-                      <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
+                      {!supersetPartner && (
+                        <button
+                          onClick={() => onAddSet(exercise.id)}
+                          className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                        >
+                          <Plus size={16} className="mr-2" />
+                          Add Set
+                        </button>
+                      )}
+
+                      {supersetPartner && (
+                        <>
+                          <button
+                            onClick={() => onAddSet(exercise.id)}
+                            className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                          >
+                            <Plus size={16} className="mr-2" />
+                            Add Set
+                          </button>
+
+                          <div className="my-4 border-t border-lime-500" />
+                          <div className="mb-2">
+                            <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
+                          </div>
+                          {supersetPartner.sets.map((set) => (
+                            <MobileSetRow
+                              key={set.id}
+                              set={set}
+                              exercise={supersetPartner.exercise}
+                              onUpdate={(field, value) => onUpdateSet(supersetPartner.exercise.id, set.id, field, value)}
+                              onDelete={() => onDeleteSet(supersetPartner.exercise.id, set.id)}
+                              onOpenNoteModal={() => setActiveNoteModal({
+                                exerciseId: supersetPartner.exercise.id,
+                                setId: set.id,
+                                exerciseName: supersetPartner.exercise.name,
+                                setNumber: set.setNumber
+                              })}
+                              onSetComplete={() => handleSetComplete(supersetPartner.exercise.id)}
+                            />
+                          ))}
+                          <button
+                            onClick={() => onAddSet(supersetPartner.exercise.id)}
+                            className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+                          >
+                            <Plus size={16} className="mr-2" />
+                            Add Set
+                          </button>
+                        </>
+                      )}
                     </div>
-                    {supersetPartner.sets.map((set) => (
-                      <MobileSetRow
-                        key={set.id}
-                        set={set}
-                        exercise={supersetPartner.exercise}
-                        onUpdate={(field, value) => onUpdateSet(supersetPartner.exercise.id, set.id, field, value)}
-                        onDelete={() => onDeleteSet(supersetPartner.exercise.id, set.id)}
-                        onOpenNoteModal={() => setActiveNoteModal({
-                          exerciseId: supersetPartner.exercise.id,
-                          setId: set.id,
-                          exerciseName: supersetPartner.exercise.name,
-                          setNumber: set.setNumber
-                        })}
-                        onSetComplete={() => handleSetComplete(supersetPartner.exercise.id)}
-                      />
-                    ))}
-                    <button
-                      onClick={() => onAddSet(supersetPartner.exercise.id)}
-                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Add Set
-                    </button>
                   </>
+                ) : (
+                  // Previous Workouts View
+                  <div 
+                    className="overflow-y-auto space-y-2"
+                    style={{ height: `${tabContentHeights[exercise.id] || 300}px` }}
+                  >
+                    <div className="flex justify-between items-center mb-2">
+                      <h4 className="text-sm font-medium text-gray-900">Exercise History</h4>
+                      <button
+                        onClick={() => setShowChart(prev => ({
+                          ...prev,
+                          [exercise.id]: !prev[exercise.id]
+                        }))}
+                        className={`p-1.5 rounded ${
+                          showChart[exercise.id] 
+                            ? 'bg-blue-50 text-blue-600' 
+                            : 'text-gray-500 hover:text-gray-700'
+                        }`}
+                      >
+                        <BarChart2 size={16} strokeWidth={1.5} />
+                      </button>
+                    </div>
+
+                    {showChart[exercise.id] ? (
+                      <div className="bg-white rounded-lg p-0 ml-[-2rem] ">
+                        <div className="w-full h-[200px]">
+                          {(() => {
+                            const data = getExerciseProgressionData(exercise.id);
+                            if (data.length === 0) return (
+                              <div className="flex items-center justify-center h-full text-sm text-gray-500">
+                                No progression data available
+                              </div>
+                            );
+
+                            return (
+                              <ResponsiveContainer width="100%" height="100%">
+                                <LineChart
+                                  data={data}
+                                  margin={{
+                                    top: 2,
+                                    right: 2,
+                                    left: 2,
+                                    bottom: 2,
+                                  }}
+                                >
+                                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                  <XAxis 
+                                    dataKey="formattedDate"
+                                    tick={{ fontSize: 10 }}
+                                    stroke="#9ca3af"
+                                  />
+                                  <YAxis 
+                                    tick={{ fontSize: 10 }}
+                                    stroke="#9ca3af"
+                                  />
+                                  <Tooltip content={<CustomTooltip />} />
+                                  <Line
+                                    type="monotone"
+                                    dataKey="weight"
+                                    stroke="#2563eb"
+                                    strokeWidth={2}
+                                    dot={{ r: 3, fill: "#2563eb" }}
+                                    activeDot={{ r: 5, fill: "#2563eb" }}
+                                  />
+                                </LineChart>
+                              </ResponsiveContainer>
+                            );
+                          })()}
+                        </div>
+                      </div>
+                    ) : (
+                      // Existing history view
+                      <>
+                        {exerciseHistory?.[exercise.id]?.map((workout, index) => (
+                          <div key={`${workout.id}-${index}`} className="bg-gray-50 rounded-lg p-3">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium text-gray-900">
+                                  {formatDate(workout.startTime)}
+                                </span>
+                                <span className="text-xs text-gray-500 bg-white px-1.5 py-0.5 rounded">
+                                  #{exerciseHistory[exercise.id].length - index}/{exerciseHistory[exercise.id].length}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="space-y-1.5">
+                              {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set, setIndex) => (
+                                <div key={set.id} className="flex items-center gap-3 text-sm">
+                                  <span className="font-medium text-gray-700">
+                                    {formatSet(set, exercise)}
+                                  </span>
+                                  {set.isPR && (
+                                    <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-medium">
+                                      PR
+                                    </span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {(!exerciseHistory?.[exercise.id] || exerciseHistory[exercise.id].length === 0) && (
+                          <div className="text-center text-gray-500 py-8">
+                            No previous workout data available
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -539,7 +767,12 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClose={() => setShowFinishConfirmation(false)}
         onConfirm={handleCompleteWorkout}
         title="Finish Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets completed. Are you sure you want to finish this workout?`}
+        message={
+          stats.exercises.total - stats.exercises.completed === 0 && 
+          stats.sets.total - stats.sets.completed === 0
+            ? "Woah, looks like you're all done! Time to cool down and focus on your recovery for the next session. 💪"
+            : `You still have ${stats.exercises.total - stats.exercises.completed} exercises and ${stats.sets.total - stats.sets.completed} sets remaining. Are you sure you want to finish?`
+        }
         confirmText="Yes, Finish"
         confirmButtonClass="bg-blue-600 hover:bg-blue-700"
       />
@@ -549,7 +782,12 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClose={() => setShowCancelConfirmation(false)}
         onConfirm={onCancelWorkout}
         title="Cancel Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets that will be discarded. This action cannot be undone.`}
+        message={
+          stats.exercises.total - stats.exercises.completed === 0 && 
+          stats.sets.total - stats.sets.completed === 0
+            ? "Woah, looks like you're all done! Time to cool down and focus on your recovery for the next session. 💪"
+            : `You still have ${stats.exercises.total - stats.exercises.completed} exercises and ${stats.sets.total - stats.sets.completed} sets remaining. Are you sure you want to cancel?`
+        }
         confirmText="Yes, Cancel"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />

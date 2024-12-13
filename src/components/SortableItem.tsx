@@ -14,6 +14,7 @@ export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
     setNodeRef,
     transform,
     transition,
+    isDragging,
   } = useSortable({ 
     id,
     attributes: {
@@ -26,13 +27,17 @@ export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
     transform: CSS.Transform.toString(transform),
     transition,
     touchAction: 'manipulation',
+    
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
+<div ref={setNodeRef} style={style}>
       {React.cloneElement(children as React.ReactElement, {
         ...attributes,
         ...listeners,
+        className: `${(children as React.ReactElement).props.className || ''} ${
+          isDragging ? 'bg-blue-50 border-blue-400' : 'border-gray-200'
+        }`,
       })}
     </div>
   );

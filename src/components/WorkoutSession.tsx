@@ -15,16 +15,17 @@ const STORAGE_PREFIX = 'logday_';
 const WORKOUT_TIMER_KEY = `${STORAGE_PREFIX}workoutTimer`;
 
 export const WorkoutSession: React.FC = () => {
-  const { 
-    currentWorkout, 
-    updateWorkoutExercise, 
-    completeWorkout,
-    deleteExercise,
-    addExercisesToWorkout,
-    setCurrentWorkout,
-    setSelectedExercises,
-    clearWorkoutState 
-  } = useWorkout();
+const { 
+  currentWorkout, 
+  updateWorkoutExercise, 
+  workoutLogs,  // Add this
+  completeWorkout,
+  deleteExercise,
+  addExercisesToWorkout,
+  setCurrentWorkout,
+  setSelectedExercises,
+  clearWorkoutState 
+} = useWorkout();
   const { weightUnit } = useSettings();
   const [workoutName, setWorkoutName] = useState(currentWorkout?.name || '');
   const [duration, setDuration] = useState(0);
@@ -40,6 +41,29 @@ export const WorkoutSession: React.FC = () => {
   const [isExerciseModalOpen, setIsExerciseModalOpen] = useState(false);
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [isLoadingExercises, setIsLoadingExercises] = useState(true);
+
+  const getExerciseHistory = () => {
+    const history: { [key: string]: WorkoutLog[] } = {};
+    
+    workoutLogs.forEach(log => {
+      log.exercises.forEach(ex => {
+        if (!history[ex.exercise.id]) {
+          history[ex.exercise.id] = [];
+        }
+        if (ex.sets.length > 0) {
+          history[ex.exercise.id].push(log);
+        }
+      });
+    });
+    
+    Object.keys(history).forEach(exerciseId => {
+      history[exerciseId].sort((a, b) => 
+        new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+      );
+    });
+    
+    return history;
+  };
 
   useEffect(() => {
     if (!currentWorkout?.startTime || isInitializedRef.current) return;
@@ -303,21 +327,22 @@ export const WorkoutSession: React.FC = () => {
     }
 
     return (
-      <MobileWorkoutView
-        workout={currentWorkout}
-        duration={duration}
-        workoutName={workoutName}
-        onNameChange={setWorkoutName}
-        onUpdateSet={handleUpdateSet}
-        onDeleteSet={handleDeleteSet}
-        onAddSet={handleAddSet}
-        onDeleteExercise={deleteExercise}
-        onShowExerciseModal={handleAddExercises}
-        onCompleteWorkout={handleCompleteWorkout}
-        onCancelWorkout={handleCancelWorkout}
-        isPaused={isPaused}
-        onPauseResume={handlePauseResume}
-      />
+<MobileWorkoutView
+  workout={currentWorkout}
+  duration={duration}
+  workoutName={workoutName}
+  exerciseHistory={getExerciseHistory()}  // Add this line
+  onNameChange={setWorkoutName}
+  onUpdateSet={handleUpdateSet}
+  onDeleteSet={handleDeleteSet}
+  onAddSet={handleAddSet}
+  onDeleteExercise={deleteExercise}
+  onShowExerciseModal={handleAddExercises}
+  onCompleteWorkout={handleCompleteWorkout}
+  onCancelWorkout={handleCancelWorkout}
+  isPaused={isPaused}
+  onPauseResume={handlePauseResume}
+/>
     );
   }
 

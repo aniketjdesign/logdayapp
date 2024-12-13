@@ -234,7 +234,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         onClick={() => setShowMenu(true)}
         className="p-1 hover:bg-gray-100 rounded-lg flex justify-center h-8"
       >
-        <MoreVertical size={20} />
+        <MoreVertical  strokeWidth={1}  size={16} />
       </button>
 
       {showMenu && (

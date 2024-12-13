@@ -74,7 +74,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
               <div>
                 {items.map(({ exercise }) => (
                   <SortableItem key={exercise.id} id={exercise.id}>
-                    <div className="flex items-center px-4 py-3 bg-white border-b">
+                    <div className="flex items-center px-4 py-3 border-b">
                       <div className="touch-none select-none cursor-grab active:cursor-grabbing">
                         <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
                       </div>
