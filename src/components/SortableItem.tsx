@@ -14,18 +14,26 @@ export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id });
+  } = useSortable({ 
+    id,
+    attributes: {
+      role: 'button',
+      'aria-label': 'drag handle'
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    touchAction: 'none', // Only disable touch actions when dragging
-    userSelect: 'none',
+    touchAction: 'manipulation',
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
+    <div ref={setNodeRef} style={style}>
+      {React.cloneElement(children as React.ReactElement, {
+        ...attributes,
+        ...listeners,
+      })}
     </div>
   );
 };
