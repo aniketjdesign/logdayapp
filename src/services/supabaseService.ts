@@ -6,7 +6,7 @@ import { isValidUUID } from '../utils/uuid';
 const ITEMS_PER_PAGE = 10;
 
 export const supabaseService = {
-  async getWorkoutLogs(page: number = 1) {
+  async getWorkoutLogs() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
@@ -15,9 +15,9 @@ export const supabaseService = {
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('workout_logs')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('user_id', session.user.id)
         .gte('start_time', thirtyDaysAgo.toISOString())
         .order('start_time', { ascending: false });
@@ -34,10 +34,10 @@ export const supabaseService = {
         duration: log.duration
       })) || [];
 
-      return { data: transformedData, count: count || 0, error: null };
+      return { data: transformedData, error: null };
     } catch (error) {
       console.error('Error fetching workout logs:', error);
-      return { data: [], count: 0, error };
+      return { data: [], error };
     }
   },
 
@@ -100,25 +100,27 @@ export const supabaseService = {
     }
   },
 
-  async searchWorkoutLogs(query: string, page: number = 1) {
+  async searchWorkoutLogs(query: string) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE - 1;
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const queryBuilder = supabase
         .from('workout_logs')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('user_id', session.user.id)
+        .gte('start_time', thirtyDaysAgo.toISOString())
         .order('created_at', { ascending: false });
 
       if (query) {
         queryBuilder.filter('name', 'ilike', `%${query}%`);
       }
 
-      const { data, error, count } = await queryBuilder.range(start, end);
+      const { data, error } = await queryBuilder;
 
       if (error) throw error;
 
@@ -132,10 +134,10 @@ export const supabaseService = {
         duration: log.duration
       })) || [];
 
-      return { data: transformedData, count: count || 0, error: null };
+      return { data: transformedData, error: null };
     } catch (error) {
       console.error('Error searching workout logs:', error);
-      return { data: [], count: 0, error };
+      return { data: [], error };
     }
   },
 
@@ -263,5 +265,42 @@ export const supabaseService = {
       console.error('Error fetching recent exercises:', error);
       return [];
     }
-  }
+  },
+
+  async getLastWorkoutForExercise(exerciseId: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .contains('exercises', [{ exercise: { id: exerciseId } }])
+        .order('start_time', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      // Return the last performed set for this exercise
+      if (data && data.length > 0) {
+        const lastWorkout = data[0];
+        const exerciseData = lastWorkout.exercises.find(
+          (e: any) => e.exercise.id === exerciseId
+        );
+        if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
+          // Return the last non-warmup set
+          const lastSet = [...exerciseData.sets]
+            .reverse()
+            .find((set: any) => !set.isWarmup);
+          return { data: lastSet, error: null };
+        }
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Error fetching last workout for exercise:', error);
+      return { data: null, error };
+    }
+  },
 };
