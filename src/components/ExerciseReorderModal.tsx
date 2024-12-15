@@ -4,6 +4,7 @@ import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSo
 import { SortableItem } from './SortableItem';
 import { Exercise } from '../types/workout';
 import { GripVertical } from 'lucide-react';
+import { useWorkout } from '../context/WorkoutContext';
 
 interface ExerciseReorderModalProps {
   exercises: { exercise: Exercise }[];
@@ -17,6 +18,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   onReorder,
 }) => {
   const [items, setItems] = React.useState(exercises);
+  const { reorderWorkoutExercises } = useWorkout();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -44,6 +46,7 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   };
 
   const handleSave = () => {
+    reorderWorkoutExercises(items);
     onReorder(items);
     onClose();
   };

@@ -22,6 +22,7 @@ interface WorkoutContextType {
   startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
   completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
+  reorderWorkoutExercises: (reorderedExercises: WorkoutExercise[]) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
   addCustomExercise: (exercise: Exercise) => void;
   deleteExercise: (exerciseId: string) => void;
@@ -225,6 +226,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const reorderWorkoutExercises = (reorderedExercises: WorkoutExercise[]) => {
+    if (!currentWorkout) return;
+    setCurrentWorkout(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        exercises: reorderedExercises
+      };
+    });
+  };
+
   const addExercisesToWorkout = (exercises: Exercise[]) => {
     if (!currentWorkout) return;
     exercises.forEach(exercise => {
@@ -324,6 +336,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       startWorkout,
       completeWorkout,
       updateWorkoutExercise,
+      reorderWorkoutExercises,
       addExercisesToWorkout,
       addCustomExercise,
       deleteExercise,

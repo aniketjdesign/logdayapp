@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, MoreHorizontal, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock, BarChart2 } from 'lucide-react';
+import { Plus, Timer, MoreVertical, Trash2, CheckCheck, FileText, ChevronDownSquareIcon, X, History, Calendar, MoreHorizontal, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock, BarChart2, File } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
@@ -319,7 +319,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           }).format(new Date(workout.startTime)),
           weight: maxWeightSet?.weight || 0,
           reps: maxWeightSet?.performedReps || '0',
-          movementInfo: `Movement #${movementNumber} of ${totalMovements}`
+          movementInfo: `Exercise #${movementNumber} of ${totalMovements}`
         };
       })
       .filter(data => data !== null && data.weight > 0)
@@ -470,6 +470,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                     </div>
 
               <div className="p-4">
+                
                 {(!activeTab[exercise.id] || activeTab[exercise.id] === 'log') ? (
                   <>
                     {/* Existing Log View Content */}
@@ -575,11 +576,14 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                 ) : (
                   // Previous Workouts View
                   <div 
-                    className="overflow-y-auto space-y-2"
+                    className="overflow-y-auto space-y-4 pb-12"
                     style={{ height: `${tabContentHeights[exercise.id] || 300}px` }}
                   >
-                    <div className="flex justify-between items-center mb-2">
-                      <h4 className="text-sm font-medium text-gray-900">Exercise History</h4>
+                    <div className="flex justify-between items-center">
+                      <div className="flex space-x-1 items-center">
+                      <FileText size={14} strokeWidth={1.33} className="text-gray-500" />
+                      <h4 className="text-sm font-medium text-gray-700">Performance</h4>
+                      </div>
                       <button
                         onClick={() => setShowChart(prev => ({
                           ...prev,
@@ -587,8 +591,8 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                         }))}
                         className={`p-1.5 rounded ${
                           showChart[exercise.id] 
-                            ? 'bg-blue-50 text-blue-600' 
-                            : 'text-gray-500 hover:text-gray-700'
+                            ? 'bg-gray-200 text-gray-900' 
+                            : 'bg-gray-100 text-gray-900 hover:text-gray-700'
                         }`}
                       >
                         <BarChart2 size={16} strokeWidth={1.5} />
@@ -596,8 +600,8 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                     </div>
 
                     {showChart[exercise.id] ? (
-                      <div className="bg-white rounded-lg p-0 ml-[-2rem] ">
-                        <div className="w-full h-[200px]">
+                      <div className="bg-white rounded-lg pr-2 ml-[-2.5rem] ">
+                        <div className="w-auto h-[160px] ">
                           {(() => {
                             const data = getExerciseProgressionData(exercise.id);
                             if (data.length === 0) return (
@@ -646,20 +650,40 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                       // Existing history view
                       <>
                         {exerciseHistory?.[exercise.id]?.map((workout, index) => (
-                          <div key={`${workout.id}-${index}`} className="bg-gray-50 rounded-lg p-3">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">
+                          <div key={`${workout.id}-${index}`} className="space-y-2 w-auto bg-gray-50 pb-2 rounded-md overflow-hidden">
+                            <div className="flex items-center justify-between pl-2 pr-1 py-1 bg-gray-100">
+                              <div className="flex items-center justify-between w-full ">                        
+                              <span className="text-xs font-medium text-gray-900">
                                   {formatDate(workout.startTime)}
                                 </span>
                                 <span className="text-xs text-gray-500 bg-white px-1.5 py-0.5 rounded">
-                                  #{exerciseHistory[exercise.id].length - index}/{exerciseHistory[exercise.id].length}
+                                  {(() => {
+                                    // Sort exercises by their first set's timestamp if available
+                                    const exercisesWithTimestamp = workout.exercises
+                                      .map((e, originalIndex) => ({
+                                        ...e,
+                                        originalIndex: originalIndex + 1,
+                                        firstSetTime: e.sets[0]?.timestamp
+                                      }))
+                                      .sort((a, b) => {
+                                        // If timestamps exist, use them
+                                        if (a.firstSetTime && b.firstSetTime) {
+                                          return new Date(a.firstSetTime).getTime() - new Date(b.firstSetTime).getTime();
+                                        }
+                                        // Fall back to original index if no timestamps
+                                        return a.originalIndex - b.originalIndex;
+                                      });
+                                    
+                                    // Find the position of current exercise
+                                    const position = exercisesWithTimestamp.findIndex(e => e.exercise.id === exercise.id) + 1;
+                                    return `Exercise #${position} on this day`;
+                                  })()}
                                 </span>
                               </div>
                             </div>
-                            <div className="space-y-1.5">
+                            <div className="space-y-1.5 bg-gray-50 ">
                               {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set, setIndex) => (
-                                <div key={set.id} className="flex items-center gap-3 text-sm">
+                                <div key={set.id} className="flex items-center gap-3 text-xs px-2.5">
                                   <span className="font-medium text-gray-700">
                                     {formatSet(set, exercise)}
                                   </span>
