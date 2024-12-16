@@ -194,27 +194,27 @@ export const Navigation: React.FC = () => {
         <div className="flex-1 py-2">
           <button
             onClick={navigateToHome}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-sm"
+            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
           >
             Quick Start
           </button>
           {currentWorkout && (
             <button
               onClick={navigateToWorkout}
-              className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-sm"
+              className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
             >
               Active Workout
             </button>
           )}
           <button
             onClick={navigateToLogs}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-sm"
+            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
           >
             Workout History
           </button>
           <button
             onClick={navigateToSettings}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-sm"
+            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
           >
             Settings
           </button>
