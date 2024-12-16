@@ -9,19 +9,19 @@ export const Settings: React.FC = () => {
 
   return (
     <div className="max-w-2xl mx-auto p-4 sm:p-6 pb-32">
-      <h2 className="text-2xl font-bold mb-6">Settings</h2>
+      <h2 className="text-lg font-bold mb-6">Settings</h2>
 
-      <div className="bg-white rounded-lg shadow-sm p-6">
-        <div className="flex items-start space-x-4">
+      <div className="bg-white rounded-lg shadow-sm p-4">
+        <div className="flex flex-col items-start gap-4">
           <div className="p-2 bg-blue-50 rounded-lg">
             <Scale className="h-6 w-6 text-blue-600" />
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold mb-1">Weight Unit</h3>
+          <div className="flex flex-col mx-0">
+            <h3 className="text-lg font-semibold mb-0">Weight Unit</h3>
             <p className="text-gray-600 text-sm mb-4">
               Choose your preferred unit for tracking weights
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
               <button
                 onClick={() => !currentWorkout && setWeightUnit('kgs')}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${

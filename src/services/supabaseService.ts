@@ -117,14 +117,39 @@ export const supabaseService = {
         .order('created_at', { ascending: false });
 
       if (query) {
-        queryBuilder.filter('name', 'ilike', `%${query}%`);
+        const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+        // Get all workouts and filter in memory for complex searches
+        const { data, error } = await queryBuilder;
+        if (error) throw error;
+
+        // Transform the data first
+        const transformedData = data?.map(log => ({
+          id: log.id,
+          name: log.name,
+          exercises: log.exercises,
+          startTime: log.start_time,
+          endTime: log.end_time,
+          duration: log.duration
+        })) || [];
+
+        // Filter the transformed data
+        const filteredData = transformedData.filter(log => {
+          const searchableText = [
+            log.name || '',
+            ...log.exercises.map(ex => ex.exercise.name),
+            ...log.exercises.flatMap(ex => ex.sets.map(set => set.comments || ''))
+          ].join(' ').toLowerCase();
+          
+          return searchTerms.every(term => searchableText.includes(term));
+        });
+
+        return { data: filteredData, error: null };
       }
 
+      // If no query, return all data
       const { data, error } = await queryBuilder;
-
       if (error) throw error;
 
-      // Transform and validate the data
       const transformedData = data?.map(log => ({
         id: log.id,
         name: log.name,

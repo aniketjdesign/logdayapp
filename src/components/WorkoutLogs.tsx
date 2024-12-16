@@ -65,7 +65,7 @@ export const WorkoutLogs: React.FC = () => {
     );
   }
 
-  if (workoutLogs.length === 0) {
+  if (workoutLogs.length === 0 && !search) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
         <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
@@ -81,34 +81,47 @@ export const WorkoutLogs: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
+    <div className="max-w-4xl mx-auto px-4 sm:p-6 pb-32">
       {currentWorkout && <OngoingWorkoutMessage />}
 
       <div className="mb-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
-        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
-
+        <div className="heading-wrapper flex-col gap-y-2 pt-6 pb-4">
+          <h1 className="text-lg font-bold">Workout History</h1>
+          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
+        </div>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
             placeholder="Search workouts..."
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base"
+            className="w-full pl-7 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base rounded-lg"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
       </div>
 
-      <div className="space-y-4 sm:space-y-6">
-        {workoutLogs.map(log => (
-          <WorkoutLogCard
-            key={log.id}
-            log={log}
-            onDelete={() => handleDeleteClick(log.id)}
-          />
-        ))}
-      </div>
+      {workoutLogs.length === 0 && search ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 text-sm">No workouts found matching "{search}"</p>
+          <button
+            onClick={() => setSearch('')}
+            className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+          >
+            Clear search
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4 sm:space-y-6">
+          {workoutLogs.map(log => (
+            <WorkoutLogCard
+              key={log.id}
+              log={log}
+              onDelete={() => handleDeleteClick(log.id)}
+            />
+          ))}
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={showDeleteModal}
