@@ -87,12 +87,14 @@ export const ExerciseList: React.FC = () => {
 
   return (
     <div className="h-full max-w-3xl mx-auto">
+      <div className="px-4 py-0">
       {currentWorkout && <OngoingWorkoutMessage />}
+      </div>
       <InstallAppToast />
      
       <div className= {`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
       <div className= "px-4">
-        <div className="heading-wrapper flex-col gap-y-2 pt-6 pb-4">
+        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-4">
           <h1 className="text-lg font-bold">Quick Start</h1>
           <p className="text-sm text-gray-500">Select your exercises and click Start Workout</p>
         </div>

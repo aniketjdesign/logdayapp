@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share, RefreshCw } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -194,35 +194,48 @@ export const Navigation: React.FC = () => {
         <div className="flex-1 py-2">
           <button
             onClick={navigateToHome}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
+            <Zap size={18} strokeWidth={2} className="mr-3 text-gray-500" />
             Quick Start
           </button>
           {currentWorkout && (
             <button
               onClick={navigateToWorkout}
-              className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
+              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
             >
+              <Timer size={18} strokeWidth={2} className="mr-3  text-gray-500" />
               Active Workout
             </button>
           )}
           <button
-            onClick={navigateToLogs}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
+            onClick={navigateToSettings}
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
+            <Settings size={18} strokeWidth={2} className="mr-3  text-gray-500" />
+            Settings
+          </button>
+          <button
+            onClick={navigateToLogs}
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+          >
+            <History size={18} strokeWidth={2} className="mr-3  text-gray-500" />
             Workout History
           </button>
           <button
-            onClick={navigateToSettings}
-            className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-100 font-medium text-md"
+            onClick={() => {
+              setIsMenuOpen(false);
+              navigate('/contact');
+            }}
+            className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100"
           >
-            Settings
+            <MessageSquare size={18} className="mr-3 text-gray-500" />
+            <span>Contact</span>
           </button>
+          
         </div>
-
-        <div className="border-t border-gray-100 py-4 px-4 space-y-4">
-          {isInstallable && (
-            <div className="p-3 bg-blue-50 rounded-lg">
+        {isInstallable && (
+            <div className="p-3 bg-blue-50 rounded-lg m-4">
               <div className="flex items-center text-blue-800 mb-1.5">
                 <Share size={16} strokeWidth={2} className="mr-2 flex-shrink-0" />
                 <span className="text-sm font-medium">Install Logday App</span>
@@ -234,14 +247,18 @@ export const Navigation: React.FC = () => {
               </p>
             </div>
           )}
-          <div className="flex items-center space-x-3 text-gray-600 px-1">
+
+
+
+        <div className="border-t border-gray-100 py-4 px-4 space-y-4">
+          <div className="flex flex-row items-center px-2 bg-gray-50 py-2 rounded-lg space-x-2 text-gray-600 px-1 w-full">
             <User size={18} strokeWidth={2} />
             <span className="text-sm font-medium truncate">{user?.email}</span>
           </div>
           <button
             onClick={handleLogoutClick}
             disabled={isLoggingOut}
-            className="w-full py-2.5 text-red-600 hover:bg-red-50 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="w-full py-2.5 text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <LogOut size={16} strokeWidth={2} />
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>

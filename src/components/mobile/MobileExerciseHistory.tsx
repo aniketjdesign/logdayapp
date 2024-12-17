@@ -96,7 +96,10 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
       <div className="flex justify-between items-center">
         <div className="flex space-x-1 items-center">
           <FileText size={14} strokeWidth={1.33} className="text-gray-500" />
-          <h4 className="text-sm font-medium text-gray-700">Performance</h4>
+          <div className="flex items-center gap-2">
+            <h4 className="text-sm font-medium text-gray-700">Performance</h4>
+            <span className="px-1.5 py-0.5 text-xs font-medium bg-blue-50 text-blue-700 rounded">Beta</span>
+          </div>
         </div>
         <button
           onClick={onToggleChart}

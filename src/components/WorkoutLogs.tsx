@@ -85,7 +85,7 @@ export const WorkoutLogs: React.FC = () => {
       {currentWorkout && <OngoingWorkoutMessage />}
 
       <div className="mb-6">
-        <div className="heading-wrapper flex-col gap-y-2 pt-6 pb-4">
+        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-4">
           <h1 className="text-lg font-bold">Workout History</h1>
           <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
         </div>

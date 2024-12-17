@@ -13,6 +13,8 @@ import { SignUp } from './components/Auth/SignUp';
 import { MigrationStatus } from './components/MigrationStatus';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
+import { LogDayLogo } from './components/LogDayLogo';
+
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -43,8 +45,9 @@ const AppContent = () => {
   // Show loading state while checking auth and workout status
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-pulse text-gray-500">Loading...</div>
+      <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
+        <LogDayLogo/>
+        <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
       </div>
     );
   }
