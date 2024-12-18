@@ -13,7 +13,11 @@ export const exerciseService = {
       .single();
 
     if (error) throw error;
-    return data;
+    // Map database fields to frontend fields
+    return {
+      ...data,
+      muscleGroup: data.muscle_group
+    };
   },
 
   async getUserExercises(): Promise<CustomExercise[]> {
@@ -23,7 +27,11 @@ export const exerciseService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data;
+    // Map database fields to frontend fields for each exercise
+    return data.map(exercise => ({
+      ...exercise,
+      muscleGroup: exercise.muscle_group
+    }));
   },
 
   async updateExercise(id: string, exercise: Partial<NewCustomExercise>): Promise<CustomExercise> {
@@ -35,7 +43,11 @@ export const exerciseService = {
       .single();
 
     if (error) throw error;
-    return data;
+    // Map database fields to frontend fields
+    return {
+      ...data,
+      muscleGroup: data.muscle_group
+    };
   },
 
   async deleteExercise(id: string): Promise<void> {
