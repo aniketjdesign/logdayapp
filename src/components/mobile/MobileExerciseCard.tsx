@@ -69,7 +69,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
       <div className="border-b px-3 py-2 border-gray-100">
         <div className="flex justify-between items-center">
           <div className="flex-1">
-            <h3 className="font-bold text-base">{exercise.name}</h3>
+            <h3 className="font-bold text-sm">{exercise.name}</h3>
             {supersetPartner && (
               <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
                 <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
@@ -77,17 +77,18 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               </div>
             )}
           </div>
-          <button
-            onClick={() => onExerciseMenuToggle(exercise.id)}
-            className="p-2 hover:bg-gray-100  text-gray-600 rounded-lg"
-          >
-            <MoreHorizontal strokeWidth={1.33} size={16} />
-          </button>
+          <div className="flex items-center gap-1">
+            <MobileExerciseTabs activeTab={activeTab} onTabChange={setActiveTab} />
+            <button
+              onClick={() => onExerciseMenuToggle(exercise.id)}
+              className="p-2 hover:bg-gray-100 border-gray-100 border text-gray-600 rounded-lg"
+            >
+              <MoreHorizontal strokeWidth={1.33} size={16} />
+            </button>
+          </div>
         </div>
         {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
       </div>
-
-      <MobileExerciseTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <div className="p-4">
         {activeTab === 'log' ? (
