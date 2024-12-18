@@ -11,26 +11,26 @@ export const MobileExerciseTabs: React.FC<MobileExerciseTabsProps> = ({
   onTabChange,
 }) => {
   return (
-    <div className="flex p-[2px] rounded-lg border border-gray-100">
+    <div className="flex space-x-1 p-[2px] rounded-lg border border-gray-100">
       <button
         className={`p-1.5 rounded-md transition-colors ${
           activeTab === 'log'
-            ? 'text-gray-600 bg-gray-100 shadow-sm '
+            ? 'text-gray-600 bg-gray-100 shadow-sm'
             : 'text-gray-500 hover:text-gray-700'
         }`}
         onClick={() => onTabChange('log')}
       >
-        <ClipboardList size={16} />
+        <ClipboardList size={18} strokeWidth={1.5}/>
       </button>
       <button
         className={`p-1.5 rounded-md transition-colors ${
           activeTab === 'previous'
-            ? 'text-gray-600 bg-gray-100 shadow-sm '
+            ? 'text-gray-600 bg-gray-100 shadow-sm'
             : 'text-gray-500 hover:text-gray-700'
         }`}
         onClick={() => onTabChange('previous')}
       >
-        <LineChart size={16} />
+        <LineChart size={18} strokeWidth={1.5}/>
       </button>
     </div>
   );

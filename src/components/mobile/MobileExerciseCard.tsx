@@ -69,7 +69,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
       <div className="border-b px-3 py-2 border-gray-100">
         <div className="flex justify-between items-center">
           <div className="flex-1">
-            <h3 className="font-bold text-sm">{exercise.name}</h3>
+            <h3 className="font-bold text-[15px] text-gray-900">{exercise.name}</h3>
             {supersetPartner && (
               <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
                 <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />

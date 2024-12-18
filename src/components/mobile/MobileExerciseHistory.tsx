@@ -92,7 +92,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
   };
 
   return (
-    <div className="space-y-4" >
+    <div className="space-y-2" >
       <div className="flex justify-between items-center">
         <div className="flex space-x-1 items-center">
           <FileText size={14} strokeWidth={1.33} className="text-gray-500" />
@@ -103,10 +103,10 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         </div>
         <button
           onClick={onToggleChart}
-          className={`p-1.5 rounded ${
+          className={`p-1 rounded-md ${
             showChart 
-              ? 'bg-gray-200 text-gray-900' 
-              : 'bg-gray-100 text-gray-900 hover:text-gray-700'
+              ? 'bg-gray-100 border border-white text-gray-900' 
+              : 'bg-white border border-gray-200 text-gray-900 hover:text-gray-700'
           }`}
         >
           <BarChart2 size={16} strokeWidth={1.5} />
