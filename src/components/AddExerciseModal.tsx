@@ -66,11 +66,11 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 p-3 flex items-center justify-center z-50 ">
       <div className="bg-white rounded-xl w-full max-w-md">
-        <div className="flex flex-row space-x-4 items-center mb-6 p-4 border-b border-gray-100">
+        <div className="flex flex-row space-x-4 items-center mb-4 p-4 border-b border-gray-100">
         <h2 className="text-lg font-semibold">Add Custom Exercise</h2>
         <span className="px-1.5 py-0.5 h-content text-xs font-medium bg-blue-50 text-blue-700 rounded">Beta</span></div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="px-4 mb-6">
+          <div className="px-4 mb-8 space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
@@ -117,7 +117,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             )}
           </div>
           </div>
-          <div className="flex justify-end gap-2 pt-4 px-4 pb-2 border-t ">
+          <div className="flex justify-end gap-2 pt-4 px-4 pb-2 border-t">
             <button
               type="button"
               onClick={onClose}
