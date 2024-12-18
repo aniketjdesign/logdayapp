@@ -40,8 +40,9 @@ export const WorkoutLogs: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
-        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
+          <h1 className="text-lg font-bold">Workout History</h1>
+          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
+        
 
         {currentWorkout && <OngoingWorkoutMessage />}
 
@@ -68,8 +69,8 @@ export const WorkoutLogs: React.FC = () => {
   if (workoutLogs.length === 0 && !search) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
-        <h1 className="text-xl font-bold text-gray-900 mb-1">Workout History</h1>
-        <p className="text-sm text-gray-600 mb-4">View your past workouts</p>
+          <h1 className="text-lg font-bold">Workout History</h1>
+          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
 
         {currentWorkout && <OngoingWorkoutMessage />}
         <EmptyState
