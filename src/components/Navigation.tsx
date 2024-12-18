@@ -209,13 +209,6 @@ export const Navigation: React.FC = () => {
             </button>
           )}
           <button
-            onClick={navigateToSettings}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
-          >
-            <Settings size={18} strokeWidth={2} className="mr-3  text-gray-500" />
-            Settings
-          </button>
-          <button
             onClick={navigateToLogs}
             className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
@@ -223,11 +216,18 @@ export const Navigation: React.FC = () => {
             Workout History
           </button>
           <button
+            onClick={navigateToSettings}
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+          >
+            <Settings size={18} strokeWidth={2} className="mr-3  text-gray-500" />
+            Settings
+          </button>
+          <button
             onClick={() => {
               setIsMenuOpen(false);
               navigate('/contact');
             }}
-            className="flex items-center w-full px-4 py-3 text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100"
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
             <MessageSquare size={18} className="mr-3 text-gray-500" />
             <span>Contact</span>

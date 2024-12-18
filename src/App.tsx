@@ -14,6 +14,8 @@ import { MigrationStatus } from './components/MigrationStatus';
 import { UpdatePrompt } from './components/UpdatePrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { LogDayLogo } from './components/LogDayLogo';
+import { ContactForm } from './components/ContactForm';
+
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -78,6 +80,7 @@ const AppContent = () => {
           <Route path="/workout" element={<WorkoutSession />} />
           <Route path="/logs" element={<WorkoutLogs />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/contact" element={<ContactForm />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
