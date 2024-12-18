@@ -4,34 +4,23 @@ const CACHE_PREFIX = 'logday-cache-';
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-    // Force all clients to reload to ensure new styles are applied
-    self.clients.matchAll().then(clients => {
-      console.log(`[SW] Reloading ${clients.length} client(s)`);
-      clients.forEach(client => client.navigate(client.url));
-    });
   }
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating new service worker version:', APP_VERSION);
-
   event.waitUntil(
     Promise.all([
+      // Take control of all clients as soon as the service worker activates
       self.clients.claim(),
-      // Clear old version caches
-      caches.keys().then(cacheNames => 
-        Promise.all(
-          cacheNames
-            .filter(cacheName => 
-              cacheName.startsWith(CACHE_PREFIX) && 
-              !cacheName.includes(APP_VERSION)
-            )
-            .map(cacheName => {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            })
-        )
-      )
+      
+      // Clear old caches if needed
+      caches.keys().then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            return caches.delete(cacheName);
+          })
+        );
+      })
     ])
   );
 });

@@ -250,7 +250,7 @@ export const Navigation: React.FC = () => {
 
 
 
-        <div className="border-t border-gray-100 py-4 px-4 space-y-4">
+        <div className="border-t border-gray-100 py-4 px-4 space-y-4 mb-4">
           <div className="flex flex-row items-center px-2 bg-gray-50 py-2 rounded-lg space-x-2 text-gray-600 px-1 w-full">
             <User size={18} strokeWidth={2} />
             <span className="text-sm font-medium truncate">{user?.email}</span>
@@ -258,7 +258,7 @@ export const Navigation: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             disabled={isLoggingOut}
-            className="w-full py-2.5 text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+            className="w-full py-2.5  text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
             <LogOut size={16} strokeWidth={2} />
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
