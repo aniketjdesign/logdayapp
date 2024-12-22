@@ -50,12 +50,19 @@ const shouldGroupAsCategory = (
 export const generateWorkoutName = (exercises: Exercise[]): string => {
   if (!exercises.length) return '';
 
+  // Get muscle groups, handling both property names
+  const muscleGroups = exercises.map(exercise => 
+    (exercise as any).muscle_group || exercise.muscleGroup
+  ).filter(Boolean) as MuscleGroup[];
+
+  if (!muscleGroups.length) return 'Workout';
+
   // Get unique muscle groups from selected exercises
-  const muscleGroups = [...new Set(exercises.map(ex => ex.muscleGroup))];
+  const uniqueMuscleGroups = [...new Set(muscleGroups)];
 
   // Check if all exercises are from a single muscle group
-  if (muscleGroups.length === 1) {
-    return `${muscleGroups[0]} Session`;
+  if (uniqueMuscleGroups.length === 1) {
+    return `${uniqueMuscleGroups[0]} Session`;
   }
 
   // Initialize arrays to store categorized and uncategorized muscle groups
@@ -64,7 +71,7 @@ export const generateWorkoutName = (exercises: Exercise[]): string => {
 
   // Check for full category matches first
   muscleGroupCategories.forEach(category => {
-    const categoryGroups = muscleGroups.filter(group => category.groups.includes(group));
+    const categoryGroups = uniqueMuscleGroups.filter(group => category.groups.includes(group));
     
     if (shouldGroupAsCategory(categoryGroups, category)) {
       parts.push(category.name);
@@ -73,16 +80,16 @@ export const generateWorkoutName = (exercises: Exercise[]): string => {
   });
 
   // Special handling for specific combinations
-  const hasLegs = muscleGroups.some(group => ['Quads', 'Hamstrings', 'Calves', 'Glutes'].includes(group));
-  const hasArms = muscleGroups.some(group => ['Biceps', 'Triceps'].includes(group));
-  const hasUpper = muscleGroups.some(group => ['Chest', 'Back', 'Shoulders'].includes(group));
+  const hasLegs = uniqueMuscleGroups.some(group => ['Quads', 'Hamstrings', 'Calves', 'Glutes'].includes(group));
+  const hasArms = uniqueMuscleGroups.some(group => ['Biceps', 'Triceps'].includes(group));
+  const hasUpper = uniqueMuscleGroups.some(group => ['Chest', 'Back', 'Shoulders'].includes(group));
 
   if (hasLegs && hasUpper) {
     return 'Full Body Session';
   }
 
   // Add remaining unprocessed muscle groups
-  muscleGroups
+  uniqueMuscleGroups
     .filter(group => !processedGroups.has(group))
     .forEach(group => {
       // Don't add individual leg muscles if we already have "Legs"

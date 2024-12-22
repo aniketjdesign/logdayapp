@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { calculateWorkoutStats } from '../utils/workoutStats';
 import { generateUUID } from '../utils/uuid';
 import { Analytics } from '../services/analytics';
+import { exerciseService } from '../services/exerciseService';
 
 type View = 'exercises' | 'workout' | 'logs';
 
@@ -12,21 +13,21 @@ interface WorkoutContextType {
   selectedExercises: Exercise[];
   currentWorkout: WorkoutLog | null;
   workoutLogs: WorkoutLog[];
-  totalLogs: number;
-  currentPage: number;
   currentView: View;
+  customExercises: Exercise[];
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
-  startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => void;
+  startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
   completeWorkout: (name: string) => Promise<WorkoutLog>;
   updateWorkoutExercise: (exerciseId: string, data: WorkoutExercise) => void;
+  reorderWorkoutExercises: (reorderedExercises: WorkoutExercise[]) => void;
   addExercisesToWorkout: (exercises: Exercise[]) => void;
+  addCustomExercise: (exercise: Exercise) => void;
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
   searchLogs: (query: string) => Promise<void>;
   clearWorkoutState: () => void;
-  setCurrentPage: (page: number) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -39,9 +40,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutLog | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
-  const [totalLogs, setTotalLogs] = useState(0);
-  const [currentPage, setCurrentPage] = useState(1);
   const [currentView, setCurrentView] = useState<View>('exercises');
+  const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const { user } = useAuth();
 
   // Load current workout from localStorage
@@ -67,17 +67,31 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   useEffect(() => {
     const loadWorkouts = async () => {
       if (user) {
-        const { data, count, error } = await supabaseService.getWorkoutLogs(currentPage);
-        if (!error) {
-          setWorkoutLogs(data);
-          setTotalLogs(count);
+        const response = await supabaseService.getWorkoutLogs();
+        if (!response.error) {
+          setWorkoutLogs(response.data);
         }
       }
     };
     loadWorkouts();
-  }, [user, currentPage]);
+  }, [user]);
 
-  const startWorkout = (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
+  // Load custom exercises
+  useEffect(() => {
+    const loadCustomExercises = async () => {
+      if (user) {
+        try {
+          const exercises = await exerciseService.getUserExercises();
+          setCustomExercises(exercises);
+        } catch (error) {
+          console.error('Failed to load custom exercises:', error);
+        }
+      }
+    };
+    loadCustomExercises();
+  }, [user]);
+
+  const startWorkout = async (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
     let workoutExercises;
     
     if (existingExercises) {
@@ -109,13 +123,6 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       duration: 0
     };
     
-    setCurrentWorkout(workout);
-    Analytics.workoutStarted({
-      exercises: exercises.length,
-      name: name
-    });
-    setCurrentView('workout');
-
     // Initialize timer state with auto-start (not paused)
     const timerState = {
       accumulated: 0,
@@ -123,6 +130,30 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       isPaused: false
     };
     localStorage.setItem(WORKOUT_TIMER_KEY, JSON.stringify(timerState));
+    localStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(workout));
+    
+    // Update all states in the correct order and wait for them to complete
+    await Promise.all([
+      new Promise<void>(resolve => {
+        setCurrentWorkout(workout);
+        resolve();
+      }),
+      new Promise<void>(resolve => {
+        setSelectedExercises([]);
+        resolve();
+      }),
+      new Promise<void>(resolve => {
+        setCurrentView('workout');
+        resolve();
+      })
+    ]);
+    
+    Analytics.workoutStarted({
+      exercises: exercises.length,
+      name: name
+    });
+
+    return workout;
   };
 
   const completeWorkout = async (name: string): Promise<WorkoutLog> => {
@@ -155,8 +186,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
 
     try {
-      const { error } = await supabaseService.saveWorkoutLog(completedWorkout);
-      if (error) throw error;
+      const response = await supabaseService.saveWorkoutLog(completedWorkout);
+      if (response.error) throw response.error;
 
       // Clear current workout state immediately after successful save
       localStorage.removeItem(CURRENT_WORKOUT_KEY);
@@ -164,10 +195,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setCurrentWorkout(null);
 
       // Refresh the logs
-      const { data, count } = await supabaseService.getWorkoutLogs(1);
-      setWorkoutLogs(data);
-      setTotalLogs(count);
-      setCurrentPage(1);
+      const logsResponse = await supabaseService.getWorkoutLogs();
+      if (!logsResponse.error) {
+        setWorkoutLogs(logsResponse.data);
+      }
 
       return completedWorkout;
     } catch (error) {
@@ -185,6 +216,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
         exercises: prev.exercises.map(ex => 
           ex.exercise.id === exerciseId ? data : ex
         )
+      };
+    });
+  };
+
+  const reorderWorkoutExercises = (reorderedExercises: WorkoutExercise[]) => {
+    if (!currentWorkout) return;
+    setCurrentWorkout(prev => {
+      if (!prev) return null;
+      return {
+        ...prev,
+        exercises: reorderedExercises
       };
     });
   };
@@ -219,6 +261,10 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     });
   };
 
+  const addCustomExercise = (exercise: Exercise) => {
+    setCustomExercises(prev => [exercise, ...prev]);
+  };
+
   const deleteExercise = (exerciseId: string) => {
     if (!currentWorkout) return;
     const exercise = currentWorkout.exercises.find(ex => ex.exercise.id === exerciseId);
@@ -240,13 +286,14 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const deleteLog = async (logId: string) => {
     try {
-      const { error } = await supabaseService.deleteWorkoutLog(logId);
-      if (error) throw error;
+      const response = await supabaseService.deleteWorkoutLog(logId);
+      if (response.error) throw response.error;
 
       // Refresh the logs
-      const { data, count } = await supabaseService.getWorkoutLogs(currentPage);
-      setWorkoutLogs(data);
-      setTotalLogs(count);
+      const logsResponse = await supabaseService.getWorkoutLogs();
+      if (!logsResponse.error) {
+        setWorkoutLogs(logsResponse.data);
+      }
     } catch (error) {
       console.error('Error deleting workout log:', error);
       throw error;
@@ -254,12 +301,11 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const searchLogs = async (query: string) => {
-    try {
-      const { data, count } = await supabaseService.searchWorkoutLogs(query, currentPage);
-      setWorkoutLogs(data);
-      setTotalLogs(count);
-    } catch (error) {
-      console.error('Error searching workout logs:', error);
+    if (user) {
+      const response = await supabaseService.searchWorkoutLogs(query);
+      if (!response.error) {
+        setWorkoutLogs(response.data);
+      }
     }
   };
 
@@ -275,21 +321,21 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       selectedExercises,
       currentWorkout,
       workoutLogs,
-      totalLogs,
-      currentPage,
       currentView,
+      customExercises,
       setSelectedExercises,
       setCurrentWorkout,
       startWorkout,
       completeWorkout,
       updateWorkoutExercise,
+      reorderWorkoutExercises,
       addExercisesToWorkout,
+      addCustomExercise,
       deleteExercise,
       deleteLog,
       setCurrentView,
       searchLogs,
-      clearWorkoutState,
-      setCurrentPage
+      clearWorkoutState
     }}>
       {children}
     </WorkoutContext.Provider>

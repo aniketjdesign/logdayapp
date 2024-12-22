@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share, RefreshCw } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -54,18 +54,10 @@ export const Navigation: React.FC = () => {
     }
   }, [user]);
 
-  const handleRefresh = async () => {
+  const handleRefresh = () => {
     setIsRefreshing(true);
-    
-    // Handle refresh based on current route
-    if (location.pathname === '/logs') {
-      await searchLogs('');
-    } else if (location.pathname === '/') {
-      // Refresh exercise list by forcing a re-render
-      setSelectedExercises([]);
-    }
-    
-    setTimeout(() => setIsRefreshing(false), 500);
+    // Force a hard refresh by reloading without cache
+    window.location.reload(true);
   };
 
   const handleLogoutClick = () => {
@@ -143,34 +135,33 @@ export const Navigation: React.FC = () => {
 
   return (
     <>
-      <nav className="app-header bg-white shadow-md">
+      <nav className="app-header bg-white shadow-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-14">
             <div className="flex items-center">
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-md hover:bg-gray-100"
+                className="p-2 rounded-lg hover:bg-gray-100 bg-gray-50 text-gray-700 mr-2"
               >
-                {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
+                {isMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
               </button>
-              <LogDayLogo />
-              <span className="ml-2 text-xl font-bold text-gray-900">Logday</span>
+              <LogDayLogo/>
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-1.5">
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className={`px-2 py-1.5 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 text-sm ${
+                className={`p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 ${
                   isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
-                <RefreshCw size={16} className={`${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw size={16} strokeWidth={2} className={`${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
               <button
                 data-canny-changelog
-                className="px-2 py-1.5 border border-gray-200 rounded-md text-gray-700 hover:bg-gray-50 text-sm"
+                className="p-2.5 rounded-lg text-gray-600 hover:bg-gray-100"
               >
-                🔔
+                <Bell size={16} strokeWidth={2} />
               </button>
             </div>
           </div>
@@ -178,82 +169,98 @@ export const Navigation: React.FC = () => {
       </nav>
 
       <div 
-        className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-40 safe-top ${
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity z-40 safe-top ${
           isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={() => setIsMenuOpen(false)}
       />
       <div
-        className={`fixed top-0 left-0 h-full w-64 bg-white transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-72 bg-white transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
           isMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        <div className="h-16 flex items-center justify-between px-4 border-b">
+        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100">
           <div className="flex items-center">
-            <LogDayLogo className="h-8 w-8" />
-            <span className="ml-2 text-xl font-bold text-gray-900">Logday</span>
+            <LogDayLogo/>
           </div>
           <button
             onClick={() => setIsMenuOpen(false)}
-            className="p-2 text-gray-500 hover:text-gray-700"
+            className="p-2 hover:bg-gray-100 rounded-lg bg-gray-50 text-gray-700"
           >
-            <X size={24} />
+            <X size={20} strokeWidth={2} />
           </button>
         </div>
 
-        <div className="flex-1 py-4">
+        <div className="flex-1 py-2">
           <button
             onClick={navigateToHome}
-            className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
+            <Zap size={18} strokeWidth={2} className="mr-3 text-gray-500" />
             Quick Start
           </button>
           {currentWorkout && (
             <button
               onClick={navigateToWorkout}
-              className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
             >
+              <Timer size={18} strokeWidth={2} className="mr-3  text-gray-500" />
               Active Workout
             </button>
           )}
           <button
             onClick={navigateToLogs}
-            className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
+            <History size={18} strokeWidth={2} className="mr-3  text-gray-500" />
             Workout History
           </button>
           <button
             onClick={navigateToSettings}
-            className="w-full px-6 py-3 text-left text-gray-700 hover:bg-gray-100 font-medium"
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
+            <Settings size={18} strokeWidth={2} className="mr-3  text-gray-500" />
             Settings
           </button>
+          <button
+            onClick={() => {
+              setIsMenuOpen(false);
+              navigate('/contact');
+            }}
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+          >
+            <MessageSquare size={18} className="mr-3 text-gray-500" />
+            <span>Contact</span>
+          </button>
+          
         </div>
-
-        <div className="border-t py-4 px-6 space-y-4">
-          {isInstallable && (
-            <div className="p-3 bg-blue-50 rounded-lg">
-              <div className="flex items-center text-blue-800 mb-2">
-                <Share size={18} className="mr-2 flex-shrink-0" />
+        {isInstallable && (
+            <div className="p-3 bg-blue-50 rounded-lg m-4">
+              <div className="flex items-center text-blue-800 mb-1.5">
+                <Share size={16} strokeWidth={2} className="mr-2 flex-shrink-0" />
                 <span className="text-sm font-medium">Install Logday App</span>
               </div>
-              <p className="text-xs text-blue-600">
+              <p className="text-xs text-blue-600 leading-relaxed">
                 {isIOS ? 
                   "Tap the share button in your browser and select 'Add to Home Screen'" :
                   "Click the install button in your browser's address bar"}
               </p>
             </div>
           )}
-          <div className="flex items-center space-x-3 text-gray-600">
-            <User size={20} />
+
+
+
+        <div className="border-t border-gray-100 py-4 px-4 space-y-4 mb-4">
+          <div className="flex flex-row items-center px-2 bg-gray-50 py-2 rounded-lg space-x-2 text-gray-600 px-1 w-full">
+            <User size={18} strokeWidth={2} />
             <span className="text-sm font-medium truncate">{user?.email}</span>
           </div>
           <button
             onClick={handleLogoutClick}
             disabled={isLoggingOut}
-            className="w-full py-2 text-red-600 hover:bg-red-50 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5  text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
           >
-            <LogOut size={20} />
+            <LogOut size={16} strokeWidth={2} />
             <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
           </button>
         </div>

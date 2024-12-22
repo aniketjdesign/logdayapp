@@ -14,19 +14,31 @@ export const SortableItem: React.FC<SortableItemProps> = ({ id, children }) => {
     setNodeRef,
     transform,
     transition,
-  } = useSortable({ id });
+    isDragging,
+  } = useSortable({ 
+    id,
+    attributes: {
+      role: 'button',
+      'aria-label': 'drag handle'
+    }
+  });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    WebkitTouchCallout: 'none',
-    WebkitUserSelect: 'none',
-    userSelect: 'none',
+    touchAction: 'manipulation',
+    
   };
 
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      {children}
+<div ref={setNodeRef} style={style}>
+      {React.cloneElement(children as React.ReactElement, {
+        ...attributes,
+        ...listeners,
+        className: `${(children as React.ReactElement).props.className || ''} ${
+          isDragging ? 'bg-blue-50 border-blue-400' : 'border-gray-200'
+        }`,
+      })}
     </div>
   );
 };

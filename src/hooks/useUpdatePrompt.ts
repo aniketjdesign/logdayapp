@@ -19,9 +19,19 @@ export const useUpdatePrompt = () => {
       // Get the registration
       navigator.serviceWorker.ready.then(reg => {
         setRegistration(reg);
+
+        // Immediately check for updates
+        reg.update();
+
+        // Check for updates every 15 minutes
+        const interval = setInterval(() => {
+          reg.update();
+        }, 15 * 60 * 1000);
+
+        return () => clearInterval(interval);
       });
 
-      // Listen for new service worker
+      // Listen for new service worker installation
       navigator.serviceWorker.addEventListener('controllerchange', () => {
         window.location.reload();
       });
@@ -37,14 +47,26 @@ export const useUpdatePrompt = () => {
 
   const updateServiceWorker = async () => {
     if (registration) {
-      await registration.update();
-      if (registration.waiting) {
-        // Send message to service worker to skip waiting
-        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        Analytics.appUpdated({
-          fromVersion: registration.waiting.scriptURL || 'unknown',
-          toVersion: registration.active?.scriptURL || 'new'
-        });
+      try {
+        await registration.update();
+        
+        if (registration.waiting) {
+          // Send message to service worker to skip waiting
+          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+          
+          // Track the update in analytics
+          Analytics.appUpdated({
+            fromVersion: registration.waiting.scriptURL || 'unknown',
+            toVersion: registration.active?.scriptURL || 'new'
+          });
+
+          // Force reload after a short delay to ensure the new service worker is active
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        }
+      } catch (error) {
+        console.error('Failed to update service worker:', error);
       }
     }
   };

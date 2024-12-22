@@ -10,6 +10,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<AuthResponse>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -142,8 +143,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updatePassword = async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+    if (error) throw error;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut, signInWithGoogle }}>
+    <AuthContext.Provider value={{ user, signIn, signUp, signOut, signInWithGoogle, updatePassword }}>
       {children}
     </AuthContext.Provider>
   );

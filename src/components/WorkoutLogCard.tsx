@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MoreVertical, Trash2, Medal, Link2, Play } from 'lucide-react';
+import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 import { ExerciseSetList } from './ExerciseSetList';
@@ -17,7 +17,6 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
   const { startWorkout } = useWorkout();
   const navigate = useNavigate();
   const { weightUnit, convertWeight } = useSettings();
@@ -112,9 +111,9 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-white rounded-xl shadow-sm overflow-hidden">
       {/* Header */}
-      <div className="p-4">
+      <div className="p-3">
         <div className="flex justify-between items-start mb-4">
           <div 
             className="flex-1"
@@ -126,10 +125,10 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               }
             }}
           >
-            <h3 className="text-lg font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
-            <div className="mt-2 text-sm text-gray-600">
+            <h3 className="text-base font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
+            <div className="mt-0.5 text-xs font-medium text-gray-600">
               <div className="flex items-center">
-                <Calendar size={16} className="mr-1.5" />
+                <Calendar size={12} className="mr-1" />
                 {formatDate(log.startTime)}
               </div>
             </div>
@@ -137,17 +136,11 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           <div className="relative">
             <button
               onClick={(e) => {
-                const button = e.currentTarget;
-                const rect = button.getBoundingClientRect();
-                setMenuPosition({
-                  top: rect.bottom + window.scrollY,
-                  left: rect.left + window.scrollX - 200 + rect.width
-                });
                 setShowMenu(!showMenu);
               }}
-              className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50"
             >
-              <MoreVertical size={20} className="text-gray-500" />
+              <MoreVertical size={16} strokeWidth={1.33} className="text-gray-700" />
             </button>
             {showMenu && (
               <>
@@ -156,22 +149,16 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                   onClick={() => setShowMenu(false)}
                 />
                 <div 
-                  style={{
-                    position: 'fixed',
-                    top: `${menuPosition.top}px`,
-                    left: `${menuPosition.left}px`,
-                    zIndex: 20
-                  }}
-                  className="w-48 bg-white rounded-md shadow-lg border"
+                  className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border z-20"
                 >
                   <div
                     onClick={() => {
                       handleRestartWorkout();
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center cursor-pointer"
+                    className="w-full px-4 py-2 text-left text-gray-900 hover:bg-blue-50 flex items-center cursor-pointer"
                   >
-                    <Play size={16} className="mr-2" />
+                    <Repeat1 size={16} className="mr-2" />
                     Repeat Workout
                   </div>
                   <div
@@ -192,26 +179,26 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
 
         {/* Workout Stats */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-          <div className="bg-gray-50 p-3 rounded-lg">
-            <div className="text-xs text-gray-500 mb-1">Time Spent</div>
+          <div className="bg-gray-50 p-2 rounded-lg">
+            <div className="text-xs text-gray-500 mb-1">Duration</div>
             <div className="flex items-center text-sm font-medium">
-                <Clock size={16} className="mr-1.5" />
+                <Clock size={14} className="mr-1" />
                 {formatDuration(log.duration)}
             </div>
           </div>
-          <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="bg-gray-50 p-2 rounded-lg">
             <div className="text-xs text-gray-500 mb-1">Volume</div>
             <div className="text-sm font-medium">
               {stats.volume.toLocaleString()} {weightUnit}
             </div>
           </div>
-          <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="bg-gray-50 p-2 rounded-lg">
             <div className="text-xs text-gray-500 mb-1">Sets</div>
             <div className="text-sm font-medium">
               {stats.exercises} exercises, {stats.sets} sets
             </div>
           </div>
-          <div className="bg-gray-50 p-3 rounded-lg">
+          <div className="bg-gray-50 p-2 rounded-lg">
             <div className="text-xs text-gray-500 mb-1">PRs</div>
             <div className="flex items-center text-sm font-medium text-yellow-600">
               <Medal size={16} className="mr-1.5" />

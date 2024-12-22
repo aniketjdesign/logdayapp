@@ -1,24 +1,28 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Timer, MoreVertical, Trash2, CheckCheck, X, History, Settings, RefreshCw, PlayCircle, PauseCircle, MoveVertical, Link2, Clock } from 'lucide-react';
+import { Clock, Link2 } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
 import { WorkoutReview } from './WorkoutReview';
-import { CircularProgress } from './CircularProgress';
-import { ExerciseReorderModal } from './ExerciseReorderModal';
 import { SupersetModal } from './SupersetModal';
 import { RestTimer } from './RestTimer';
+import { ExerciseReorderModal } from './ExerciseReorderModal';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
+import { MobileWorkoutHeader } from './mobile/MobileWorkoutHeader';
+import { MobileExerciseCard } from './mobile/MobileExerciseCard';
+import { MobileWorkoutFooter } from './mobile/MobileWorkoutFooter';
+import { MobileWorkoutMenu } from './mobile/MobileWorkoutMenu';
 
 interface MobileWorkoutViewProps {
   workout: WorkoutLog;
   duration: number;
   workoutName: string;
   isPaused: boolean;
+  exerciseHistory?: { [exerciseId: string]: WorkoutLog[] };
   onNameChange: (name: string) => void;
   onUpdateSet: (exerciseId: string, setId: string, field: string, value: any) => void;
   onDeleteSet: (exerciseId: string, setId: string) => void;
@@ -35,6 +39,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   duration,
   workoutName,
   isPaused,
+  exerciseHistory,
   onNameChange,
   onUpdateSet,
   onDeleteSet,
@@ -62,20 +67,16 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
-  const { weightUnit } = useSettings();
   const [workoutRestTimer, setWorkoutRestTimer] = useState<boolean>(true);
   const [showRestTimer, setShowRestTimer] = useState(false);
-  // Initialize rest timer as enabled for all exercises by default
   const [restTimerEnabled, setRestTimerEnabled] = useState<{ [key: string]: boolean}>(() => {
     const initialState: { [key: string]: boolean } = {};
     workout.exercises.forEach(({ exercise }) => {
-      // Use the saved state from workout if available, otherwise default to true
       initialState[exercise.id] = workout.restTimerSettings?.[exercise.id] ?? true;
     });
     return initialState;
   });
-  
-  // Initialize workout-level rest timer from saved state
+
   useEffect(() => {
     if (workout.workoutRestTimer !== undefined) {
       setWorkoutRestTimer(workout.workoutRestTimer);
@@ -83,14 +84,8 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   }, [workout.workoutRestTimer]);
 
   const { setCurrentWorkout } = useWorkout();
+  const { weightUnit } = useSettings();
   const navigate = useNavigate();
-
-  const formatTime = (seconds: number) => {
-    const hrs = Math.floor(seconds / 3600);
-    const mins = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
 
   const getWorkoutStats = () => {
     const totalExercises = workout.exercises.length;
@@ -138,23 +133,31 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       [exerciseId]: !restTimerEnabled[exerciseId]
     };
     setRestTimerEnabled(newSettings);
-    
-    // Update workout state to persist settings
     setCurrentWorkout({
       ...workout,
       restTimerSettings: newSettings
     });
   };
-  
-  const toggleWorkoutRestTimer = () => {
-    const newValue = !workoutRestTimer;
-    setWorkoutRestTimer(newValue);
-    
-    // Update workout state to persist the setting
-    setCurrentWorkout({
-      ...workout,
-      workoutRestTimer: newValue
+
+  const handleMenuToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    const button = event.currentTarget;
+    const rect = button.getBoundingClientRect();
+    setMenuPosition({
+      top: rect.top + rect.height + 4,
+      right: window.innerWidth - rect.right
     });
+    setShowMenu(prev => !prev);
+  };
+
+  const handleCompleteWorkout = async () => {
+    try {
+      setShowFinishConfirmation(false);
+      await onCompleteWorkout();
+      setShowWorkoutReview(true);
+    } catch (error) {
+      console.error('Error completing workout:', error);
+      alert('Failed to complete workout. Please try again.');
+    }
   };
 
   const handleSuperset = (exerciseId: string) => {
@@ -202,29 +205,8 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     setSelectedExerciseId(null);
   };
 
-  const handleMenuToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
-    const button = event.currentTarget;
-    const rect = button.getBoundingClientRect();
-    setMenuPosition({
-      top: rect.top + rect.height + 4,
-      right: window.innerWidth - rect.right
-    });
-    setShowMenu(prev => !prev);
-  };
-
-  const handleCompleteWorkout = async () => {
-    try {
-      setShowFinishConfirmation(false);
-      await onCompleteWorkout();
-      setShowWorkoutReview(true);
-    } catch (error) {
-      console.error('Error completing workout:', error);
-      alert('Failed to complete workout. Please try again.');
-    }
-  };
-
   const renderExerciseMenu = (exerciseId: string) => (
-    <div className="absolute right-4 mt-2 w-48 bg-white rounded-lg shadow-lg border z-10">
+    <div className="absolute right-4 mt-2 w-52 bg-white rounded-lg shadow-lg border z-10">
       <button
         onClick={() => {
           toggleRestTimer(exerciseId);
@@ -235,7 +217,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         }`}
         disabled={!workoutRestTimer}
       >
-        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-blue-500" : "text-gray-400"} />
+        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-gray-500" : "text-gray-400"} />
         <span>
           {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
         </span>
@@ -260,7 +242,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         }}
         className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-red-600"
       >
-        <Trash2 size={16} className="mr-2" />
+        <Link2 size={16} className="mr-2" />
         <span>Remove Exercise</span>
       </button>
     </div>
@@ -268,214 +250,61 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
   const stats = getWorkoutStats();
 
+  const toggleWorkoutRestTimer = () => {
+    const newValue = !workoutRestTimer;
+    setWorkoutRestTimer(newValue);
+    setCurrentWorkout({
+      ...workout,
+      workoutRestTimer: newValue
+    });
+  };
+
   return (
     <div className="md:hidden app-layout bg-gray-50">
-      {/* Fixed Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
-        {/* First Row - Workout Name and Actions */}
-        <div className="flex items-center justify-between p-4 gap-4">
-          <input
-            type="text"
-            placeholder="Workout Name"
-            className="flex-1 px-2 py-1 text-md font-medium bg-transparent rounded-lg border text-gray-800"
-            value={workoutName}
-            onChange={(e) => onNameChange(e.target.value)}
-          />
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handleMenuToggle}
-              className="p-2.5 bg-blue-50 rounded-lg"
-            >
-              <MoreVertical size={16} className="text-blue-600"/>
-            </button>
-            <button
-              onClick={() => setShowExerciseModal(true)}
-              className="p-2.5 bg-blue-600 text-white rounded-lg"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-        </div>
+      <MobileWorkoutHeader
+        workoutName={workoutName}
+        duration={duration}
+        isPaused={isPaused}
+        stats={stats}
+        onNameChange={onNameChange}
+        onMenuToggle={handleMenuToggle}
+        onAddExercise={() => setShowExerciseModal(true)}
+        onPauseResume={onPauseResume}
+      />
 
-        {/* Second Row - Stats */}
-        <div className="flex items-center justify-between px-4 pt-2 pb-4">
-          <button 
-            onClick={onPauseResume}
-            className={`flex items-center space-x-1 ${isPaused ? "text-yellow-600" : "text-gray-600"}`}
-          >
-            <Timer size={18} className={isPaused ? "text-yellow-600" : "text-gray-500"} />
-            <span className={`text-sm font-medium ${isPaused ? "text-yellow-600" : "text-gray-600"}`}>
-              {formatTime(duration)}
-            </span>
-          </button>
-          <div className="separator w-px h-4 bg-gray-200"/>
-          <div className="flex items-center space-x-2">
-            <CircularProgress 
-              progress={stats.exercises.progress} 
-              color={stats.exercises.color}
-            />
-            <span className="text-sm font-medium text-gray-600">
-              {stats.exercises.completed}/{stats.exercises.total} exercises
-            </span>
-          </div>
-          <div className="separator w-px h-4 bg-gray-200"/>
-          <div className="flex items-center space-x-2">
-            <CircularProgress 
-              progress={stats.sets.progress} 
-              color={stats.sets.color}
-            />
-            <span className="text-sm font-medium text-gray-600">
-              {stats.sets.completed}/{stats.sets.total} sets
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Exercise List */}
       <div className="px-4 space-y-6 pt-16 pb-40">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
-          const isBodyweight = exercise.name.includes('(Bodyweight)');
-          const isCardio = exercise.muscleGroup === 'Cardio';
-          const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
-          const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
-
           if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
             return null;
           }
 
+          const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
+
           return (
-            <div key={exercise.id} className="bg-white rounded-xl shadow-sm">
-              <div className="p-4 border-b">
-                <div className="flex justify-between items-center">
-                  <div className="flex-1">
-                    <h3 className="font-semibold">{exercise.name}</h3>
-                    {supersetPartner && (
-                      <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
-                        <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
-                        Superset w/ {supersetPartner.exercise.name}
-                      </div>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleExerciseMenuToggle(exercise.id)}
-                    className="p-2 hover:bg-gray-100 rounded-lg ml-2"
-                  >
-                    <MoreVertical size={18} />
-                  </button>
-                </div>
-
-                {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
-              </div>
-
-              <div className="p-4">
-                {/* Column Headers */}
-                <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
-                  <div>SET</div>
-                  {isCardio || isTimeBasedCore ? (
-                    <>
-                      <div>TIME</div>
-                      {exercise.metrics?.distance && <div>DISTANCE</div>}
-                      {exercise.metrics?.difficulty && <div>DIFFICULTY</div>}
-                      {exercise.metrics?.incline && <div>INCLINE</div>}
-                      {exercise.metrics?.pace && <div>PACE</div>}
-                      {exercise.metrics?.reps && <div>REPS</div>}
-                    </>
-                  ) : (
-                    <>
-                      <div>{isBodyweight ? 'WEIGHT' : weightUnit.toUpperCase()}</div>
-                      <div>GOAL</div>
-                      <div>DONE</div>
-                    </>
-                  )}
-                  <div></div>
-                </div>
-                {sets.map((set) => (
-                  <MobileSetRow
-                    key={set.id}
-                    set={set}
-                    exercise={exercise}
-                    onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-                    onDelete={() => onDeleteSet(exercise.id, set.id)}
-                    onOpenNoteModal={() => setActiveNoteModal({
-                      exerciseId: exercise.id,
-                      setId: set.id,
-                      exerciseName: exercise.name,
-                      setNumber: set.setNumber
-                    })}
-                    onSetComplete={() => handleSetComplete(exercise.id)}
-                  />
-                ))}
-
-                {!supersetPartner && (
-                  <button
-                    onClick={() => onAddSet(exercise.id)}
-                    className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                  >
-                    <Plus size={16} className="mr-2" />
-                    Add Set
-                  </button>
-                )}
-
-                {supersetPartner && (
-                  <>
-                    <button
-                      onClick={() => onAddSet(exercise.id)}
-                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Add Set
-                    </button>
-
-                    <div className="my-4 border-t border-lime-500" />
-                    <div className="mb-2">
-                      <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
-                    </div>
-                    {supersetPartner.sets.map((set) => (
-                      <MobileSetRow
-                        key={set.id}
-                        set={set}
-                        exercise={supersetPartner.exercise}
-                        onUpdate={(field, value) => onUpdateSet(supersetPartner.exercise.id, set.id, field, value)}
-                        onDelete={() => onDeleteSet(supersetPartner.exercise.id, set.id)}
-                        onOpenNoteModal={() => setActiveNoteModal({
-                          exerciseId: supersetPartner.exercise.id,
-                          setId: set.id,
-                          exerciseName: supersetPartner.exercise.name,
-                          setNumber: set.setNumber
-                        })}
-                        onSetComplete={() => handleSetComplete(supersetPartner.exercise.id)}
-                      />
-                    ))}
-                    <button
-                      onClick={() => onAddSet(supersetPartner.exercise.id)}
-                      className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                    >
-                      <Plus size={16} className="mr-2" />
-                      Add Set
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
+            <MobileExerciseCard
+              key={exercise.id}
+              exercise={exercise}
+              sets={sets}
+              supersetWith={supersetWith}
+              exerciseHistory={exerciseHistory}
+              weightUnit={weightUnit}
+              onUpdateSet={onUpdateSet}
+              onDeleteSet={onDeleteSet}
+              onAddSet={onAddSet}
+              onOpenNoteModal={setActiveNoteModal}
+              onSetComplete={handleSetComplete}
+              onExerciseMenuToggle={handleExerciseMenuToggle}
+              activeExerciseMenu={activeExerciseMenu}
+              renderExerciseMenu={renderExerciseMenu}
+              supersetPartner={supersetPartner}
+            />
           );
         })}
 
-        <div className="space-y-3 mt-6 mb-20">
-          <button
-            onClick={() => setShowFinishConfirmation(true)}
-            className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium transition-colors flex items-center justify-center"
-          >
-            <CheckCheck size={20} className="mr-2" />
-            Finish Workout
-          </button>
-          <button
-            onClick={() => setShowCancelConfirmation(true)}
-            className="w-full py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 font-medium transition-colors flex items-center justify-center"
-          >
-            <X size={20} className="mr-2" />
-            Cancel Workout
-          </button>
-        </div>
+        <MobileWorkoutFooter
+          onFinish={() => setShowFinishConfirmation(true)}
+          onCancel={() => setShowCancelConfirmation(true)}
+        />
       </div>
 
       {/* Modals */}
@@ -539,7 +368,12 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClose={() => setShowFinishConfirmation(false)}
         onConfirm={handleCompleteWorkout}
         title="Finish Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets completed. Are you sure you want to finish this workout?`}
+        message={
+          stats.exercises.total - stats.exercises.completed === 0 && 
+          stats.sets.total - stats.sets.completed === 0
+            ? "Woah, looks like you're all done! Time to cool down and focus on your recovery for the next session. 💪"
+            : `You still have ${stats.exercises.total - stats.exercises.completed} exercises and ${stats.sets.total - stats.sets.completed} sets remaining. Are you sure you want to finish?`
+        }
         confirmText="Yes, Finish"
         confirmButtonClass="bg-blue-600 hover:bg-blue-700"
       />
@@ -549,121 +383,43 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClose={() => setShowCancelConfirmation(false)}
         onConfirm={onCancelWorkout}
         title="Cancel Workout?"
-        message={`You have ${stats.exercises.completed}/${stats.exercises.total} exercises and ${stats.sets.completed}/${stats.sets.total} sets that will be discarded. This action cannot be undone.`}
+        message="Are you sure you want to cancel this workout? All progress will be lost."
         confirmText="Yes, Cancel"
         confirmButtonClass="bg-red-600 hover:bg-red-700"
       />
 
-      {/* Rest Timer */}
-      <RestTimer
-        isOpen={showRestTimer}
-        onClose={() => setShowRestTimer(false)}
-        defaultDuration={120}
-      />
-
-      {/* Menu */}
-      {showMenu && (
-        <>
-          <div 
-            className="fixed inset-0 z-50" 
-            onClick={() => setShowMenu(false)}
-          />
-          <div 
-            style={{
-              position: 'fixed',
-              top: `${menuPosition.top}px`,
-              right: `${menuPosition.right}px`,
-              maxHeight: 'calc(100vh - 64px)',
-              overflowY: 'auto'
-            }}
-            className="bg-white rounded-lg shadow-lg z-50 min-w-[200px] py-1"
-          >
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                setShowFinishConfirmation(true);
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <CheckCheck size={18} className="mr-3 text-blue-600" />
-              <span className="text-sm font-medium text-blue-600">Finish Workout</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                onPauseResume();
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              {isPaused ? (
-                <>
-                  <PlayCircle size={18} className="mr-3 text-gray-600" />
-                  <span className="text-sm font-medium">Resume Workout</span>
-                </>
-              ) : (
-                <>
-                  <PauseCircle size={18} className="mr-3 text-gray-600" />
-                  <span className="text-sm font-medium">Pause Workout</span>
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                setShowReorderModal(true);
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <MoveVertical size={18} className="mr-3 text-gray-600" />
-              <span className="text-sm font-medium">Reorder Exercises</span>
-            </button>
-            <div className="w-full h-px bg-gray-100"/>
-            <button
-              onClick={() => {
-                toggleWorkoutRestTimer();
-                setShowMenu(false);
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <Clock size={18} className={`mr-3 ${workoutRestTimer ? "text-gray-600" : "text-gray-600"}`} />
-              <span className="text-sm font-medium">
-                {workoutRestTimer ? 'Disable Rest Timers' : 'Enable Rest Timers'}
-              </span>
-            </button>
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                navigate('/logs');
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <History size={18} className="mr-3 text-gray-600" />
-              <span className="text-sm font-medium">Workout History</span>
-            </button>
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                navigate('/settings');
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <Settings size={18} className="mr-3 text-gray-600" />
-              <span className="text-sm font-medium">Settings</span>
-            </button>
-            <div className="w-full h-px bg-gray-100"/>
-            <button
-              onClick={() => {
-                setShowMenu(false);
-                window.location.reload();
-              }}
-              className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
-            >
-              <RefreshCw size={18} className="mr-3 text-gray-600" />
-              <span className="text-sm font-medium">Refresh</span>
-            </button>
-          </div>
-        </>
+      {showRestTimer && (
+        <RestTimer
+          isOpen={showRestTimer}
+          onClose={() => setShowRestTimer(false)}
+          defaultDuration={120}
+        />
       )}
+
+      {showWorkoutReview && (
+        <WorkoutReview
+          workout={workout}
+          onClose={() => {
+            setShowWorkoutReview(false);
+            navigate('/');
+          }}
+        />
+      )}
+
+      <MobileWorkoutMenu
+        isOpen={showMenu}
+        position={menuPosition}
+        isPaused={isPaused}
+        workoutRestTimer={workoutRestTimer}
+        onClose={() => setShowMenu(false)}
+        onFinishWorkout={() => setShowFinishConfirmation(true)}
+        onPauseResume={onPauseResume}
+        onReorderExercises={() => setShowReorderModal(true)}
+        onToggleWorkoutRestTimer={toggleWorkoutRestTimer}
+        onNavigateToHistory={() => navigate('/logs')}
+        onNavigateToSettings={() => navigate('/settings')}
+        onRefresh={() => window.location.reload()}
+      />
     </div>
   );
 };

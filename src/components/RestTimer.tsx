@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, SkipForward } from 'lucide-react';
+import bellSound from '../assets/audio/bell-sound.mp3';
 
 interface RestTimerProps {
   isOpen: boolean;
@@ -25,6 +26,34 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   );
   const timerRef = useRef<number>();
   const initialDurationRef = useRef(defaultDuration);
+  const bellAudioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Initialize audio on component mount
+  useEffect(() => {
+    // Create new audio instance
+    bellAudioRef.current = new Audio(bellSound);
+    
+    // Enable audio playback on iOS Safari
+    const enableAudio = () => {
+      // Create and play a silent audio context to enable audio
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const silentBuffer = audioContext.createBuffer(1, 1, 22050);
+      const source = audioContext.createBufferSource();
+      source.buffer = silentBuffer;
+      source.connect(audioContext.destination);
+      source.start();
+      
+      // Remove the listener once enabled
+      document.removeEventListener('touchstart', enableAudio);
+    };
+    
+    document.addEventListener('touchstart', enableAudio);
+    
+    return () => {
+      document.removeEventListener('touchstart', enableAudio);
+      bellAudioRef.current = null;
+    };
+  }, []);
 
   // Reset timer when opened
   useEffect(() => {
@@ -56,6 +85,14 @@ export const RestTimer: React.FC<RestTimerProps> = ({
       if (remaining <= 0) {
         if (timerRef.current) {
           window.clearInterval(timerRef.current);
+        }
+        // Play bell sound with error handling
+        if (bellAudioRef.current) {
+          // Reset audio to start
+          bellAudioRef.current.currentTime = 0;
+          bellAudioRef.current.play().catch(error => {
+            console.warn('Audio playback failed:', error);
+          });
         }
         onClose();
       }

@@ -6,20 +6,21 @@ import { isValidUUID } from '../utils/uuid';
 const ITEMS_PER_PAGE = 10;
 
 export const supabaseService = {
-  async getWorkoutLogs(page: number = 1) {
+  async getWorkoutLogs() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE - 1;
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-      const { data, error, count } = await supabase
+      const { data, error } = await supabase
         .from('workout_logs')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('user_id', session.user.id)
-        .order('created_at', { ascending: false })
-        .range(start, end);
+        .gte('start_time', thirtyDaysAgo.toISOString())
+        .order('start_time', { ascending: false });
 
       if (error) throw error;
 
@@ -33,10 +34,10 @@ export const supabaseService = {
         duration: log.duration
       })) || [];
 
-      return { data: transformedData, count: count || 0, error: null };
+      return { data: transformedData, error: null };
     } catch (error) {
       console.error('Error fetching workout logs:', error);
-      return { data: [], count: 0, error };
+      return { data: [], error };
     }
   },
 
@@ -99,29 +100,56 @@ export const supabaseService = {
     }
   },
 
-  async searchWorkoutLogs(query: string, page: number = 1) {
+  async searchWorkoutLogs(query: string) {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE - 1;
+      // Calculate date 30 days ago
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
       const queryBuilder = supabase
         .from('workout_logs')
-        .select('*', { count: 'exact' })
+        .select('*')
         .eq('user_id', session.user.id)
+        .gte('start_time', thirtyDaysAgo.toISOString())
         .order('created_at', { ascending: false });
 
       if (query) {
-        queryBuilder.filter('name', 'ilike', `%${query}%`);
+        const searchTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+        // Get all workouts and filter in memory for complex searches
+        const { data, error } = await queryBuilder;
+        if (error) throw error;
+
+        // Transform the data first
+        const transformedData = data?.map(log => ({
+          id: log.id,
+          name: log.name,
+          exercises: log.exercises,
+          startTime: log.start_time,
+          endTime: log.end_time,
+          duration: log.duration
+        })) || [];
+
+        // Filter the transformed data
+        const filteredData = transformedData.filter(log => {
+          const searchableText = [
+            log.name || '',
+            ...log.exercises.map(ex => ex.exercise.name),
+            ...log.exercises.flatMap(ex => ex.sets.map(set => set.comments || ''))
+          ].join(' ').toLowerCase();
+          
+          return searchTerms.every(term => searchableText.includes(term));
+        });
+
+        return { data: filteredData, error: null };
       }
 
-      const { data, error, count } = await queryBuilder.range(start, end);
-
+      // If no query, return all data
+      const { data, error } = await queryBuilder;
       if (error) throw error;
 
-      // Transform and validate the data
       const transformedData = data?.map(log => ({
         id: log.id,
         name: log.name,
@@ -131,10 +159,10 @@ export const supabaseService = {
         duration: log.duration
       })) || [];
 
-      return { data: transformedData, count: count || 0, error: null };
+      return { data: transformedData, error: null };
     } catch (error) {
       console.error('Error searching workout logs:', error);
-      return { data: [], count: 0, error };
+      return { data: [], error };
     }
   },
 
@@ -231,5 +259,73 @@ export const supabaseService = {
       console.error('Error migrating localStorage data:', error);
       return { error };
     }
-  }
+  },
+
+  async getRecentExercises(limit: number = 10) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('exercises')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+
+      // Extract unique exercises from recent workouts
+      const recentExercises = new Map();
+      data?.forEach(log => {
+        log.exercises.forEach(({ exercise }) => {
+          if (!recentExercises.has(exercise.id)) {
+            recentExercises.set(exercise.id, exercise);
+          }
+        });
+      });
+
+      return Array.from(recentExercises.values()).slice(0, limit);
+    } catch (error) {
+      console.error('Error fetching recent exercises:', error);
+      return [];
+    }
+  },
+
+  async getLastWorkoutForExercise(exerciseId: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .contains('exercises', [{ exercise: { id: exerciseId } }])
+        .order('start_time', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+
+      // Return the last performed set for this exercise
+      if (data && data.length > 0) {
+        const lastWorkout = data[0];
+        const exerciseData = lastWorkout.exercises.find(
+          (e: any) => e.exercise.id === exerciseId
+        );
+        if (exerciseData && exerciseData.sets && exerciseData.sets.length > 0) {
+          // Return the last non-warmup set
+          const lastSet = [...exerciseData.sets]
+            .reverse()
+            .find((set: any) => !set.isWarmup);
+          return { data: lastSet, error: null };
+        }
+      }
+
+      return { data: null, error: null };
+    } catch (error) {
+      console.error('Error fetching last workout for exercise:', error);
+      return { data: null, error };
+    }
+  },
 };
