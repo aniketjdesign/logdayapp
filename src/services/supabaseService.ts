@@ -328,4 +328,81 @@ export const supabaseService = {
       return { data: null, error };
     }
   },
+
+  async getFolders() {
+    return await supabase
+      .from('folders')
+      .select('*')
+      .order('name');
+  },
+
+  async addFolder(folder: { name: string; user_id: string }) {
+    return await supabase
+      .from('folders')
+      .insert([folder]);
+  },
+
+  async updateFolder(id: string, updates: { name: string }) {
+    return await supabase
+      .from('folders')
+      .update(updates)
+      .eq('id', id);
+  },
+
+  async deleteFolder(id: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // First, delete all routines in the folder
+      const { error: routinesError } = await supabase
+        .from('routines')
+        .delete()
+        .eq('folder_id', id)
+        .eq('user_id', session.user.id);
+
+      if (routinesError) throw routinesError;
+
+      // Then delete the folder itself
+      const { error: folderError } = await supabase
+        .from('folders')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', session.user.id);
+
+      if (folderError) throw folderError;
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      return { error };
+    }
+  },
+
+  async getRoutines() {
+    return await supabase
+      .from('routines')
+      .select('*')
+      .order('created_at', { ascending: false });
+  },
+
+  async addRoutine(routine: any) {
+    return await supabase
+      .from('routines')
+      .insert([routine]);
+  },
+
+  async updateRoutine(id: string, updates: any) {
+    return await supabase
+      .from('routines')
+      .update(updates)
+      .eq('id', id);
+  },
+
+  async deleteRoutine(id: string) {
+    return await supabase
+      .from('routines')
+      .delete()
+      .eq('id', id);
+  },
 };

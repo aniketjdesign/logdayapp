@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Exercise, WorkoutLog, WorkoutExercise } from '../types/workout';
+import { Exercise, WorkoutLog, WorkoutExercise, Folder } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
 import { calculateWorkoutStats } from '../utils/workoutStats';
@@ -15,6 +15,8 @@ interface WorkoutContextType {
   workoutLogs: WorkoutLog[];
   currentView: View;
   customExercises: Exercise[];
+  folders: Folder[];
+  routines: any[];
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
   startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
@@ -28,6 +30,12 @@ interface WorkoutContextType {
   setCurrentView: (view: View) => void;
   searchLogs: (query: string) => Promise<void>;
   clearWorkoutState: () => void;
+  addFolder: (folder: { name: string }) => Promise<void>;
+  updateFolder: (id: string, updates: { name: string }) => Promise<void>;
+  deleteFolder: (id: string) => Promise<void>;
+  addRoutine: (routine: any) => Promise<void>;
+  updateRoutine: (id: string, updates: any) => Promise<void>;
+  deleteRoutine: (id: string) => Promise<void>;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -42,6 +50,8 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
   const [currentView, setCurrentView] = useState<View>('exercises');
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
+  const [folders, setFolders] = useState<Folder[]>([]);
+  const [routines, setRoutines] = useState<any[]>([]);
   const { user } = useAuth();
 
   // Load current workout from localStorage
@@ -91,6 +101,44 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     loadCustomExercises();
   }, [user]);
 
+  // Fetch folders when user changes
+  useEffect(() => {
+    if (user) {
+      fetchFolders();
+    } else {
+      setFolders([]);
+    }
+  }, [user]);
+
+  const fetchFolders = async () => {
+    try {
+      const { data, error } = await supabaseService.getFolders();
+      if (error) throw error;
+      setFolders(data || []);
+    } catch (error) {
+      console.error('Error fetching folders:', error);
+    }
+  };
+
+  // Fetch routines when user changes
+  useEffect(() => {
+    if (user) {
+      fetchRoutines();
+    } else {
+      setRoutines([]);
+    }
+  }, [user]);
+
+  const fetchRoutines = async () => {
+    try {
+      const { data, error } = await supabaseService.getRoutines();
+      if (error) throw error;
+      setRoutines(data || []);
+    } catch (error) {
+      console.error('Error fetching routines:', error);
+    }
+  };
+
   const startWorkout = async (exercises: Exercise[], name: string = '', existingExercises?: WorkoutExercise[]) => {
     let workoutExercises;
     
@@ -98,6 +146,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       workoutExercises = existingExercises;
     } else {
       workoutExercises = exercises.map(exercise => ({
+
         exercise,
         sets: [{ 
           id: generateUUID(), 
@@ -316,27 +365,126 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     localStorage.removeItem(WORKOUT_TIMER_KEY);
   };
 
+  const addFolder = async (folder: { name: string }) => {
+    try {
+      const { error } = await supabaseService.addFolder({
+        name: folder.name,
+        user_id: user?.id || '',
+      });
+      if (error) throw error;
+      await fetchFolders();
+    } catch (error) {
+      console.error('Error adding folder:', error);
+      throw error;
+    }
+  };
+
+  const updateFolder = async (id: string, updates: { name: string }) => {
+    try {
+      const { error } = await supabaseService.updateFolder(id, updates);
+      if (error) throw error;
+      await fetchFolders();
+    } catch (error) {
+      console.error('Error updating folder:', error);
+      throw error;
+    }
+  };
+
+  const deleteFolder = async (id: string) => {
+    try {
+      const { error } = await supabaseService.deleteFolder(id);
+      if (error) throw error;
+      await fetchFolders();
+      await fetchRoutines();
+    } catch (error) {
+      console.error('Error deleting folder:', error);
+      throw error;
+    }
+  };
+
+  const addRoutine = async (routine: any) => {
+    try {
+      const routineData = {
+        name: routine.name,
+        description: routine.description,
+        exercises: routine.exercises,
+        user_id: user?.id,
+        folder_id: routine.folder_id,
+        total_exercises: routine.exercises.length,
+        total_sets: routine.exercises.reduce((total: number, ex: any) => total + ex.sets.length, 0),
+      };
+
+      const { error } = await supabaseService.addRoutine(routineData);
+      if (error) throw error;
+      await fetchRoutines();
+    } catch (error) {
+      console.error('Error adding routine:', error);
+      throw error;
+    }
+  };
+
+  const updateRoutine = async (id: string, updates: any) => {
+    try {
+      const routineData = {
+        name: updates.name,
+        description: updates.description,
+        exercises: updates.exercises,
+        folder_id: updates.folder_id,
+        total_exercises: updates.exercises.length,
+        total_sets: updates.exercises.reduce((total: number, ex: any) => total + ex.sets.length, 0),
+      };
+
+      const { error } = await supabaseService.updateRoutine(id, routineData);
+      if (error) throw error;
+      await fetchRoutines();
+    } catch (error) {
+      console.error('Error updating routine:', error);
+      throw error;
+    }
+  };
+
+  const deleteRoutine = async (id: string) => {
+    try {
+      const { error } = await supabaseService.deleteRoutine(id);
+      if (error) throw error;
+      await fetchRoutines();
+    } catch (error) {
+      console.error('Error deleting routine:', error);
+      throw error;
+    }
+  };
+
   return (
-    <WorkoutContext.Provider value={{
-      selectedExercises,
-      currentWorkout,
-      workoutLogs,
-      currentView,
-      customExercises,
-      setSelectedExercises,
-      setCurrentWorkout,
-      startWorkout,
-      completeWorkout,
-      updateWorkoutExercise,
-      reorderWorkoutExercises,
-      addExercisesToWorkout,
-      addCustomExercise,
-      deleteExercise,
-      deleteLog,
-      setCurrentView,
-      searchLogs,
-      clearWorkoutState
-    }}>
+    <WorkoutContext.Provider
+      value={{
+        selectedExercises,
+        currentWorkout,
+        workoutLogs,
+        currentView,
+        customExercises,
+        folders,
+        routines,
+        setSelectedExercises,
+        setCurrentWorkout,
+        startWorkout,
+        completeWorkout,
+        updateWorkoutExercise,
+        reorderWorkoutExercises,
+        addExercisesToWorkout,
+        addCustomExercise,
+        deleteExercise,
+        deleteLog,
+        setCurrentView,
+        searchLogs,
+        clearWorkoutState,
+        addFolder,
+        updateFolder,
+        deleteFolder,
+        addRoutine,
+        updateRoutine,
+        deleteRoutine,
+      }}
+    >
       {children}
     </WorkoutContext.Provider>
   );

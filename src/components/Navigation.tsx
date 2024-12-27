@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare, Clipboard } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -133,6 +133,63 @@ export const Navigation: React.FC = () => {
     navigate('/settings');
   };
 
+  const navigationItems = [
+    {
+      icon: <Zap className="w-6 h-6" />,
+      label: 'Exercises',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/');
+      },
+      isActive: location.pathname === '/'
+    },
+    {
+      icon: <Timer className="w-6 h-6" />,
+      label: 'Workout',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/workout');
+      },
+      isActive: location.pathname === '/workout'
+    },
+    {
+      icon: <Clipboard className="w-6 h-6" />,
+      label: 'Routines',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/routines');
+      },
+      isActive: location.pathname === '/routines'
+    },
+    {
+      icon: <History className="w-6 h-6" />,
+      label: 'Workout History',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/logs');
+      },
+      isActive: location.pathname === '/logs'
+    },
+    {
+      icon: <Settings className="w-6 h-6" />,
+      label: 'Settings',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/settings');
+      },
+      isActive: location.pathname === '/settings'
+    },
+    {
+      icon: <MessageSquare className="w-6 h-6" />,
+      label: 'Contact',
+      onClick: () => {
+        setIsMenuOpen(false);
+        navigate('/contact');
+      },
+      isActive: location.pathname === '/contact'
+    },
+  ];
+
   return (
     <>
       <nav className="app-header bg-white shadow-sm border-b border-gray-100">
@@ -209,6 +266,16 @@ export const Navigation: React.FC = () => {
             </button>
           )}
           <button
+            onClick={() => {
+              setIsMenuOpen(false);
+              navigate('/routines');
+            }}
+            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+          >
+            <Clipboard size={18} strokeWidth={2} className="mr-3  text-gray-500" />
+            Routines
+          </button>
+          <button
             onClick={navigateToLogs}
             className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
           >
@@ -232,8 +299,8 @@ export const Navigation: React.FC = () => {
             <MessageSquare size={18} className="mr-3 text-gray-500" />
             <span>Contact</span>
           </button>
-          
         </div>
+
         {isInstallable && (
             <div className="p-3 bg-blue-50 rounded-lg m-4">
               <div className="flex items-center text-blue-800 mb-1.5">
@@ -247,8 +314,6 @@ export const Navigation: React.FC = () => {
               </p>
             </div>
           )}
-
-
 
         <div className="border-t border-gray-100 py-4 px-4 space-y-4 mb-4">
           <div className="flex flex-row items-center px-2 bg-gray-50 py-2 rounded-lg space-x-2 text-gray-600 px-1 w-full">
