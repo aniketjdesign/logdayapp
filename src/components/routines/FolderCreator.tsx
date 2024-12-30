@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
+import { LoadingButton } from '../ui/LoadingButton';
 
 interface FolderCreatorProps {
   onClose: () => void;
-  onSave: (name: string) => void;
+  onSave: (name: string) => Promise<void>;
 }
 
 export const FolderCreator: React.FC<FolderCreatorProps> = ({
@@ -11,12 +12,20 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   onSave,
 }) => {
   const [name, setName] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
-      onSave(name.trim());
-      onClose();
+    if (name.trim() && !isLoading) {
+      setIsLoading(true);
+      try {
+        await onSave(name.trim());
+        onClose();
+      } catch (error) {
+        console.error('Error creating folder:', error);
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -53,16 +62,18 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
             >
               Cancel
             </button>
-            <button
+            <LoadingButton
               type="submit"
-              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg"
+              isLoading={isLoading}
+              className="text-sm font-medium"
             >
               Create
-            </button>
+            </LoadingButton>
           </div>
         </form>
       </div>

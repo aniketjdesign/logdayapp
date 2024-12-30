@@ -4,6 +4,8 @@ import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { RoutinePreviewSheet } from './RoutinePreviewSheet';
 import { DeleteRoutineModal } from './DeleteRoutineModal';
+import { LoadingButton } from '../ui/LoadingButton';
+import { generateUUID } from '../../utils/uuid';
 
 interface RoutinePreviewProps {
   routine: any;
@@ -26,6 +28,7 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
   const [showPreview, setShowPreview] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -59,7 +62,22 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
   const handleStartWorkout = async () => {
     try {
       const exercises = routine.exercises.map((config: any) => config.exercise);
-      await startWorkout(exercises, routine.name);
+      const workoutExercises = routine.exercises.map((config: any) => ({
+        exercise: config.exercise,
+        sets: config.sets.map((set: any) => ({
+          id: generateUUID(),
+          setNumber: 1,
+          targetReps: set.goal || 0,
+          performedReps: '',
+          weight: set.weight || 0,
+          comments: '',
+          isPR: false,
+          isWarmup: false,
+          isDropset: false,
+          isFailure: false
+        }))
+      }));
+      await startWorkout(exercises, routine.name, workoutExercises);
       navigate('/workout');
     } catch (error) {
       console.error('Error starting workout:', error);
@@ -155,8 +173,20 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
       <DeleteRoutineModal
         isOpen={showDeleteModal}
         routineName={routine.name}
-        onConfirm={() => onDelete?.(routine.id)}
+        onConfirm={async () => {
+          if (isDeleting) return;
+          setIsDeleting(true);
+          try {
+            await onDelete?.(routine.id);
+            setShowDeleteModal(false);
+          } catch (error) {
+            console.error('Error deleting routine:', error);
+          } finally {
+            setIsDeleting(false);
+          }
+        }}
         onClose={() => setShowDeleteModal(false)}
+        isLoading={isDeleting}
       />
     </>
   );

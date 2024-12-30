@@ -1,16 +1,16 @@
 import React from 'react';
 import { AlertTriangle, X, Pencil } from 'lucide-react';
+import { LoadingButton } from '../ui/LoadingButton';
 
 interface FolderModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (value?: string) => void;
+  onConfirm: (value?: string) => Promise<void>;
   title: string;
   message: string;
   confirmText: string;
   mode: 'rename' | 'delete';
   initialValue?: string;
-  confirmButtonClass?: string;
 }
 
 export const FolderModal: React.FC<FolderModalProps> = ({
@@ -22,9 +22,9 @@ export const FolderModal: React.FC<FolderModalProps> = ({
   confirmText,
   mode,
   initialValue = '',
-  confirmButtonClass = mode === 'delete' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
 }) => {
   const [inputValue, setInputValue] = React.useState(initialValue);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   React.useEffect(() => {
     setInputValue(initialValue);
@@ -32,9 +32,18 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (mode === 'rename' && !inputValue.trim()) return;
-    onConfirm(mode === 'rename' ? inputValue : undefined);
+    if (isLoading) return;
+
+    setIsLoading(true);
+    try {
+      await onConfirm(mode === 'rename' ? inputValue : undefined);
+    } catch (error) {
+      console.error('Error in folder operation:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,51 +61,44 @@ export const FolderModal: React.FC<FolderModalProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-full -mr-2 -mt-2"
+              disabled={isLoading}
+              className="text-gray-400 hover:text-gray-500 disabled:opacity-50"
             >
-              <X size={20} />
+              <X className="h-6 w-6" />
             </button>
           </div>
-          
-          <p className="text-gray-600 mb-6">{message}</p>
 
-          {mode === 'rename' && (
-            <div className="mb-6">
+          <div className="mb-6">
+            <p className="text-gray-600">{message}</p>
+            {mode === 'rename' && (
               <input
                 type="text"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
+                className="mt-4 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter folder name"
-                className="w-full p-2 border rounded-lg"
+                disabled={isLoading}
                 autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && inputValue.trim()) {
-                    handleConfirm();
-                  }
-                  if (e.key === 'Escape') {
-                    onClose();
-                  }
-                }}
               />
-            </div>
-          )}
-          
-          <div className="flex space-x-3">
+            )}
+          </div>
+
+          <div className="flex justify-end gap-x-2">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50"
             >
               Cancel
             </button>
-            <button
+            <LoadingButton
               onClick={handleConfirm}
-              className={`flex-1 px-4 py-2 text-white rounded-lg font-medium ${confirmButtonClass} ${
-                mode === 'rename' && !inputValue.trim() ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-              disabled={mode === 'rename' && !inputValue.trim()}
+              isLoading={isLoading}
+              variant={mode === 'delete' ? 'danger' : 'primary'}
+              className="text-sm font-medium"
             >
               {confirmText}
-            </button>
+            </LoadingButton>
           </div>
         </div>
       </div>
