@@ -154,7 +154,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
     
     return (
       <div key={folderId || 'root'} className="border rounded-lg bg-white mb-2">
-        <div className="flex items-center group">
+        <div className="flex items-center group pl-[2px]">
           <button
             onClick={() => toggleFolder(folderId)}
             className="p-2 hover:bg-gray-100 rounded-lg"
