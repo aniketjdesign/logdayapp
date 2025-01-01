@@ -274,6 +274,7 @@ export const Navigation: React.FC = () => {
           >
             <Clipboard size={18} strokeWidth={2} className="mr-3  text-gray-500" />
             Routines
+            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Beta</span>
           </button>
           <button
             onClick={navigateToLogs}

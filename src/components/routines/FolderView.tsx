@@ -86,7 +86,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
     routineCount: number;
   } | null>(null);
 
-  const { folders, routines, addFolder, deleteFolder, updateFolder } = useWorkout();
+  const { folders, routines, addFolder, deleteFolder, updateFolder, deleteRoutine } = useWorkout();
 
   // Memoize routines by folder to prevent unnecessary recalculations
   const routinesByFolder = useMemo(() => {
@@ -138,9 +138,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
           onEdit={() => onEditRoutine(routine)}
           onDelete={async (routineId) => {
             try {
-              await deleteFolder(routineId);
+              await deleteRoutine(routineId);
             } catch (error) {
               console.error('Error deleting routine:', error);
+              alert('Failed to delete routine');
             }
           }}
         />

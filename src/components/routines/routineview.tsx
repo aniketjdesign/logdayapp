@@ -21,7 +21,10 @@ export const RoutineView = () => {
         <div className="px-4 h-[100vh] max-w-2xl mx-auto">
 
         <div className="heading-wrapper flex-col gap-y-2 py-4">
-          <h1 className="text-lg font-bold">Routines</h1>
+          <h1 className="text-lg font-bold flex items-center">
+            Routines
+            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Beta</span>
+          </h1>
           <p className="text-sm text-gray-500">Create, view and manage your routines</p>
         </div>
 
