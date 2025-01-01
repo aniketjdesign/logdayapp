@@ -15,7 +15,7 @@ import { UpdatePrompt } from './components/UpdatePrompt';
 import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
-
+import RoutinesPage from './pages/routines';
 
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -81,6 +81,8 @@ const AppContent = () => {
           <Route path="/logs" element={<WorkoutLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/contact" element={<ContactForm />} />
+          <Route path="/migration-status" element={<MigrationStatus />} />
+          <Route path="/routines" element={<RoutinesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

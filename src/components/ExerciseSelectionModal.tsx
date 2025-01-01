@@ -42,7 +42,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="relative w-full h-[70vh] max-w-md bg-white rounded-t-xl">
-        <div className="flex items-center justify-between p-4 border-b mb-6">
+        <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Add Exercises</h2>
           <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
             <X size={20} />
