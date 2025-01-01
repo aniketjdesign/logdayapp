@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Medal, Link2, Target, MoreVertical, Play, Trash2 } from 'lucide-react';
+import { X, Medal, Link2, Target, MoreVertical, Play, Repeat1, Trash2 } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { ExerciseSetList } from './ExerciseSetList';
 import { useSettings } from '../context/SettingsContext';
@@ -93,9 +93,9 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
                         handleRestartWorkout();
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-blue-600 hover:bg-blue-50 flex items-center"
+                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-blue-50 hover:bg-blue-50 flex items-center"
                     >
-                      <Play size={16} className="mr-2" />
+                      <Repeat1 size={16} className="mr-2" />
                       Repeat Workout
                     </button>
                     <button

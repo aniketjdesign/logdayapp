@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Link2 } from 'lucide-react';
+import { Clock, Link2, Trash2 } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
@@ -206,18 +206,18 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const renderExerciseMenu = (exerciseId: string) => (
-    <div className="absolute right-4 mt-2 w-52 bg-white rounded-lg shadow-lg border z-10">
+    <div className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10">
       <button
         onClick={() => {
           toggleRestTimer(exerciseId);
           setActiveExerciseMenu(null);
         }}
-        className={`w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2 ${
+        className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2 ${
           !workoutRestTimer ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         disabled={!workoutRestTimer}
       >
-        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-gray-500" : "text-gray-400"} />
+        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-gray-600" : "text-gray-600"} />
         <span>
           {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
         </span>
@@ -226,7 +226,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClick={() => {
           handleSuperset(exerciseId);
         }}
-        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center gap-2"
+        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
       >
         <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
         <span>
@@ -240,9 +240,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           onDeleteExercise(exerciseId);
           setActiveExerciseMenu(null);
         }}
-        className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center text-red-600"
+        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center text-red-600"
       >
-        <Link2 size={16} className="mr-2" />
+        <Trash2 size={16} className="mr-2" />
         <span>Remove Exercise</span>
       </button>
     </div>
