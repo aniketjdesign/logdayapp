@@ -11,12 +11,10 @@ import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
 import { MigrationStatus } from './components/MigrationStatus';
-import { UpdatePrompt } from './components/UpdatePrompt';
-import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
+import { UpdateNotification } from './components/UpdateNotification';
 import RoutinesPage from './pages/routines';
-
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -29,68 +27,72 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AppContent = () => {
+function AppContent() {
   const { user } = useAuth();
-  const { currentWorkout } = useWorkout();
   const location = useLocation();
-  const [isLoading, setIsLoading] = useState(true);
-  const { updateAvailable, updateServiceWorker } = useUpdatePrompt();
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-  const isWorkoutRoute = location.pathname === '/workout';
+  const { currentWorkout } = useWorkout();
+  const [showMigration, setShowMigration] = useState(false);
 
   useEffect(() => {
-    // Allow time for auth and workout state to hydrate
-    const timer = setTimeout(() => setIsLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
+    const checkMigration = async () => {
+      const migrationNeeded = await checkIfMigrationNeeded();
+      setShowMigration(migrationNeeded);
+    };
 
-  // Show loading state while checking auth and workout status
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
-        <LogDayLogo/>
-        <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
-      </div>
-    );
-  }
-
-  // Handle public routes
-  if (!user) {
-    if (location.pathname === '/login' || location.pathname === '/signup') {
-      return (
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      );
+    if (user) {
+      checkMigration();
     }
-    return <Navigate to="/login" replace />;
-  }
+  }, [user]);
 
-  // Hide navigation on mobile during workout
-  const showNavigation = !isMobile || (isMobile && (!currentWorkout || !isWorkoutRoute));
+  if (showMigration) {
+    return <MigrationStatus onComplete={() => setShowMigration(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {showNavigation && <Navigation />}
-      <div className="pt-16">
-        <Routes>
-          <Route path="/" element={<ExerciseList />} />
-          <Route path="/workout" element={<WorkoutSession />} />
-          <Route path="/logs" element={<WorkoutLogs />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/contact" element={<ContactForm />} />
-          <Route path="/migration-status" element={<MigrationStatus />} />
-          <Route path="/routines" element={<RoutinesPage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+      <div className="flex flex-col min-h-screen">
+        {location.pathname !== '/workout' && (
+          <Navigation />
+        )}
+        <main className="flex-1">
+          <Routes>
+            <Route
+              path="/"
+              element={
+                currentWorkout ? (
+                  <Navigate to="/workout" replace />
+                ) : (
+                  <Navigate to="/routines" replace />
+                )
+              }
+            />
+            <Route
+              path="/routines/*"
+              element={<ProtectedRoute><ExerciseList /></ProtectedRoute>}
+            />
+            <Route
+              path="/workout"
+              element={<ProtectedRoute><WorkoutSession /></ProtectedRoute>}
+            />
+            <Route
+              path="/logs"
+              element={<ProtectedRoute><WorkoutLogs /></ProtectedRoute>}
+            />
+            <Route
+              path="/settings"
+              element={<ProtectedRoute><Settings /></ProtectedRoute>}
+            />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/contact" element={<ContactForm />} />
+            <Route path="/routines" element={<RoutinesPage />} />
+          </Routes>
+        </main>
       </div>
-      <MigrationStatus />
-      {updateAvailable && <UpdatePrompt onUpdate={updateServiceWorker} />}
+      <UpdateNotification />
     </div>
   );
-};
+}
 
 function App() {
   return (

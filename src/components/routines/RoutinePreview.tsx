@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2, FolderSymlink } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { RoutinePreviewSheet } from './RoutinePreviewSheet';
 import { DeleteRoutineModal } from './DeleteRoutineModal';
 import { LoadingButton } from '../ui/LoadingButton';
 import { generateUUID } from '../../utils/uuid';
+import { MoveRoutineModal } from './MoveRoutineModal';
 
 interface RoutinePreviewProps {
   routine: any;
   onEdit: () => void;
   onDelete?: (routineId: string) => void;
+  onMove?: () => void;
 }
 
 interface MuscleGroupSummary {
@@ -22,12 +24,14 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
   routine,
   onEdit,
   onDelete,
+  onMove,
 }) => {
   const { startWorkout } = useWorkout();
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showMoveModal, setShowMoveModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +119,18 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
                     <Edit2 size={14} className="mr-2" />
                     Edit Routine
                   </button>
+                  {onMove && (
+                    <button
+                      onClick={() => {
+                        setShowMoveModal(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center text-gray-700"
+                    >
+                      <FolderSymlink size={14} className="mr-2" />
+                      Move to Folder
+                    </button>
+                  )}
                   {onDelete && (
                     <button
                       onClick={() => {
@@ -188,6 +204,15 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
         onClose={() => setShowDeleteModal(false)}
         isLoading={isDeleting}
       />
+
+      {showMoveModal && (
+        <MoveRoutineModal
+          isOpen={showMoveModal}
+          onClose={() => setShowMoveModal(false)}
+          routineId={routine.id}
+          currentFolderId={routine.folder_id}
+        />
+      )}
     </>
   );
 };

@@ -19,8 +19,11 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
     try {
       const routineData = {
         ...data,
-        folder_id: folderId,
+        // Only set folder_id for new routines, let updates use the selected folder
+        ...(routine ? {} : { folder_id: folderId }),
       };
+
+      console.log('Saving routine data:', routineData);
 
       if (routine) {
         await updateRoutine(routine.id, routineData);
@@ -37,10 +40,10 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
   return (
     <div className="fixed inset-0 bg-white z-50">
       <RoutineSetup
-        onClose={onClose}
         onSave={handleSave}
+        onCancel={onClose}
         routine={routine}
-        folderId={folderId}
+        folderId={routine?.folder_id || folderId || null}
       />
     </div>
   );

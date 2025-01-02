@@ -6,6 +6,7 @@ import { Exercise } from '../../types/exercise';
 import { exercises as defaultExercises } from '../../data/exercises';
 import { Dropdown } from '../ui/Dropdown';
 import { LoadingButton } from '../ui/LoadingButton';
+import { FolderModal } from './FolderModal';
 
 interface RoutineSetupProps {
   onClose: () => void;
@@ -20,13 +21,15 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   routine,
   folderId,
 }) => {
-  const { folders, customExercises } = useWorkout();
+  const { folders, customExercises, addFolder, moveRoutine } = useWorkout();
   const [name, setName] = useState(routine?.name || '');
   const [description, setDescription] = useState(routine?.description || '');
   const [exerciseData, setExerciseData] = useState<any[]>([]);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId || routine?.folder_id || null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showNewFolderModal, setShowNewFolderModal] = useState(false);
+  const [pendingFolderName, setPendingFolderName] = useState<string | null>(null);
 
   // Initialize exercise data with initial values if provided
   useEffect(() => {
@@ -41,6 +44,17 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
       setExerciseData(initializedData);
     }
   }, [routine]);
+
+  // Watch for folder changes to select newly created folder
+  useEffect(() => {
+    if (pendingFolderName) {
+      const newFolder = folders.find(f => f.name === pendingFolderName);
+      if (newFolder) {
+        setSelectedFolderId(newFolder.id);
+        setPendingFolderName(null);
+      }
+    }
+  }, [folders, pendingFolderName]);
 
   // Group exercises by first letter for ExerciseSelector
   const groupedExercises = defaultExercises.reduce((acc, exercise) => {
@@ -115,17 +129,50 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
 
     setIsSaving(true);
     try {
-      await onSave({
+      // If this is an update and the folder has changed, move the routine first
+      if (routine?.id && selectedFolderId !== routine.folder_id) {
+        console.log('Moving routine to new folder:', {
+          routineId: routine.id,
+          oldFolder: routine.folder_id,
+          newFolder: selectedFolderId
+        });
+        await moveRoutine(routine.id, selectedFolderId);
+      }
+
+      const routineData = {
         name,
         description,
         exercises: exerciseData,
         folder_id: selectedFolderId,
-      });
+      };
+
+      console.log('Saving routine:', routineData);
+      await onSave(routineData);
     } catch (error) {
       console.error('Error saving routine:', error);
       alert('Failed to save routine. Please try again.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFolderSelect = async (value: string) => {
+    if (value === 'new') {
+      setShowNewFolderModal(true);
+    } else {
+      setSelectedFolderId(value || null);
+    }
+  };
+
+  const handleCreateFolder = async (name: string) => {
+    try {
+      setPendingFolderName(name);
+      await addFolder({ name });
+      setShowNewFolderModal(false);
+    } catch (error) {
+      console.error('Error creating folder:', error);
+      alert('Failed to create folder. Please try again.');
+      setPendingFolderName(null);
     }
   };
 
@@ -181,13 +228,14 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                 </label>
                 <Dropdown
                   value={selectedFolderId || ''}
-                  onChange={(value) => setSelectedFolderId(value || null)}
+                  onChange={handleFolderSelect}
                   options={[
                     { value: '', label: 'No folder' },
                     ...folders.map((folder) => ({
                       value: folder.id,
                       label: folder.name
-                    }))
+                    })),
+                    { value: 'new', label: '+ New Folder', className: 'border-t text-blue-600 sticky bottom-0 bg-white hover:bg-blue-50' }
                   ]}
                   placeholder="Select a folder"
                   className="w-full text-sm"
@@ -320,6 +368,18 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
 
         </div>
         </>
+      )}
+      {showNewFolderModal && (
+        <FolderModal
+          isOpen={showNewFolderModal}
+          onClose={() => setShowNewFolderModal(false)}
+          onConfirm={handleCreateFolder}
+          title="Create New Folder"
+          message="Enter a name for the new folder"
+          confirmText="Create"
+          mode="rename"
+          initialValue=""
+        />
       )}
     </div>
   );

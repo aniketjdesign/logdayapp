@@ -36,6 +36,7 @@ interface WorkoutContextType {
   addRoutine: (routine: any) => Promise<void>;
   updateRoutine: (id: string, updates: any) => Promise<void>;
   deleteRoutine: (id: string) => Promise<void>;
+  moveRoutine: (routineId: string, newFolderId: string | null) => Promise<void>;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -454,37 +455,53 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const moveRoutine = async (routineId: string, newFolderId: string | null) => {
+    try {
+      const { error } = await supabaseService.moveRoutine(routineId, newFolderId);
+      if (error) throw error;
+
+      // Update local state
+      setRoutines(prev => prev.map(routine => 
+        routine.id === routineId 
+          ? { ...routine, folder_id: newFolderId }
+          : routine
+      ));
+    } catch (error) {
+      console.error('Error moving routine:', error);
+      throw error;
+    }
+  };
+
   return (
-    <WorkoutContext.Provider
-      value={{
-        selectedExercises,
-        currentWorkout,
-        workoutLogs,
-        currentView,
-        customExercises,
-        folders,
-        routines,
-        setSelectedExercises,
-        setCurrentWorkout,
-        startWorkout,
-        completeWorkout,
-        updateWorkoutExercise,
-        reorderWorkoutExercises,
-        addExercisesToWorkout,
-        addCustomExercise,
-        deleteExercise,
-        deleteLog,
-        setCurrentView,
-        searchLogs,
-        clearWorkoutState,
-        addFolder,
-        updateFolder,
-        deleteFolder,
-        addRoutine,
-        updateRoutine,
-        deleteRoutine,
-      }}
-    >
+    <WorkoutContext.Provider value={{
+      selectedExercises,
+      currentWorkout,
+      workoutLogs,
+      currentView,
+      customExercises,
+      folders,
+      routines,
+      setSelectedExercises,
+      setCurrentWorkout,
+      startWorkout,
+      completeWorkout,
+      updateWorkoutExercise,
+      reorderWorkoutExercises,
+      addExercisesToWorkout,
+      addCustomExercise,
+      deleteExercise,
+      deleteLog,
+      setCurrentView,
+      searchLogs,
+      clearWorkoutState,
+      addFolder,
+      updateFolder,
+      deleteFolder,
+      addRoutine,
+      updateRoutine,
+      deleteRoutine,
+      moveRoutine,
+    }}>
       {children}
     </WorkoutContext.Provider>
   );

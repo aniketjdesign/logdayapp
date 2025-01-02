@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown, Folder, Plus, MoreVertical } from 'lucide-react';
+import { ChevronRight, ChevronDown, Folder, Plus, MoreVertical, FolderSymlink } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { RoutinePreview } from './RoutinePreview';
 import { FolderModal } from './FolderModal';
 import { FolderCreator } from './FolderCreator';
+import { MoveRoutineModal } from './MoveRoutineModal';
 
 interface FolderMenuProps {
   folderId: string;
@@ -85,8 +86,14 @@ export const FolderView: React.FC<FolderViewProps> = ({
     folderName: string;
     routineCount: number;
   } | null>(null);
+  const [showMoveRoutineModal, setShowMoveRoutineModal] = useState(false);
+  const [routineToMove, setRoutineToMove] = useState<{ id: string; folderId: string | null } | null>(null);
 
-  const { folders, routines, addFolder, deleteFolder, updateFolder, deleteRoutine } = useWorkout();
+  const { folders, routines, addFolder, deleteFolder, updateFolder, deleteRoutine, currentWorkout } = useWorkout();
+
+  const isWorkoutActive = !!currentWorkout;
+
+  const disabledMessage = isWorkoutActive ? "Cannot perform this action while a workout is in progress" : "";
 
   // Memoize routines by folder to prevent unnecessary recalculations
   const routinesByFolder = useMemo(() => {
@@ -130,19 +137,39 @@ export const FolderView: React.FC<FolderViewProps> = ({
     }));
   };
 
+  const handleMoveRoutine = (routineId: string, currentFolderId: string | null) => {
+    if (isWorkoutActive) {
+      alert(disabledMessage);
+      return;
+    }
+    setRoutineToMove({ id: routineId, folderId: currentFolderId });
+    setShowMoveRoutineModal(true);
+  };
+
   const renderRoutines = (routines: any[]) => {
     return routines.map(routine => (
-      <div key={routine.id} className="py-2 px-2 bg-gray-100">
-        <RoutinePreview 
+      <div key={routine.id} className="py-2 px-2">
+        <RoutinePreview
           routine={routine}
           onEdit={() => onEditRoutine(routine)}
           onDelete={async (routineId) => {
+            if (isWorkoutActive) {
+              alert(disabledMessage);
+              return;
+            }
             try {
               await deleteRoutine(routineId);
             } catch (error) {
               console.error('Error deleting routine:', error);
               alert('Failed to delete routine');
             }
+          }}
+          onMove={() => {
+            if (isWorkoutActive) {
+              alert(disabledMessage);
+              return;
+            }
+            handleMoveRoutine(routine.id, routine.folder_id);
           }}
         />
       </div>
@@ -152,6 +179,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
   const renderFolderItem = (folderId: string | null, name: string, routines: any[], showOptions = true) => {
     const isExpanded = expandedFolders[folderId || 'root'];
     const isSelected = selectedFolderId === folderId;
+    const hasRoutines = routines.length > 0;
     
     return (
       <div key={folderId || 'root'} className="border rounded-lg bg-white mb-2">
@@ -214,6 +242,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
                   }}
                   onClose={() => setActiveMenu(null)}
                   onAddRoutine={() => {
+                    if (isWorkoutActive) {
+                      alert(disabledMessage);
+                      return;
+                    }
                     onCreateRoutine?.(folderId);
                     setActiveMenu(null);
                   }}
@@ -222,9 +254,28 @@ export const FolderView: React.FC<FolderViewProps> = ({
             </div>
           )}
         </div>
-        {isExpanded && routines.length > 0 && (
+        {isExpanded && (
           <div>
-            {renderRoutines(routines)}
+            {hasRoutines ? (
+              renderRoutines(routines)
+            ) : (
+              <div className="py-8 text-center">
+                <p className="text-gray-500 mb-3">No routines yet</p>
+                <button
+                  onClick={() => {
+                    if (isWorkoutActive) {
+                      alert(disabledMessage);
+                      return;
+                    }
+                    onCreateRoutine(folderId);
+                  }}
+                  className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                >
+                  <Plus size={16} />
+                  Create a routine
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -236,7 +287,13 @@ export const FolderView: React.FC<FolderViewProps> = ({
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-md font-medium">Folders</h2>
         <button
-          onClick={() => setShowNewFolderModal(true)}
+          onClick={() => {
+            if (isWorkoutActive) {
+              alert(disabledMessage);
+              return;
+            }
+            setShowNewFolderModal(true);
+          }}
           className="text-blue-600 text-sm flex items-center hover:bg-blue-50 px-3 py-1 rounded-lg"
         >
           <Plus size={14} className="mr-1" />
@@ -248,6 +305,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
         <FolderCreator
           onClose={() => setShowNewFolderModal(false)}
           onSave={async (name) => {
+            if (isWorkoutActive) {
+              alert(disabledMessage);
+              return;
+            }
             try {
               await addFolder({ name });
             } catch (error) {
@@ -258,8 +319,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
         />
       )}
 
-      {/* Root level routines */}
-      {renderFolderItem(null, 'All Routines', routinesByFolder['null'] || [], false)}
+      {/* Root level routines - only show if there are uncategorized routines */}
+      {(routinesByFolder['null'] || []).length > 0 && 
+        renderFolderItem(null, 'All Routines', routinesByFolder['null'] || [], false)
+      }
 
       {/* Folders */}
       {folders.map((folder) =>
@@ -275,6 +338,10 @@ export const FolderView: React.FC<FolderViewProps> = ({
           isOpen={modalState.isOpen}
           onClose={() => setModalState(null)}
           onConfirm={async (value?: string) => {
+            if (isWorkoutActive) {
+              alert(disabledMessage);
+              return;
+            }
             if (modalState.mode === 'delete') {
               await handleDeleteFolder();
             } else {
@@ -293,6 +360,18 @@ export const FolderView: React.FC<FolderViewProps> = ({
           confirmText={modalState.mode === 'delete' ? 'Delete' : 'Rename'}
           mode={modalState.mode}
           initialValue={modalState.mode === 'rename' ? modalState.folderName : ''}
+        />
+      )}
+
+      {showMoveRoutineModal && routineToMove && (
+        <MoveRoutineModal
+          isOpen={showMoveRoutineModal}
+          onClose={() => {
+            setShowMoveRoutineModal(false);
+            setRoutineToMove(null);
+          }}
+          routineId={routineToMove.id}
+          currentFolderId={routineToMove.folderId}
         />
       )}
     </div>
