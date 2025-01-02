@@ -27,86 +27,77 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-function AppContent() {
+const AppContent = () => {
   const { user } = useAuth();
-  const location = useLocation();
   const { currentWorkout } = useWorkout();
-  const [showMigration, setShowMigration] = useState(false);
+  const location = useLocation();
+  const [isLoading, setIsLoading] = useState(true);
+  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  const isWorkoutRoute = location.pathname === '/workout';
 
   useEffect(() => {
-    const checkMigration = async () => {
-      const migrationNeeded = await checkIfMigrationNeeded();
-      setShowMigration(migrationNeeded);
-    };
+    // Allow time for auth and workout state to hydrate
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
 
-    if (user) {
-      checkMigration();
-    }
-  }, [user]);
-
-  if (showMigration) {
-    return <MigrationStatus onComplete={() => setShowMigration(false)} />;
+  // Show loading state while checking auth and workout status
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
+        <LogDayLogo/>
+        <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
+      </div>
+    );
   }
+
+  // Handle public routes
+  if (!user) {
+    if (location.pathname === '/login' || location.pathname === '/signup') {
+      return (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      );
+    }
+    return <Navigate to="/login" replace />;
+  }
+
+  // Hide navigation on mobile during workout
+  const showNavigation = !isMobile || (isMobile && (!currentWorkout || !isWorkoutRoute));
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="flex flex-col min-h-screen">
-        {location.pathname !== '/workout' && (
-          <Navigation />
-        )}
-        <main className="flex-1">
-          <Routes>
-            <Route
-              path="/"
-              element={
-                currentWorkout ? (
-                  <Navigate to="/workout" replace />
-                ) : (
-                  <Navigate to="/routines" replace />
-                )
-              }
-            />
-            <Route
-              path="/routines/*"
-              element={<ProtectedRoute><ExerciseList /></ProtectedRoute>}
-            />
-            <Route
-              path="/workout"
-              element={<ProtectedRoute><WorkoutSession /></ProtectedRoute>}
-            />
-            <Route
-              path="/logs"
-              element={<ProtectedRoute><WorkoutLogs /></ProtectedRoute>}
-            />
-            <Route
-              path="/settings"
-              element={<ProtectedRoute><Settings /></ProtectedRoute>}
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/contact" element={<ContactForm />} />
-            <Route path="/routines" element={<RoutinesPage />} />
-          </Routes>
-        </main>
+      {showNavigation && <Navigation />}
+      <div className={showNavigation ? "pt-16" : ""}>
+        <Routes>
+          <Route path="/" element={<ExerciseList />} />
+          <Route path="/workout" element={<WorkoutSession />} />
+          <Route path="/logs" element={<WorkoutLogs />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/contact" element={<ContactForm />} />
+          <Route path="/migration-status" element={<MigrationStatus />} />
+          <Route path="/routines" element={<RoutinesPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
+      <MigrationStatus />
       <UpdateNotification />
     </div>
   );
-}
+};
 
 function App() {
   return (
-    <div className="app-layout bg-gray-50">
-      <AuthProvider>
-        <SettingsProvider>
-          <WorkoutProvider>
-            <div className="app-content">
-              <AppContent />
-            </div>
-          </WorkoutProvider>
-        </SettingsProvider>
-      </AuthProvider>
-    </div>
+    <AuthProvider>
+      <SettingsProvider>
+        <WorkoutProvider>
+          <AppContent />
+        </WorkoutProvider>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 
