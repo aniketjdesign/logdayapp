@@ -296,7 +296,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
           className="text-blue-600 text-sm flex items-center hover:bg-blue-50 px-3 py-1 rounded-lg"
         >
           <Plus size={14} className="mr-1" />
-          New Folder
+          Add New
         </button>
       </div>
 
