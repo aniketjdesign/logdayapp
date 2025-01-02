@@ -11,31 +11,43 @@ export function useAppUpdate() {
     const updateSW = registerSW({
       immediate: true,
       onNeedRefresh() {
+        console.log('New version available!')
         setNeedRefresh(true)
       },
       onOfflineReady() {
         setOfflineReady(true)
+      },
+      onRegisteredSW(swUrl, registration) {
+        // Check for updates every minute
+        setInterval(() => {
+          registration?.update()
+        }, 60 * 1000)
       }
     })
     setUpdateSW(() => updateSW)
   }, [])
 
-  const update = async () => {
+  const updateApp = async () => {
     if (updateSW) {
       try {
+        // Send message to skip waiting
+        const registration = await navigator.serviceWorker.ready
+        if (registration.waiting) {
+          registration.waiting.postMessage('SKIP_WAITING')
+        }
+        
         await updateSW()
         Analytics.appUpdated({
           fromVersion: import.meta.env.VITE_APP_VERSION || 'unknown',
           toVersion: 'latest'
         })
-        window.location.reload()
-      } catch (error) {
-        console.error('Failed to update service worker:', error)
-        Analytics.error({
-          error: 'Failed to update service worker',
-          context: 'useAppUpdate.update',
-          metadata: { error: String(error) }
-        })
+        
+        // Force reload after a short delay
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
+      } catch (err) {
+        console.error('Failed to update:', err)
       }
     }
   }
@@ -43,6 +55,6 @@ export function useAppUpdate() {
   return {
     needRefresh,
     offlineReady,
-    updateApp: update
+    updateApp
   }
 }

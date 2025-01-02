@@ -4,8 +4,8 @@ import { clientsClaim } from 'workbox-core'
 
 declare let self: ServiceWorkerGlobalScope
 
-// Use the Vite-injected manifest
-self.skipWaiting()
+// Don't skip waiting by default to allow update notification
+// self.skipWaiting()
 clientsClaim()
 
 // Clean up old caches
@@ -13,12 +13,8 @@ cleanupOutdatedCaches()
 
 // Handle updates
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    Promise.all([
-      // Skip waiting to activate immediately
-      self.skipWaiting()
-    ])
-  )
+  // Don't skip waiting here to allow update notification
+  event.waitUntil(Promise.resolve())
 })
 
 self.addEventListener('activate', (event) => {
@@ -30,6 +26,13 @@ self.addEventListener('activate', (event) => {
       cleanupOutdatedCaches()
     ])
   )
+})
+
+// Listen for message to skip waiting
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
 })
 
 // Precache all assets
