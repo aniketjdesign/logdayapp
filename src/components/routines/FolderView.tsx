@@ -42,7 +42,6 @@ const FolderMenu: React.FC<FolderMenuProps> = ({
           onClose();
         }}
       >
-        <Plus size={14} className="mr-2" />
         Add Routine
       </button>
       <button
