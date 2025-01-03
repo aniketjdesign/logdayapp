@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2, FolderSymlink } from 'lucide-react';
+import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2, FolderSymlink, Copy } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { RoutinePreviewSheet } from './RoutinePreviewSheet';
@@ -26,7 +26,7 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
   onDelete,
   onMove,
 }) => {
-  const { startWorkout } = useWorkout();
+  const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -108,40 +108,61 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
               </button>
               
               {showMenu && (
-                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10">
-                  <button
+                <div className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-20 border">
+                  <div
                     onClick={() => {
                       onEdit();
                       setShowMenu(false);
                     }}
-                    className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center text-gray-700"
+                    className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
                   >
-                    <Edit2 size={14} className="mr-2" />
-                    Edit Routine
-                  </button>
+                    <Edit2 size={16} className="mr-2" />
+                    Edit
+                  </div>
+                  <div
+                    onClick={async () => {
+                      try {
+                        const duplicatedRoutine = {
+                          ...routine,
+                          id: undefined,
+                          name: `${routine.name} (copy)`,
+                          folder_id: routine.folder_id
+                        };
+                        await addRoutine(duplicatedRoutine);
+                        setShowMenu(false);
+                      } catch (error) {
+                        console.error('Error duplicating routine:', error);
+                        alert('Failed to duplicate routine. Please try again.');
+                      }
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
+                  >
+                    <Copy size={16} className="mr-2" />
+                    Duplicate
+                  </div>
                   {onMove && (
-                    <button
+                    <div
                       onClick={() => {
                         setShowMoveModal(true);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center text-gray-700"
+                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
                     >
-                      <FolderSymlink size={14} className="mr-2" />
-                      Move to Folder
-                    </button>
+                      <FolderSymlink size={16} className="mr-2" />
+                      Move
+                    </div>
                   )}
                   {onDelete && (
-                    <button
+                    <div
                       onClick={() => {
                         setShowDeleteModal(true);
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-sm hover:bg-gray-50 flex items-center text-red-600"
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
                     >
-                      <Trash2 size={14} className="mr-2" />
-                      Delete Routine
-                    </button>
+                      <Trash2 size={16} className="mr-2" />
+                      Delete
+                    </div>
                   )}
                 </div>
               )}
