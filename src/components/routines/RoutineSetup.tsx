@@ -185,9 +185,12 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
               {routine ? 'Edit Routine' : 'Create Routine'}
             </h1>
             <button
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
               disabled={isSaving}
-              className="px-4 py-2 bg-gray-100 rounded-xl text-gray-600 text-sm hover:bg-gray-100 rounded-lg disabled:opacity-50"
+              className="px-4 py-2 bg-gray-100 text-gray-600 text-sm hover:bg-gray-200 rounded-xl transition-colors disabled:opacity-50"
             >
               Cancel
             </button>

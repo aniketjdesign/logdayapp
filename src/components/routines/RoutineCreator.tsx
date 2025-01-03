@@ -41,7 +41,7 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
     <div className="fixed inset-0 bg-white z-50">
       <RoutineSetup
         onSave={handleSave}
-        onCancel={onClose}
+        onClose={onClose}
         routine={routine}
         folderId={routine?.folder_id || folderId || null}
       />

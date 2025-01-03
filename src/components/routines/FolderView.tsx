@@ -34,9 +34,9 @@ const FolderMenu: React.FC<FolderMenuProps> = ({
   }, [onClose]);
 
   return (
-    <div className="folder-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50">
+    <div className="folder-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 text-md">
       <button
-        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center"
+        className="w-full px-4 py-1 text-left hover:bg-gray-50 flex items-center"
         onClick={() => {
           onAddRoutine();
           onClose();
@@ -147,7 +147,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
 
   const renderRoutines = (routines: any[]) => {
     return routines.map(routine => (
-      <div key={routine.id} className="py-2 px-2">
+      <div key={routine.id} className="py-2 px-2 bg-gray-100">
         <RoutinePreview
           routine={routine}
           onEdit={() => onEditRoutine(routine)}
@@ -181,28 +181,25 @@ export const FolderView: React.FC<FolderViewProps> = ({
     const hasRoutines = routines.length > 0;
     
     return (
-      <div key={folderId || 'root'} className="border rounded-lg bg-white mb-2">
-        <div className="flex items-center group pl-[2px]">
-          <button
+      <div key={folderId || 'root'} className="border rounded-xl bg-white mb-2">
+        <div className="flex items-center group">
+          <div
             onClick={() => toggleFolder(folderId)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 flex items-center w-full"
           >
+            <div className="mr-1">
             {isExpanded ? (
               <ChevronDown size={20} className="text-gray-500" />
             ) : (
               <ChevronRight size={20} className="text-gray-500" />
             )}
-          </button>
-          <button
-              onClick={() => onFolderSelect(folderId)}
-              className="flex-1 flex items-center p-2 hover:bg-gray-50 text-gray-500"
-            >
-              <Folder size={20} className="mr-2 text-gray-500" />
-            <span className="flex text-left font-medium">{name}</span>
-            <span className="ml-2 px-2 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-500">
+            </div>
+              <Folder size={18} className="mr-2 text-gray-500" />
+            <span className="flex text-left font-medium text-md">{name}</span>
+            <span className="ml-2 px-1 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-500">
               {routines.length}
             </span>
-          </button>
+            </div>
           {showOptions && folderId && (
             <div className="relative">
               <button
@@ -259,7 +256,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
               renderRoutines(routines)
             ) : (
               <div className="py-8 text-center">
-                <p className="text-gray-500 mb-3">No routines yet</p>
+                <p className="text-gray-500 mb-1 text-sm">No routines yet</p>
                 <button
                   onClick={() => {
                     if (isWorkoutActive) {
@@ -268,7 +265,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                     }
                     onCreateRoutine(folderId);
                   }}
-                  className="text-blue-600 hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                  className="text-blue-600 text-sm hover:text-blue-700 font-medium inline-flex items-center gap-1"
                 >
                   <Plus size={16} />
                   Create a routine
