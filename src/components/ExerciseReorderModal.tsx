@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -19,22 +19,6 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
 }) => {
   const [items, setItems] = React.useState(exercises);
   const { reorderWorkoutExercises } = useWorkout();
-
-  useEffect(() => {
-    const mainContainer = document.querySelector('.app-wrapper');
-    if (mainContainer) {
-      mainContainer.classList.add('overflow-hidden');
-      mainContainer.classList.remove('overflow-y-scroll');
-    }
-
-    return () => {
-      const mainContainer = document.querySelector('.app-wrapper');
-      if (mainContainer) {
-        mainContainer.classList.remove('overflow-hidden');
-        mainContainer.classList.add('overflow-y-scroll');
-      }
-    };
-  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

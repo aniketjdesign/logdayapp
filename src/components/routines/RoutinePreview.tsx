@@ -68,9 +68,9 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
       const exercises = routine.exercises.map((config: any) => config.exercise);
       const workoutExercises = routine.exercises.map((config: any) => ({
         exercise: config.exercise,
-        sets: config.sets.map((set: any, index: number) => ({
+        sets: config.sets.map((set: any) => ({
           id: generateUUID(),
-          setNumber: index + 1,
+          setNumber: 1,
           targetReps: set.goal || 0,
           performedReps: '',
           weight: set.weight || 0,
