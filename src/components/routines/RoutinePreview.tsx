@@ -68,9 +68,9 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
       const exercises = routine.exercises.map((config: any) => config.exercise);
       const workoutExercises = routine.exercises.map((config: any) => ({
         exercise: config.exercise,
-        sets: config.sets.map((set: any) => ({
+        sets: config.sets.map((set: any, index: number) => ({
           id: generateUUID(),
-          setNumber: 1,
+          setNumber: index + 1,
           targetReps: set.goal || 0,
           performedReps: '',
           weight: set.weight || 0,
@@ -187,7 +187,8 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
         <div className="mt-4 flex justify-end gap-x-2 text-sm border-t border-gray-100 pt-2">
           <button
             onClick={() => setShowPreview(true)}
-            className="flex items-center text-gray-600 hover:text-gray-700 px-2 py-1.5 bg-gray-100 rounded-lg">
+            className="flex items-center text-gray-600 hover:text-gray-700 px-2 py-1.5 bg-gray-100 rounded-lg"
+          >
             <Eye size={16} className="mr-1" />
             Preview
           </button>
