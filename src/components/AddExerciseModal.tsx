@@ -35,6 +35,30 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    if (isOpen) {
+      const mainContainer = document.querySelector('.app-wrapper');
+      if (mainContainer) {
+        mainContainer.classList.add('overflow-hidden');
+        mainContainer.classList.remove('overflow-y-scroll');
+      }
+    } else {
+      const mainContainer = document.querySelector('.app-wrapper');
+      if (mainContainer) {
+        mainContainer.classList.remove('overflow-hidden');
+        mainContainer.classList.add('overflow-y-scroll');
+      }
+    }
+
+    return () => {
+      const mainContainer = document.querySelector('.app-wrapper');
+      if (mainContainer) {
+        mainContainer.classList.remove('overflow-hidden');
+        mainContainer.classList.add('overflow-y-scroll');
+      }
+    };
+  }, [isOpen]);
+
   const muscleGroups: MuscleGroup[] = [
     'Chest',
     'Back',
