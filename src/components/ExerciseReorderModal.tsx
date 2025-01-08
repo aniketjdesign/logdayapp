@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
@@ -19,6 +19,16 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
 }) => {
   const [items, setItems] = React.useState(exercises);
   const { reorderWorkoutExercises } = useWorkout();
+
+  useEffect(() => {
+    // Disable scroll on body when modal opens
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable scroll when modal closes
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

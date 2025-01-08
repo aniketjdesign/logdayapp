@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface RoutinePreviewSheetProps {
@@ -13,6 +13,18 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
   onClose,
 }) => {
   if (!isOpen) return null;
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
