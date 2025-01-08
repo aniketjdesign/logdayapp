@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Exercise } from '../types/exercise';
 import { exercises } from '../data/exercises';
@@ -20,6 +20,16 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { customExercises, addCustomExercise } = useWorkout();
+
+  useEffect(() => {
+    // Disable scroll on body when modal opens
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable scroll when modal closes
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   const handleExerciseSelect = (exercise: Exercise) => {
     setSelectedExercises(
