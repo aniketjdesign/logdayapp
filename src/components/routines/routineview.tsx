@@ -37,7 +37,7 @@ export const RoutineView = () => {
                 onClick={() => handleCreateRoutine()}
                 className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">
                 <Plus size={20} className="mr-1" />
-                New Routine 
+                New Routines 
               </button>
             </div>
 
