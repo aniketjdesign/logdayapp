@@ -19,14 +19,17 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   useEffect(() => {
     const modalElement = modalRef.current;
     if (modalElement) {
-      disableBodyScroll(modalElement, {
-        reserveScrollBarGap: true,
-      });
+      // Get the scrollbar width
+      const scrollBarWidth = window.innerWidth - document.documentElement.clientWidth;
+      // Add padding to prevent layout shift
+      document.body.style.paddingRight = `${scrollBarWidth}px`;
+      document.body.style.overflow = 'hidden';
     }
 
     return () => {
       if (modalElement) {
-        enableBodyScroll(modalElement);
+        document.body.style.paddingRight = '';
+        document.body.style.overflow = '';
       }
     };
   }, []);
