@@ -15,7 +15,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@headlessui/react": "^2.2.0",
     "@supabase/supabase-js": "^2.39.7",
-    "body-scroll-lock": "^4.0.0-beta.0",
     "idb": "^8.0.0",
     "lottie-react": "^2.4.0",
     "lucide-react": "^0.344.0",

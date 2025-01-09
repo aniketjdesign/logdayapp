@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
-import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -26,22 +25,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const targetElement = menuRef.current;
-    if (showMenu && targetElement) {
-      disableBodyScroll(targetElement, {
-        reserveScrollBarGap: true,
-      });
-    }
-    
-    return () => {
-      if (targetElement) {
-        enableBodyScroll(targetElement);
-      }
-    };
-  }, [showMenu]);
+  const menuRef = React.createRef<HTMLDivElement>(null);
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;

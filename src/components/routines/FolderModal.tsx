@@ -1,7 +1,6 @@
-import React, { useRef, useEffect } from 'react';
+import React from 'react';
 import { AlertTriangle, X, Pencil } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
-import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface FolderModalProps {
   isOpen: boolean;
@@ -26,28 +25,10 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 }) => {
   const [inputValue, setInputValue] = React.useState(initialValue);
   const [isLoading, setIsLoading] = React.useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setInputValue(initialValue);
   }, [initialValue]);
-
-  useEffect(() => {
-    if (isOpen) {
-      const targetElement = modalRef.current;
-      if (targetElement) {
-        disableBodyScroll(targetElement, {
-          reserveScrollBarGap: true,
-        });
-      }
-      
-      return () => {
-        if (targetElement) {
-          enableBodyScroll(targetElement);
-        }
-      };
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -67,9 +48,7 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 
   return (
     <div 
-      ref={modalRef}
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onTouchMove={(e) => e.preventDefault()}
     >
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
