@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from './SortableItem';
 import { Exercise } from '../types/workout';
 import { GripVertical } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface ExerciseReorderModalProps {
   exercises: { exercise: Exercise }[];
@@ -19,14 +20,20 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
 }) => {
   const [items, setItems] = React.useState(exercises);
   const { reorderWorkoutExercises } = useWorkout();
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Disable scroll on body when modal opens
-    document.body.style.overflow = 'hidden';
+    const targetElement = modalRef.current;
+    if (targetElement) {
+      disableBodyScroll(targetElement, {
+        reserveScrollBarGap: true,
+      });
+    }
     
-    // Re-enable scroll when modal closes
     return () => {
-      document.body.style.overflow = 'auto';
+      if (targetElement) {
+        enableBodyScroll(targetElement);
+      }
     };
   }, []);
 
@@ -62,7 +69,10 @@ export const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50">
+    <div 
+      ref={modalRef}
+      className="fixed inset-0 bg-black bg-opacity-50 z-50"
+    >
       <div className="fixed bottom-0 left-0 right-0 h-[85vh] bg-white rounded-t-xl flex flex-col animate-slide-up">
         <div className="flex items-center justify-between p-4 border-b bg-white">
           <h2 className="text-lg font-bold select-none">Reorder Exercises</h2>

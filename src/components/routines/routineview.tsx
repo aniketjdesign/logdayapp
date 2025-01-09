@@ -32,7 +32,7 @@ export const RoutineView = () => {
               <p className="text-sm text-gray-500">Create, view and manage your routines</p>
             </div>
 
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 px-4 max-w-md mx-auto w-full">
               <button
                 onClick={() => handleCreateRoutine()}
                 className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -25,16 +26,20 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (showMenu) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
+    const targetElement = menuRef.current;
+    if (showMenu && targetElement) {
+      disableBodyScroll(targetElement, {
+        reserveScrollBarGap: true,
+      });
     }
-
+    
     return () => {
-      document.body.style.overflow = 'auto';
+      if (targetElement) {
+        enableBodyScroll(targetElement);
+      }
     };
   }, [showMenu]);
 
@@ -276,7 +281,10 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowMenu(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl z-50 animate-slide-up">
+          <div 
+            ref={menuRef}
+            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl z-50 animate-slide-up"
+          >
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto my-3" />
             
             {/* Header */}

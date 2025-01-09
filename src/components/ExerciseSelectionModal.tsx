@@ -1,10 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { Exercise } from '../types/exercise';
 import { exercises } from '../data/exercises';
 import { ExerciseSelector } from './ExerciseSelector';
 import { AddExerciseModal } from './AddExerciseModal';
 import { useWorkout } from '../context/WorkoutContext';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface ExerciseSelectionModalProps {
   onClose: () => void;
@@ -20,14 +21,20 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { customExercises, addCustomExercise } = useWorkout();
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Disable scroll on body when modal opens
-    document.body.style.overflow = 'hidden';
+    const targetElement = modalRef.current;
+    if (targetElement) {
+      disableBodyScroll(targetElement, {
+        reserveScrollBarGap: true,
+      });
+    }
     
-    // Re-enable scroll when modal closes
     return () => {
-      document.body.style.overflow = 'auto';
+      if (targetElement) {
+        enableBodyScroll(targetElement);
+      }
     };
   }, []);
 
@@ -50,7 +57,10 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div 
+      ref={modalRef}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+    >
       <div className="relative w-full h-[70vh] max-w-md bg-white rounded-t-xl">
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-lg font-semibold">Add Exercises</h2>
