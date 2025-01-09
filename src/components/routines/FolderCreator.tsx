@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
 
@@ -13,6 +13,16 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    // Disable scroll on body when modal opens
+    document.body.style.overflow = 'hidden';
+    
+    // Re-enable scroll when modal closes
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

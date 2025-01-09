@@ -20,7 +20,7 @@ export const RoutineView = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 h-[100vh] max-w-2xl mx-auto">
+        <div className="px-4 pb-20 max-w-2xl mx-auto">
           {currentWorkout && <OngoingWorkoutMessage />}
 
           <div className={`${currentWorkout ? 'opacity-50 pointer-events-none' : ''}`}>

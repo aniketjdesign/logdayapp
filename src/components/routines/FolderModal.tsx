@@ -30,6 +30,18 @@ export const FolderModal: React.FC<FolderModalProps> = ({
     setInputValue(initialValue);
   }, [initialValue]);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      // Disable scroll on body when modal opens
+      document.body.style.overflow = 'hidden';
+      
+      // Re-enable scroll when modal closes
+      return () => {
+        document.body.style.overflow = 'auto';
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleConfirm = async () => {
