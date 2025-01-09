@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface FolderCreatorProps {
   onClose: () => void;
@@ -13,6 +14,22 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const modalElement = modalRef.current;
+    if (modalElement) {
+      disableBodyScroll(modalElement, {
+        reserveScrollBarGap: true,
+      });
+    }
+
+    return () => {
+      if (modalElement) {
+        enableBodyScroll(modalElement);
+      }
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +49,7 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   return (
     <div 
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      ref={modalRef}
     >
       <div className="bg-white rounded-xl p-4 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
