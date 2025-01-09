@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import { AlertTriangle, X, Pencil } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface FolderModalProps {
   isOpen: boolean;
@@ -25,31 +26,25 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 }) => {
   const [inputValue, setInputValue] = React.useState(initialValue);
   const [isLoading, setIsLoading] = React.useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setInputValue(initialValue);
   }, [initialValue]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isOpen) {
-      // Save current scroll position and body styles
-      const scrollY = window.scrollY;
-      const originalStyle = window.getComputedStyle(document.body);
-      const originalOverflow = originalStyle.overflow;
+      const targetElement = modalRef.current;
+      if (targetElement) {
+        disableBodyScroll(targetElement, {
+          reserveScrollBarGap: true,
+        });
+      }
       
-      // Disable scroll and fix body position
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
-      document.body.style.overflow = 'hidden';
-      
-      // Re-enable scroll when modal closes
       return () => {
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
-        document.body.style.overflow = originalOverflow;
-        window.scrollTo(0, scrollY);
+        if (targetElement) {
+          enableBodyScroll(targetElement);
+        }
       };
     }
   }, [isOpen]);
@@ -72,6 +67,7 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 
   return (
     <div 
+      ref={modalRef}
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
       onTouchMove={(e) => e.preventDefault()}
     >

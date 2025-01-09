@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
+import { disableBodyScroll, enableBodyScroll } from 'body-scroll-lock';
 
 interface FolderCreatorProps {
   onClose: () => void;
@@ -13,26 +14,20 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Save current scroll position and body styles
-    const scrollY = window.scrollY;
-    const originalStyle = window.getComputedStyle(document.body);
-    const originalOverflow = originalStyle.overflow;
+    const targetElement = modalRef.current;
+    if (targetElement) {
+      disableBodyScroll(targetElement, {
+        reserveScrollBarGap: true,
+      });
+    }
     
-    // Disable scroll and fix body position
-    document.body.style.position = 'fixed';
-    document.body.style.top = `-${scrollY}px`;
-    document.body.style.width = '100%';
-    document.body.style.overflow = 'hidden';
-    
-    // Re-enable scroll when modal closes
     return () => {
-      document.body.style.position = '';
-      document.body.style.top = '';
-      document.body.style.width = '';
-      document.body.style.overflow = originalOverflow;
-      window.scrollTo(0, scrollY);
+      if (targetElement) {
+        enableBodyScroll(targetElement);
+      }
     };
   }, []);
 
@@ -53,6 +48,7 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
 
   return (
     <div 
+      ref={modalRef}
       className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
       onTouchMove={(e) => e.preventDefault()}
     >
