@@ -32,12 +32,24 @@ export const FolderModal: React.FC<FolderModalProps> = ({
 
   React.useEffect(() => {
     if (isOpen) {
-      // Disable scroll on body when modal opens
+      // Save current scroll position and body styles
+      const scrollY = window.scrollY;
+      const originalStyle = window.getComputedStyle(document.body);
+      const originalOverflow = originalStyle.overflow;
+      
+      // Disable scroll and fix body position
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
       document.body.style.overflow = 'hidden';
       
       // Re-enable scroll when modal closes
       return () => {
-        document.body.style.overflow = 'auto';
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = originalOverflow;
+        window.scrollTo(0, scrollY);
       };
     }
   }, [isOpen]);
@@ -59,7 +71,10 @@ export const FolderModal: React.FC<FolderModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onTouchMove={(e) => e.preventDefault()}
+    >
       <div className="bg-white rounded-lg max-w-md w-full">
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">

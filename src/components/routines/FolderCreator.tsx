@@ -15,12 +15,24 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Disable scroll on body when modal opens
+    // Save current scroll position and body styles
+    const scrollY = window.scrollY;
+    const originalStyle = window.getComputedStyle(document.body);
+    const originalOverflow = originalStyle.overflow;
+    
+    // Disable scroll and fix body position
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
     document.body.style.overflow = 'hidden';
     
     // Re-enable scroll when modal closes
     return () => {
-      document.body.style.overflow = 'auto';
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.width = '';
+      document.body.style.overflow = originalOverflow;
+      window.scrollTo(0, scrollY);
     };
   }, []);
 
@@ -40,7 +52,10 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div 
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+      onTouchMove={(e) => e.preventDefault()}
+    >
       <div className="bg-white rounded-xl p-4 w-full max-w-md mx-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">New Folder</h2>
