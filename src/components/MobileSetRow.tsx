@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
+import { RemoveScroll } from 'react-remove-scroll';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -260,7 +261,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       </button>
 
       {showMenu && (
-        <>
+        <RemoveScroll>
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowMenu(false)}
@@ -306,7 +307,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               </button>
             </div>
           </div>
-        </>
+        </RemoveScroll>
       )}
     </div>
   );

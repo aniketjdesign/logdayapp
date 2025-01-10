@@ -81,6 +81,7 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
           isFailure: false
         }))
       }));
+      console.log('Starting workout with routine name:', routine.name);
       await startWorkout(exercises, routine.name, workoutExercises);
       navigate('/workout');
     } catch (error) {

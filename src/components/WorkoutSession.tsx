@@ -9,7 +9,7 @@ import { ConfirmationModal } from './ConfirmationModal';
 import { SetRow } from './SetRow';
 import { MobileWorkoutView } from './MobileWorkoutView';
 import { Exercise } from '../types/workout';
-import { generateWorkoutName } from '../utils/workoutNameGenerator';
+import { exerciseService } from '../services/exerciseService';
 
 const STORAGE_PREFIX = 'logday_';
 const WORKOUT_TIMER_KEY = `${STORAGE_PREFIX}workoutTimer`;
@@ -18,7 +18,7 @@ export const WorkoutSession: React.FC = () => {
 const { 
   currentWorkout, 
   updateWorkoutExercise, 
-  workoutLogs,  // Add this
+  workoutLogs,
   completeWorkout,
   deleteExercise,
   addExercisesToWorkout,
@@ -140,14 +140,9 @@ const {
 
   useEffect(() => {
     if (currentWorkout) {
-      const generatedName = generateWorkoutName(currentWorkout.exercises.map(e => e.exercise));
-      setWorkoutName(generatedName);
-      setCurrentWorkout({
-        ...currentWorkout,
-        name: generatedName
-      });
+      setWorkoutName(currentWorkout.name);
     }
-  }, [currentWorkout?.exercises]);
+  }, [currentWorkout]);
 
   useEffect(() => {
     const loadCustomExercises = async () => {
@@ -331,7 +326,7 @@ const {
   workout={currentWorkout}
   duration={duration}
   workoutName={workoutName}
-  exerciseHistory={getExerciseHistory()}  // Add this line
+  exerciseHistory={getExerciseHistory()}  
   onNameChange={setWorkoutName}
   onUpdateSet={handleUpdateSet}
   onDeleteSet={handleDeleteSet}

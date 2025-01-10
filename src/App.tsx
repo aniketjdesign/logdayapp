@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
 import { SettingsProvider } from './context/SettingsContext';
@@ -31,15 +31,29 @@ const AppContent = () => {
   const { user } = useAuth();
   const { currentWorkout } = useWorkout();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isWorkoutRoute = location.pathname === '/workout';
 
+  // Handle initial route and loading
   useEffect(() => {
-    // Allow time for auth and workout state to hydrate
-    const timer = setTimeout(() => setIsLoading(false), 500);
+    if (isInitialLoad && currentWorkout) {
+      // Check if we should redirect to workout
+      if (location.pathname === '/') {
+        navigate('/workout', { replace: true });
+      }
+      setIsInitialLoad(false);
+    }
+
+    // Handle loading state
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
     return () => clearTimeout(timer);
-  }, []);
+  }, [currentWorkout, location.pathname, isInitialLoad]);
 
   // Show loading state while checking auth and workout status
   if (isLoading) {
