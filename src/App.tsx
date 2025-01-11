@@ -14,6 +14,7 @@ import { MigrationStatus } from './components/MigrationStatus';
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
 import { UpdateNotification } from './components/UpdateNotification';
+import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -57,9 +58,14 @@ const AppContent = () => {
 
   // Show loading state while checking auth and workout status
   if (isLoading) {
+    // Show skeleton loader for workout route when there's an active workout
+    if (currentWorkout && isWorkoutRoute) {
+      return <WorkoutSkeleton />;
+    }
+    // Show regular loading state for all other routes
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
-        <LogDayLogo/>
+        <LogDayLogo />
         <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
       </div>
     );
