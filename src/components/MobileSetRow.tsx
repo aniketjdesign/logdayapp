@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
+import { RemoveScroll } from 'react-remove-scroll';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -25,6 +26,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
+  const menuRef = React.createRef<HTMLDivElement>(null);
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -259,12 +261,15 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       </button>
 
       {showMenu && (
-        <>
+        <RemoveScroll>
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40"
             onClick={() => setShowMenu(false)}
           />
-          <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl z-50 animate-slide-up">
+          <div 
+            ref={menuRef}
+            className="fixed bottom-0 left-0 right-0 bg-white rounded-t-xl z-50 animate-slide-up"
+          >
             <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto my-3" />
             
             {/* Header */}
@@ -302,7 +307,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               </button>
             </div>
           </div>
-        </>
+        </RemoveScroll>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
 import { SettingsProvider } from './context/SettingsContext';
@@ -11,12 +11,11 @@ import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
 import { MigrationStatus } from './components/MigrationStatus';
-import { UpdatePrompt } from './components/UpdatePrompt';
-import { useUpdatePrompt } from './hooks/useUpdatePrompt';
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
+import { UpdateNotification } from './components/UpdateNotification';
+import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
-
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
@@ -33,22 +32,40 @@ const AppContent = () => {
   const { user } = useAuth();
   const { currentWorkout } = useWorkout();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  const { updateAvailable, updateServiceWorker } = useUpdatePrompt();
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isWorkoutRoute = location.pathname === '/workout';
 
+  // Handle initial route and loading
   useEffect(() => {
-    // Allow time for auth and workout state to hydrate
-    const timer = setTimeout(() => setIsLoading(false), 500);
+    if (isInitialLoad && currentWorkout) {
+      // Check if we should redirect to workout
+      if (location.pathname === '/') {
+        navigate('/workout', { replace: true });
+      }
+      setIsInitialLoad(false);
+    }
+
+    // Handle loading state
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 500);
+    
     return () => clearTimeout(timer);
-  }, []);
+  }, [currentWorkout, location.pathname, isInitialLoad]);
 
   // Show loading state while checking auth and workout status
   if (isLoading) {
+    // Show skeleton loader for workout route when there's an active workout
+    if (currentWorkout && isWorkoutRoute) {
+      return <WorkoutSkeleton />;
+    }
+    // Show regular loading state for all other routes
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
-        <LogDayLogo/>
+        <LogDayLogo />
         <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
       </div>
     );
@@ -74,7 +91,7 @@ const AppContent = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {showNavigation && <Navigation />}
-      <div className="pt-16">
+      <div className={showNavigation ? "pt-16" : ""}>
         <Routes>
           <Route path="/" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
@@ -87,24 +104,20 @@ const AppContent = () => {
         </Routes>
       </div>
       <MigrationStatus />
-      {updateAvailable && <UpdatePrompt onUpdate={updateServiceWorker} />}
+      <UpdateNotification />
     </div>
   );
 };
 
 function App() {
   return (
-    <div className="app-layout bg-gray-50">
-      <AuthProvider>
-        <SettingsProvider>
-          <WorkoutProvider>
-            <div className="app-content">
-              <AppContent />
-            </div>
-          </WorkoutProvider>
-        </SettingsProvider>
-      </AuthProvider>
-    </div>
+    <AuthProvider>
+      <SettingsProvider>
+        <WorkoutProvider>
+          <AppContent />
+        </WorkoutProvider>
+      </SettingsProvider>
+    </AuthProvider>
   );
 }
 

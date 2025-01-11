@@ -272,7 +272,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onPauseResume={onPauseResume}
       />
 
-      <div className="px-4 space-y-6 pt-16 pb-40">
+      <div className="px-4 space-y-6 pt-32 pb-40">
         {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
           if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
             return null;

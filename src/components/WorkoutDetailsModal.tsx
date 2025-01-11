@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Medal, Link2, Target, MoreVertical, Play, Repeat1, Trash2 } from 'lucide-react';
+import { X, Medal, Link2, Target, MoreVertical, Play, Repeat1, Trash2, Save } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { ExerciseSetList } from './ExerciseSetList';
 import { useSettings } from '../context/SettingsContext';
@@ -7,6 +7,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../utils/uuid';
 import { disableScroll, enableScroll } from '../utils/scrollLock';
+import { RoutineSetup } from './routines/RoutineSetup';
 
 interface WorkoutDetailsModalProps {
   log: WorkoutLog;
@@ -17,7 +18,8 @@ interface WorkoutDetailsModalProps {
 export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, onClose, onDelete }) => {
   const { weightUnit } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
-  const { startWorkout } = useWorkout();
+  const [showRoutineSetup, setShowRoutineSetup] = useState(false);
+  const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,27 +90,36 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
                     onClick={() => setShowMenu(false)}
                   />
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-30 border">
-                    <button
+                    <div
                       onClick={() => {
                         handleRestartWorkout();
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-blue-50 hover:bg-blue-50 flex items-center"
+                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-100 flex items-center cursor-pointer"
                     >
                       <Repeat1 size={16} className="mr-2" />
                       Repeat Workout
-                    </button>
-                    <button
+                    </div>
+                    <div
+                      onClick={() => {
+                        setShowRoutineSetup(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-100 flex items-center cursor-pointer"
+                    >
+                      <Save size={16} className="mr-2" />
+                      Save as Routine
+                    </div>
+                    <div
                       onClick={() => {
                         onDelete();
                         setShowMenu(false);
-                        onClose();
                       }}
-                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center"
+                      className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
                     >
                       <Trash2 size={16} className="mr-2" />
                       Delete Log
-                    </button>
+                    </div>
                   </div>
                 </>
               )}
@@ -321,6 +332,32 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
           ))}
         </div>
       </div>
+      {showRoutineSetup && (
+        <div className="fixed inset-0 z-50">
+          <RoutineSetup
+            onClose={() => setShowRoutineSetup(false)}
+            onSave={async (data) => {
+              try {
+                await addRoutine(data);
+                setShowRoutineSetup(false);
+              } catch (error) {
+                console.error('Error saving routine:', error);
+                alert('Failed to save routine. Please try again.');
+              }
+            }}
+            routine={{
+              name: log.name || 'Workout Routine',
+              exercises: log.exercises.map(ex => ({
+                exercise: ex.exercise,
+                sets: ex.sets.map(set => ({
+                  weight: set.weight || '',
+                  goal: set.performedReps || '',
+                }))
+              }))
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 };

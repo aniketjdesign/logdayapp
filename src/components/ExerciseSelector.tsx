@@ -105,7 +105,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
     <div className="flex flex-col h-full pt-4">
       <div className="flex-1 overflow-y-auto">
         <div className="px-4">
-          <div className="relative mb-5 flex gap-x-2">
+          <div className="relative mb-5 flex gap-x-2 pt-1">
             <input
               type="text"
               placeholder="Search exercises"

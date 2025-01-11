@@ -10,7 +10,21 @@ export default defineConfig({
     react(),
     // Only enable PWA in production or non-StackBlitz environments
     !isStackBlitz && VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw.ts',
+      injectRegister: 'auto',
+      workbox: {
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
+        cleanupOutdatedCaches: true,
+        clientsClaim: true,
+        skipWaiting: true
+      },
+      devOptions: {
+        enabled: true,
+        type: 'module'
+      },
       includeAssets: ['favicon.svg'],
       manifest: {
         name: 'Logday - Workout Tracker',
@@ -48,101 +62,9 @@ export default defineConfig({
             type: 'image/png',
             platform: 'narrow',
             label: 'Homescreen of Logday App'
-          },
-          {
-            src: 'screenshot2.png',
-            sizes: '1170x2532',
-            type: 'image/png',
-            platform: 'narrow',
-            label: 'Workout Session in Logday App'
-          }
-        ],
-        shortcuts: [
-          {
-            name: 'Start Workout',
-            url: '/',
-            icons: [{ src: 'shortcut-workout.png', sizes: '96x96' }]
-          },
-          {
-            name: 'View History',
-            url: '/logs',
-            icons: [{ src: 'shortcut-history.png', sizes: '96x96' }]
-          }
-        ],
-        related_applications: [
-          {
-            platform: 'webapp',
-            url: 'https://logday.app/manifest.json'
-          }
-        ],
-        prefer_related_applications: false,
-        launch_handler: {
-          client_mode: ['navigate-existing', 'auto']
-        }
-      },
-      workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-        clientsClaim: true,
-        skipWaiting: false,
-        // Use cache ID for versioning
-        cacheId: 'logday-v1',
-        // Ensure CSS changes are immediately visible
-        navigateFallbackDenylist: [/^\/api/],
-        cleanupOutdatedCaches: true,
-        sourcemap: true,
-        runtimeCaching: [
-          {
-            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'gstatic-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365 // 1 year
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            urlPattern: /^https:\/\/nusvmmtwguxhgaaezgwy\.supabase\.co\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 2 // 2 minutes
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              },
-              networkTimeoutSeconds: 10
-            }
           }
         ]
-      },
-      injectRegister: 'auto',
-      minify: true,
-      registerType: 'prompt',
-      devOptions: {
-        enabled: false // Disable in development
-      },
-      filename: 'sw.js'
+      }
     })
   ].filter(Boolean),
   optimizeDeps: {

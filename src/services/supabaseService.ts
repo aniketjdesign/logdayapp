@@ -416,9 +416,39 @@ export const supabaseService = {
         .eq('user_id', session.user.id);
 
       if (error) throw error;
+
       return { error: null };
     } catch (error) {
       console.error('Error deleting routine:', error);
+      return { error };
+    }
+  },
+
+  async moveRoutine(routineId: string, folderId: string | null) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Validate UUID format
+      if (!isValidUUID(routineId)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      if (folderId && !isValidUUID(folderId)) {
+        throw new Error('Invalid folder UUID format');
+      }
+
+      const { error } = await supabase
+        .from('routines')
+        .update({ folder_id: folderId })
+        .eq('id', routineId)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error moving routine:', error);
       return { error };
     }
   },

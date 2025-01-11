@@ -25,6 +25,18 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);

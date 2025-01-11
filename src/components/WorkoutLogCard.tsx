@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play } from 'lucide-react';
+import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play, Save } from 'lucide-react';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 import { ExerciseSetList } from './ExerciseSetList';
@@ -7,6 +7,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../utils/uuid';
 import { WorkoutDetailsModal } from './WorkoutDetailsModal';
+import { RoutineSetup } from './routines/RoutineSetup';
 
 interface WorkoutLogCardProps {
   log: WorkoutLog;
@@ -17,7 +18,8 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const { startWorkout } = useWorkout();
+  const [showRoutineSetup, setShowRoutineSetup] = useState(false);
+  const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
   const { weightUnit, convertWeight } = useSettings();
 
@@ -163,6 +165,16 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                   </div>
                   <div
                     onClick={() => {
+                      setShowRoutineSetup(true);
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-left text-gray-900 hover:bg-blue-50 flex items-center cursor-pointer"
+                  >
+                    <Save size={16} className="mr-2" />
+                    Save as Routine
+                  </div>
+                  <div
+                    onClick={() => {
                       onDelete();
                       setShowMenu(false);
                     }}
@@ -253,6 +265,32 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           onDelete={onDelete}
           onClose={() => setShowDetailsModal(false)}
         />
+      )}
+      {showRoutineSetup && (
+        <div className="fixed inset-0 z-50">
+          <RoutineSetup
+            onClose={() => setShowRoutineSetup(false)}
+            onSave={async (data) => {
+              try {
+                await addRoutine(data);
+                setShowRoutineSetup(false);
+              } catch (error) {
+                console.error('Error saving routine:', error);
+                alert('Failed to save routine. Please try again.');
+              }
+            }}
+            routine={{
+              name: log.name || 'Workout Routine',
+              exercises: log.exercises.map(ex => ({
+                exercise: ex.exercise,
+                sets: ex.sets.map(set => ({
+                  weight: set.weight || '',
+                  goal: set.performedReps || '',
+                }))
+              }))
+            }}
+          />
+        </div>
       )}
     </div>
   );
