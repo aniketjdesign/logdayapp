@@ -181,7 +181,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
       <div className="flex flex-col h-full">
         <div className="border-b">
           <div className="flex items-center justify-between p-4">
-            <h1 className="text-lg font-semibold">
+            <h1 className="text-lg font-bold">
               {routine ? 'Edit Routine' : 'Create Routine'}
             </h1>
             <button
@@ -249,7 +249,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
 
             <div className="border-t pt-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-md font-medium">Exercises</h2>
+                <h2 className="text-sm text-gray-700 font-medium">Exercises</h2>
                 <button
                   onClick={() => setShowExerciseSelector(true)}
                   className="flex items-center text-blue-600 text-sm"
@@ -338,7 +338,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
         <LoadingButton
               onClick={handleSave}
               isLoading={isSaving}
-              className="text-sm font-medium w-full"
+              className="text-md font-medium w-full py-3"
             >
               {routine ? 'Update' : 'Create'} Routine
             </LoadingButton>
