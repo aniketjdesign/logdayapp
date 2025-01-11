@@ -7,7 +7,7 @@ export function UpdateNotification() {
   if (!needRefresh) return null
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 bg-blue-600 text-white p-4 rounded-lg shadow-lg flex justify-between items-center">
+    <div className="fixed bottom-4 left-4 right-4 z-[9999] bg-blue-600 text-white p-4 rounded-lg shadow-lg flex justify-between items-center">
       <span className="text-sm">A new version is available!</span>
       <button
         onClick={updateApp}

@@ -104,7 +104,6 @@ const AppContent = () => {
         </Routes>
       </div>
       <MigrationStatus />
-      <UpdateNotification />
     </div>
   );
 };
@@ -114,6 +113,7 @@ function App() {
     <AuthProvider>
       <SettingsProvider>
         <WorkoutProvider>
+          <UpdateNotification />
           <AppContent />
         </WorkoutProvider>
       </SettingsProvider>

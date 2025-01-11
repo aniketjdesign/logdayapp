@@ -9,7 +9,7 @@ export function useAppUpdate() {
 
   useEffect(() => {
     const updateSW = registerSW({
-      immediate: true,
+      immediate: false, // Don't update immediately, wait for user confirmation
       onNeedRefresh() {
         console.log('New version available!')
         setNeedRefresh(true)
