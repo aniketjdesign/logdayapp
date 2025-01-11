@@ -94,7 +94,7 @@ export const ExerciseList: React.FC = () => {
      
       <div className= {`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
       <div className= "px-4">
-        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-4">
+        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-3">
           <h1 className="text-lg font-bold">Quick Start</h1>
           <p className="text-sm text-gray-500">Select your exercises and click Start Workout</p>
         </div>
