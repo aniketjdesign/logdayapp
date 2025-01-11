@@ -174,7 +174,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                 <div
                   key={exercise.id}
                   onClick={() => !currentWorkout && onExerciseSelect(exercise)}
-                  className={`flex items-center justify-between px-4 py-2.5 cursor-pointer border-b
+                  className={`flex items-center justify-between  cursor-pointer border-b px-4 py-2.5 
                     ${selectedExercises.find(e => e.id === exercise.id)
                       ? 'bg-blue-50 border-blue-300'
                       : 'border-gray-100 hover:bg-gray-50'
