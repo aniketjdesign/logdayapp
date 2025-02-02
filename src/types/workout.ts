@@ -73,3 +73,11 @@ export interface ExerciseMetrics {
   pace?: boolean;
   reps?: boolean;
 }
+
+export interface WorkoutPreferences {
+  id: string;
+  user_id: string;
+  history_period_days: number;
+  created_at?: string;
+  updated_at?: string;
+}
