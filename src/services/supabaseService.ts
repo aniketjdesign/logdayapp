@@ -179,7 +179,7 @@ export const supabaseService = {
       if (!session?.user) throw new Error('No authenticated user');
 
       const { data, error } = await supabase
-        .from('workout_preferences')
+        .from('user_settings')
         .select('weight_unit')
         .eq('user_id', session.user.id)
         .maybeSingle();
@@ -199,7 +199,7 @@ export const supabaseService = {
       if (!session?.user) throw new Error('No authenticated user');
 
       const { error } = await supabase
-        .from('workout_preferences')
+      .from('user_settings')
         .upsert({
           user_id: session.user.id,
           weight_unit: weightUnit,
