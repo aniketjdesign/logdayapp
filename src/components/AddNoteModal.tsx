@@ -36,7 +36,16 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
             }))
         )
     )
-    .sort((a, b) => b.date.getTime() - a.date.getTime())[0]; // Get only the first (most recent) note
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+
+  const handleRemoveNote = () => {
+    onSave(''); // Save empty string to remove the note
+    onClose();
+  };
+
+  const handleClearNote = () => {
+    setNote(''); // Just clear the textarea
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end z-50">
@@ -82,14 +91,29 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         />
         <div className="flex space-x-3 mt-4">
           <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium"
+            onClick={handleClearNote}
+            className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium ${
+              currentNote 
+                ? 'border-gray-300 text-gray-600 hover:bg-gray-50' 
+                : 'border-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!currentNote}
           >
-            Cancel
+            Clear Note
           </button>
           <button
-            onClick={() => onSave(note)}
-            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium"
+            onClick={() => {
+              if (note.trim()) {
+                onSave(note);
+                onClose();
+              }
+            }}
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${
+              note.trim() 
+                ? 'bg-blue-600 text-white hover:bg-blue-700' 
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+            disabled={!note.trim()}
           >
             Save Note
           </button>

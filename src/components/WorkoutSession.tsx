@@ -159,6 +159,49 @@ const {
     loadCustomExercises();
   }, []);
 
+  useEffect(() => {
+    if (!currentWorkout) return;
+
+    // Check for previous notes for each exercise and set
+    const updatedExercises = currentWorkout.exercises.map(ex => {
+      const updatedSets = ex.sets.map((set, index) => {
+        // Find the most recent note for this exercise and set number
+        const lastNote = workoutLogs
+          .flatMap(log => 
+            log.exercises
+              .filter(e => e.exercise.id === ex.exercise.id)
+              .flatMap(e => 
+                e.sets
+                  .filter((s, i) => i === index && s.comments)
+                  .map(s => ({
+                    note: s.comments,
+                    date: new Date(log.startTime).getTime()
+                  }))
+              )
+          )
+          .sort((a, b) => b.date - a.date)[0]?.note;
+
+        // If there's a last note and current set doesn't have comments, add them
+        if (lastNote && !set.comments) {
+          return { ...set, comments: ' ' }; // Space instead of empty string to ensure indicator shows
+        }
+        return set;
+      });
+
+      return { ...ex, sets: updatedSets };
+    });
+
+    // Only update if there are actual changes
+    const currentJson = JSON.stringify(currentWorkout.exercises);
+    const updatedJson = JSON.stringify(updatedExercises);
+    if (currentJson !== updatedJson) {
+      setCurrentWorkout(prev => ({
+        ...prev,
+        exercises: updatedExercises
+      }));
+    }
+  }, [currentWorkout?.exercises, workoutLogs]);
+
   const formatTime = (seconds: number) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
