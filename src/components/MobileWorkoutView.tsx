@@ -311,6 +311,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       {activeNoteModal && (
         <AddNoteModal
           exerciseName={activeNoteModal.exerciseName}
+          exerciseId={activeNoteModal.exerciseId}
           setNumber={activeNoteModal.setNumber}
           currentNote={
             workout.exercises
