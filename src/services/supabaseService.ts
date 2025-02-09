@@ -1,9 +1,12 @@
 import { supabase } from '../config/supabase';
-import { WorkoutLog } from '../types/workout';
+import { WorkoutLog, WorkoutPreferences } from '../types/workout';
 import { WeightUnit } from '../db/database';
 import { isValidUUID } from '../utils/uuid';
 
 const ITEMS_PER_PAGE = 10;
+
+// Default history period in days if not set
+const DEFAULT_HISTORY_PERIOD = 30;
 
 export const supabaseService = {
   async getWorkoutLogs() {
@@ -11,15 +14,17 @@ export const supabaseService = {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      // Calculate date 30 days ago
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const historyPeriod = await this.getUserHistoryPeriod();
+      
+      // Calculate date based on user's history period setting
+      const historyDate = new Date();
+      historyDate.setDate(historyDate.getDate() - historyPeriod);
 
       const { data, error } = await supabase
         .from('workout_logs')
         .select('*')
         .eq('user_id', session.user.id)
-        .gte('start_time', thirtyDaysAgo.toISOString())
+        .gte('start_time', historyDate.toISOString())
         .order('start_time', { ascending: false });
 
       if (error) throw error;
@@ -105,15 +110,17 @@ export const supabaseService = {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) throw new Error('No authenticated user');
 
-      // Calculate date 30 days ago
-      const thirtyDaysAgo = new Date();
-      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const historyPeriod = await this.getUserHistoryPeriod();
+      
+      // Calculate date based on user's history period setting
+      const historyDate = new Date();
+      historyDate.setDate(historyDate.getDate() - historyPeriod);
 
       const queryBuilder = supabase
         .from('workout_logs')
         .select('*')
         .eq('user_id', session.user.id)
-        .gte('start_time', thirtyDaysAgo.toISOString())
+        .gte('start_time', historyDate.toISOString())
         .order('created_at', { ascending: false });
 
       if (query) {
@@ -192,7 +199,7 @@ export const supabaseService = {
       if (!session?.user) throw new Error('No authenticated user');
 
       const { error } = await supabase
-        .from('user_settings')
+      .from('user_settings')
         .upsert({
           user_id: session.user.id,
           weight_unit: weightUnit,
@@ -204,6 +211,56 @@ export const supabaseService = {
       return { error: null };
     } catch (error) {
       console.error('Error saving user settings:', error);
+      return { error };
+    }
+  },
+
+  async getUserHistoryPeriod() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_preferences')
+        .select('history_period_days')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching workout preferences:', error);
+        return DEFAULT_HISTORY_PERIOD;
+      }
+
+      return data?.history_period_days || DEFAULT_HISTORY_PERIOD;
+    } catch (error) {
+      console.error('Error in getUserHistoryPeriod:', error);
+      return DEFAULT_HISTORY_PERIOD;
+    }
+  },
+
+  async updateUserHistoryPeriod(days: number) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      if (days < 1) throw new Error('History period must be at least 1 day');
+      if (days > 365) throw new Error('History period cannot exceed 365 days');
+
+      const { error } = await supabase
+        .from('workout_preferences')
+        .upsert({
+          user_id: session.user.id,
+          history_period_days: days,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        });
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error) {
+      console.error('Error updating history period:', error);
       return { error };
     }
   },

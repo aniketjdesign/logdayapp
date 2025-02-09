@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MoreVertical, X } from 'lucide-react';
+import { MoreVertical, X, MessageSquare } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 
@@ -104,21 +104,17 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     </button>
   );
 
-  const getNoteButton = () => (
+  const noteButton = (
     <button
       onClick={() => {
-        if (set.comments) {
-          onUpdate('comments', '');
-        } else {
-          onOpenNoteModal();
-        }
+        onOpenNoteModal();
         setShowMenu(false);
       }}
       className="w-full px-4 py-3 text-left text-base flex items-center justify-between hover:bg-gray-50 rounded-lg"
     >
       <div className="flex items-center">
         <div className="w-3 h-3 rounded-full bg-blue-500 mr-3" />
-        <span>{set.comments ? 'Remove Note' : 'Add Note'}</span>
+        <span>{set.comments ? 'View Note' : 'Add Note'}</span>
       </div>
     </button>
   );
@@ -292,7 +288,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               {getSetTypeButton('isDropset', 'Dropset', 'bg-purple-500', true, set.isWarmup)}
               
               {/* Add Note */}
-              {getNoteButton()}
+              {noteButton}
               
               {/* Delete Set */}
               <button

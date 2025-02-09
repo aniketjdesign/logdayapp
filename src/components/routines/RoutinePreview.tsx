@@ -203,10 +203,13 @@ export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
         </div>
       </div>
 
-      <RoutinePreviewSheet
+      <RoutinePreviewSheet 
         routine={routine}
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
+        onEdit={onEdit}
+        onDelete={onDelete}
+        onMove={onMove}
       />
 
       <DeleteRoutineModal

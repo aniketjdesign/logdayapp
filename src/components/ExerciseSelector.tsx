@@ -102,8 +102,8 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full pt-4">
-      <div className="flex-1 overflow-y-auto">
+    <div className="flex flex-col h-full pt-4 ">
+      <div className="flex-1 overflow-y-auto pb-80 bg-white">
         <div className="px-4">
           <div className="relative mb-5 flex gap-x-2 pt-1">
             <input
@@ -111,7 +111,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
               placeholder="Search exercises"
               className="w-full pl-7 pr-10 py-2 border border-gray-200 rounded-lg text-sm"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(e.target.value)}  
             />
             <button className="absolute left-1 top-1/2 -translate-y-1/2 p-1">
               <SearchIcon size={16} className="text-gray-400" />
