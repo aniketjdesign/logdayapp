@@ -1,84 +1,43 @@
-import mixpanel from 'mixpanel-browser';
+// No-op analytics implementation
+// This file provides a placeholder for analytics that can be implemented later if needed
 
-const MIXPANEL_TOKEN = '672e7aa3fb3f5695ec02ebee';
-
+// No initialization needed
 let isInitialized = false;
-
-const initMixpanel = () => {
-  if (!isInitialized && MIXPANEL_TOKEN) {
-    try {
-      mixpanel.init(MIXPANEL_TOKEN, {
-        debug: import.meta.env.DEV,
-        track_pageview: true,
-        persistence: 'localStorage'
-      });
-      isInitialized = true;
-    } catch (error) {
-      console.error('Failed to initialize Mixpanel:', error);
-    }
-  }
-};
 
 export const Analytics = {
   identify: (userId: string, traits?: Record<string, any>) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.identify(userId);
-        if (traits) {
-          mixpanel.people.set(traits);
-        }
-      }
-    } catch (error) {
-      console.error('Analytics identify error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.identify called', { userId, traits });
     }
   },
 
   track: (event: string, properties?: Record<string, any>) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track(event, properties);
-      }
-    } catch (error) {
-      console.error('Analytics track error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.track called', { event, properties });
     }
   },
 
   page: (name: string, properties?: Record<string, any>) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Page View', {
-          page: name,
-          ...properties
-        });
-      }
-    } catch (error) {
-      console.error('Analytics page error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.page called', { name, properties });
     }
   },
 
   reset: () => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.reset();
-      }
-    } catch (error) {
-      console.error('Analytics reset error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.reset called');
     }
   },
 
   // Workout Events
   workoutStarted: (properties: { exercises: number; name?: string }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Workout Started', properties);
-      }
-    } catch (error) {
-      console.error('Analytics workoutStarted error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.workoutStarted called', properties);
     }
   },
 
@@ -89,13 +48,9 @@ export const Analytics = {
     volume: number;
     prs: number;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Workout Completed', properties);
-      }
-    } catch (error) {
-      console.error('Analytics workoutCompleted error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.workoutCompleted called', properties);
     }
   },
 
@@ -104,13 +59,9 @@ export const Analytics = {
     exercises: number;
     completedSets: number;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Workout Cancelled', properties);
-      }
-    } catch (error) {
-      console.error('Analytics workoutCancelled error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.workoutCancelled called', properties);
     }
   },
 
@@ -119,13 +70,9 @@ export const Analytics = {
     exerciseName: string;
     muscleGroup: string;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Exercise Added', properties);
-      }
-    } catch (error) {
-      console.error('Analytics exerciseAdded error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.exerciseAdded called', properties);
     }
   },
 
@@ -134,13 +81,9 @@ export const Analytics = {
     exerciseName: string;
     muscleGroup: string;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Exercise Removed', properties);
-      }
-    } catch (error) {
-      console.error('Analytics exerciseRemoved error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.exerciseRemoved called', properties);
     }
   },
 
@@ -151,13 +94,9 @@ export const Analytics = {
     reps?: number;
     isPR: boolean;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Set Completed', properties);
-      }
-    } catch (error) {
-      console.error('Analytics setCompleted error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.setCompleted called', properties);
     }
   },
 
@@ -167,13 +106,9 @@ export const Analytics = {
     email: string;
     createdAt: string;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('User Signed Up', properties);
-      }
-    } catch (error) {
-      console.error('Analytics userSignedUp error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.userSignedUp called', properties);
     }
   },
 
@@ -181,24 +116,16 @@ export const Analytics = {
     userId: string;
     email: string;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('User Signed In', properties);
-      }
-    } catch (error) {
-      console.error('Analytics userSignedIn error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.userSignedIn called', properties);
     }
   },
 
   userSignedOut: () => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('User Signed Out');
-      }
-    } catch (error) {
-      console.error('Analytics userSignedOut error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.userSignedOut called');
     }
   },
 
@@ -208,25 +135,17 @@ export const Analytics = {
     value: any;
     previousValue?: any;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Settings Changed', properties);
-      }
-    } catch (error) {
-      console.error('Analytics settingsChanged error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.settingsChanged called', properties);
     }
   },
 
   // App Events
   appInstalled: () => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('App Installed');
-      }
-    } catch (error) {
-      console.error('Analytics appInstalled error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.appInstalled called');
     }
   },
 
@@ -234,13 +153,9 @@ export const Analytics = {
     fromVersion: string;
     toVersion: string;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('App Updated', properties);
-      }
-    } catch (error) {
-      console.error('Analytics appUpdated error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.appUpdated called', properties);
     }
   },
 
@@ -249,13 +164,9 @@ export const Analytics = {
     context?: string;
     metadata?: Record<string, any>;
   }) => {
-    try {
-      initMixpanel();
-      if (isInitialized) {
-        mixpanel.track('Error Occurred', properties);
-      }
-    } catch (error) {
-      console.error('Analytics error track error:', error);
+    // No-op implementation
+    if (import.meta.env.DEV) {
+      console.log('Analytics.error called', properties);
     }
   }
 };

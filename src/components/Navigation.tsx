@@ -39,9 +39,9 @@ export const Navigation: React.FC = () => {
       window.Canny('identify', {
         appID: '672e7aa3fb3f5695ec02ebee',
         user: {
-          email: user.email,
+          email: `${user.id}@logday.app`,
           id: user.id,
-          name: user.email.split('@')[0],
+          name: `User_${user.id.slice(0, 8)}`,
         },
       });
 
