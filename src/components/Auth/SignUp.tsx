@@ -137,10 +137,10 @@ export const SignUp: React.FC = () => {
             <div className="flex justify-center">
               <LogDayLogo className="h-16 w-16" />
             </div>
-            <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
+            <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
               Join Logday
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-gray-600">
               Start your fitness journey today
             </p>
           </div>

@@ -44,10 +44,10 @@ export const Login: React.FC = () => {
           <div className="flex justify-center">
             <LogDayLogo className="h-16 w-16" />
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
             Welcome to Logday
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             Never skip log day
           </p>
         </div>
@@ -102,6 +102,14 @@ export const Login: React.FC = () => {
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <Link to="/reset-password" className="font-medium text-blue-600 hover:text-blue-500">
+                Forgot your password?
+              </Link>
             </div>
           </div>
 

@@ -11,23 +11,31 @@ interface ExerciseSelectionModalProps {
   onClose: () => void;
   onAdd: (exercises: Exercise[]) => void;
   currentExercises: Exercise[];
+  isReplacing?: boolean;
 }
 
 export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
   onClose,
   onAdd,
   currentExercises,
+  isReplacing = false,
 }) => {
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const { customExercises, addCustomExercise } = useWorkout();
 
   const handleExerciseSelect = (exercise: Exercise) => {
-    setSelectedExercises(
-      selectedExercises.find(e => e.id === exercise.id)
-        ? selectedExercises.filter(e => e.id !== exercise.id)
-        : [...selectedExercises, exercise]
-    );
+    if (isReplacing) {
+      // When replacing, only allow selecting one exercise
+      setSelectedExercises([exercise]);
+    } else {
+      // Normal multi-select behavior
+      setSelectedExercises(
+        selectedExercises.find(e => e.id === exercise.id)
+          ? selectedExercises.filter(e => e.id !== exercise.id)
+          : [...selectedExercises, exercise]
+      );
+    }
   };
 
   const groupedExercises = useMemo(() => {
@@ -45,7 +53,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
       <div className="fixed inset-0 bg-black/50 flex items-center w-full justify-center z-50">
         <div className="relative w-full h-[70vh] max-w-md bg-white rounded-t-xl">
           <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Add Exercises</h2>
+            <h2 className="text-lg font-semibold">{isReplacing ? 'Replace Exercise' : 'Add Exercises'}</h2>
             <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full">
               <X size={20} />
             </button>
@@ -76,7 +84,9 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
                   : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
                 }`}
             >
-              Add Exercise{selectedExercises.length !== 1 ? 's' : ''} ({selectedExercises.length})
+              {isReplacing 
+                ? 'Replace Exercise' 
+                : `Add Exercise${selectedExercises.length !== 1 ? 's' : ''} (${selectedExercises.length})`}
             </button>
           </div>
 

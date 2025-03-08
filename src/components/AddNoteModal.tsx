@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, History } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, History, Pin } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 
 interface AddNoteModalProps {
@@ -7,7 +7,7 @@ interface AddNoteModalProps {
   exerciseId: string;
   setNumber: number;
   currentNote: string;
-  onSave: (note: string) => void;
+  onSave: (note: string | null) => void;
   onClose: () => void;
 }
 
@@ -19,7 +19,18 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   onSave,
   onClose,
 }) => {
+  // Start with the current note value
   const [note, setNote] = useState(currentNote);
+  // Track if the current note is pinned - initially true if there's a current note
+  const [isPinned, setIsPinned] = useState(!!currentNote);
+  // Track if the last note is pinned - initially true if there's a last note
+  const [isLastNotePinned, setIsLastNotePinned] = useState(false);
+  
+  // Update local state when currentNote changes
+  useEffect(() => {
+    setNote(currentNote);
+    setIsPinned(!!currentNote);
+  }, [currentNote]);
   const { workoutLogs } = useWorkout();
 
   // Get the most recent note for this exercise and set number
@@ -29,7 +40,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         .filter(ex => ex.exercise.id === exerciseId)
         .flatMap(ex => 
           ex.sets
-            .filter((set, index) => index + 1 === setNumber && set.comments)
+            .filter((set, index) => index + 1 === setNumber && set.comments && set.comments.trim().length > 0)
             .map(set => ({
               note: set.comments,
               date: new Date(log.startTime)
@@ -37,14 +48,62 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         )
     )
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+    
+  // Set the last note as pinned by default when it's available
+  useEffect(() => {
+    if (lastNote) {
+      setIsLastNotePinned(true);
+      // If there's no current note, save the last note directly
+      if (!currentNote) {
+        onSave(lastNote.note);
+      }
+    }
+  }, [lastNote, currentNote]);
 
-  const handleRemoveNote = () => {
-    onSave(''); // Save empty string to remove the note
+  // Handle unpinning the Last Note
+  const handleUnpinNote = () => {
+    // Clear the note completely
+    setNote('');
+    setIsPinned(false);
+    setIsLastNotePinned(false);
+    
+    // Save a special value to indicate explicitly unpinned
+    // Using null instead of empty string to distinguish from a new set with no comments yet
+    onSave(null);
+    // Close the modal to ensure UI updates
     onClose();
   };
 
-  const handleClearNote = () => {
-    setNote(''); // Just clear the textarea
+  // Pin the last note without changing the input field
+  const handlePinLastNote = () => {
+    setIsLastNotePinned(true);
+    // Save the last note directly
+    if (lastNote) {
+      onSave(lastNote.note);
+    }
+  };
+
+  // Handle pinning the current note in the input field
+  const handlePinCurrentNote = () => {
+    if (note.trim()) {
+      setIsPinned(true);
+      // When pinning a new note, unpin the last note
+      setIsLastNotePinned(false);
+      onSave(note);
+    }
+  };
+
+  // Handle unpinning all notes and closing the modal
+  const handleUnpinAllNotes = () => {
+    // Set local state
+    setNote('');
+    setIsPinned(false);
+    setIsLastNotePinned(false);
+    
+    // Save null instead of empty string to indicate explicitly unpinned
+    onSave(null);
+    // Close the modal
+    onClose();
   };
 
   return (
@@ -63,15 +122,34 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
           </button>
         </div>
 
-        {/* Previous Note Section */}
+        {/* Last Note Section */}
         {lastNote && (
           <div className="mb-4">
-            <div className="flex items-center gap-1 mb-2">
-              <History size={12} className="text-gray-500" />
-              <h4 className="text-xs font-medium text-gray-700">Last Note</h4>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-1">
+                <History size={12} className="text-gray-500" />
+                <h4 className="text-xs font-medium text-gray-700">Last Note</h4>
+              </div>
+              {isLastNotePinned ? (
+                <button 
+                  onClick={handleUnpinNote}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded"
+                >
+                  <Pin size={12} className="text-gray-500 fill-current" style={{ transform: 'rotate(45deg)' }} />
+                  Unpin
+                </button>
+              ) : (
+                <button 
+                  onClick={handlePinLastNote}
+                  className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 bg-gray-100 px-2 py-1 rounded"
+                >
+                  <Pin size={12} className="text-gray-500" />
+                  Pin
+                </button>
+              )}
             </div>
             <div 
-              className="bg-yellow-50 border border-yellow-200 p-2 rounded-lg cursor-pointer hover:bg-gray-100"
+              className={`border p-2 rounded-lg cursor-pointer ${isLastNotePinned ? 'bg-yellow-50 border-yellow-200' : 'bg-gray-50 border-gray-200'}`}
               onClick={() => setNote(lastNote.note)}
             >
               <p className="text-sm text-gray-800">{lastNote.note}</p>
@@ -83,7 +161,7 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         )}
 
         <textarea
-          placeholder="Add a note..."
+          placeholder="Pin a new note..."
           className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm min-h-[100px]"
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -91,31 +169,30 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
         />
         <div className="flex space-x-3 mt-4">
           <button
-            onClick={handleClearNote}
-            className={`flex-1 px-4 py-2 border rounded-lg text-sm font-medium ${
-              currentNote 
-                ? 'border-gray-300 text-gray-600 hover:bg-gray-50' 
-                : 'border-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
-            disabled={!currentNote}
+            onClick={handleUnpinAllNotes}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium flex items-center justify-center gap-1 text-gray-600 hover:bg-gray-50"
           >
-            Clear Note
+            <Pin size={14} className="inline" style={{ transform: 'rotate(45deg)' }} />
+            Unpin All Notes
           </button>
           <button
             onClick={() => {
               if (note.trim()) {
-                onSave(note);
+                // Use handlePinCurrentNote to ensure proper state management
+                handlePinCurrentNote();
+                // Close the modal
                 onClose();
               }
             }}
-            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium ${
+            className={`flex-1 px-4 py-2 rounded-lg text-sm font-medium flex items-center justify-center gap-1 ${
               note.trim() 
                 ? 'bg-blue-600 text-white hover:bg-blue-700' 
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
             disabled={!note.trim()}
           >
-            Save Note
+            <Pin size={14} className="inline" />
+            Pin This Note
           </button>
         </div>
       </div>

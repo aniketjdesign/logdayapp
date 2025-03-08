@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Link2, Trash2 } from 'lucide-react';
+import { Clock, Link2, Trash2, RefreshCw } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
@@ -61,6 +61,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
@@ -237,6 +238,17 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </button>
       <button
         onClick={() => {
+          setReplaceExerciseId(exerciseId);
+          setShowExerciseModal(true);
+          setActiveExerciseMenu(null);
+        }}
+        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
+      >
+        <RefreshCw size={16} />
+        <span>Replace Exercise</span>
+      </button>
+      <button
+        onClick={() => {
           onDeleteExercise(exerciseId);
           setActiveExerciseMenu(null);
         }}
@@ -329,9 +341,45 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
       {showExerciseModal && (
         <ExerciseSelectionModal
-          onClose={() => setShowExerciseModal(false)}
+          isReplacing={replaceExerciseId !== null}
+          onClose={() => {
+            setShowExerciseModal(false);
+            setReplaceExerciseId(null);
+          }}
           onAdd={(selectedExercises) => {
-            onShowExerciseModal(selectedExercises);
+            if (replaceExerciseId) {
+              // Handle replacing an exercise
+              const exerciseToReplace = workout.exercises.find(e => e.exercise.id === replaceExerciseId);
+              if (exerciseToReplace && selectedExercises.length === 1) {
+                // Create a new exercise with the same number of sets but with empty values
+                const newExercise = {
+                  exercise: selectedExercises[0],
+                  sets: exerciseToReplace.sets.map(set => ({
+                    ...set,
+                    weight: 0,
+                    targetReps: 0,
+                    completedReps: 0,
+                    comments: ''
+                  })),
+                  supersetWith: null
+                };
+                
+                // Replace the exercise in the workout
+                const updatedExercises = workout.exercises.map(e => 
+                  e.exercise.id === replaceExerciseId ? newExercise : e
+                );
+                
+                // Update the workout with the new exercises array
+                setCurrentWorkout({
+                  ...workout,
+                  exercises: updatedExercises
+                });
+              }
+              setReplaceExerciseId(null);
+            } else {
+              // Normal add exercise flow
+              onShowExerciseModal(selectedExercises);
+            }
             setShowExerciseModal(false);
           }}
           currentExercises={workout.exercises.map(e => e.exercise)}

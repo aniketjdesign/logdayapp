@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { MoreVertical, X, MessageSquare } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
@@ -23,10 +23,13 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onSetComplete,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
-  const menuRef = React.createRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const setTypeMenuRef = useRef<HTMLDivElement>(null);
+  const setNumberRef = useRef<HTMLDivElement>(null);
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -57,6 +60,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
   const handleSetTypeUpdate = (type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR', value: boolean) => {
     onUpdate(type, value);
+    setShowSetTypeMenu(false);
   };
 
   // Check if any non-warmup type is selected
@@ -89,16 +93,15 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     <button
       onClick={() => {
         handleSetTypeUpdate(type, !set[type]);
-        setShowMenu(false);
       }}
       disabled={disabled}
-      className={`w-full px-4 py-3 text-left text-base flex items-center justify-between ${
+      className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
         disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
       } rounded-lg`}
     >
       <div className="flex items-center">
         <div className={`w-3 h-3 rounded-full ${color} mr-3`} />
-        <span>{set[type] ? `Remove ${label}` : `Mark as ${label}`}</span>
+        <span>{set[type] ? `Remove ${label}` : `${label}`}</span>
       </div>
       {isNew && <NewTag />}
     </button>
@@ -119,26 +122,106 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     </button>
   );
 
+  // Get set type abbreviation
+  const getSetTypeAbbreviation = () => {
+    if (set.isWarmup) return "W";
+    if (set.isDropset) return "D";
+    if (set.isPR) return "🏆";
+    if (set.isFailure && !set.isPR && !set.isDropset) return "F";
+    return set.setNumber.toString();
+  };
+
+  // Get set type text color
+  const getSetTypeTextColor = () => {
+    if (set.isWarmup) return "text-orange-600";
+    if (set.isDropset) return "text-purple-600";
+    if (set.isPR) return "text-yellow-700";
+    if (set.isFailure && !set.isPR && !set.isDropset) return "text-red-600";
+    return "text-gray-500";
+  };
+
+  // Get set type background color
+  const getSetTypeBgColor = () => {
+    if (set.isWarmup) return "bg-orange-50 border-orange-100";
+    if (set.isDropset) return "bg-purple-50 border-purple-100";
+    if (set.isPR) return "bg-yellow-50 border-yellow-100";
+    if (set.isFailure && !set.isPR && !set.isDropset) return "bg-red-50 border-red-100";
+    return "bg-gray-50 border-gray-200";
+  };
+
   return (
-    <div className="grid grid-cols-[40px_1fr_1fr_1fr_32px] gap-4 items-center py-1 relative">
-      <div className="flex items-center">
-        <span className="text-sm font-medium text-gray-500 mr-1">{set.setNumber}</span>
-        <div className="relative flex -space-x-1">
-          {set.isWarmup && (
-            <div className="w-2.5 h-2.5 rounded-full bg-orange-500" />
-          )}
-          {set.isPR && (
-            <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
-          )}
-          {set.isFailure && (
-            <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-          )}
-          {set.isDropset && (
-            <div className="w-2.5 h-2.5 rounded-full bg-purple-500" />
-          )}
-          {set.comments && (
-            <div className="w-2.5 h-2.5 rounded-full bg-blue-500" />
-          )}
+    <>
+      <div className="grid grid-cols-[40px_1fr_1fr_1fr_32px] gap-4 items-center py-1 relative">
+        <div className="flex items-center" ref={setNumberRef}>
+          <div 
+            className={`flex items-center justify-center w-[34px] h-[34px] rounded-lg border cursor-pointer hover:opacity-90 ${getSetTypeBgColor()} ${getSetTypeTextColor()} relative`}
+            onClick={() => setShowSetTypeMenu(true)}
+          >
+          <span className="text-sm font-medium">{getSetTypeAbbreviation()}</span>
+          {/* Calculate the number of indicators */}
+          {(() => {
+            const indicators = [];
+            if (set.isFailure && (set.isPR || set.isDropset)) indicators.push('failure');
+            if (set.isPR && set.isDropset) indicators.push('pr');
+            if (set.comments) indicators.push('notes');
+            
+            // If only one indicator, position it at the top right
+            if (indicators.length === 1) {
+              return (
+                <>
+                  {indicators[0] === 'failure' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-red-500 border border-white"></div>
+                  )}
+                  {indicators[0] === 'pr' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
+                  )}
+                  {indicators[0] === 'notes' && (
+                    <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
+                  )}
+                </>
+              );
+            }
+            
+            // If exactly two indicators, use a specific layout
+            if (indicators.length === 2) {
+              return (
+                <div className="absolute -right-1 -top-1 flex flex-col space-y-[-5px]">
+                  {set.isFailure && (set.isPR || set.isDropset) && (
+                    <div className="w-3 h-3 rounded-full bg-red-500 border border-white"></div>
+                  )}
+                  
+                  {set.isPR && set.isDropset && (
+                    <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
+                  )}
+                  
+                  {set.comments && (
+                    <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
+                  )}
+                </div>
+              );
+            }
+            
+            // If three indicators, stack them
+            if (indicators.length === 3) {
+              return (
+                <div className="absolute -right-1 -top-0 flex flex-col space-y-[-5px]">
+                  {set.isFailure && (set.isPR || set.isDropset) && (
+                    <div className="-mt-1 w-3 h-3 rounded-full bg-red-500 border border-white"></div>
+                  )}
+                  
+                  {set.isPR && set.isDropset && (
+                    <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
+                  )}
+                  
+                  {set.comments && (
+                    <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
+                  )}
+                </div>
+              );
+            }
+            
+            return null;
+          })()}
         </div>
       </div>
 
@@ -251,11 +334,42 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
       <button
         onClick={() => setShowMenu(true)}
-        className="p-1 hover:bg-gray-100 text-gray-600 rounded-lg flex justify-center h-8"
+        className="p-1 hover:bg-gray-100 text-gray-600 rounded-lg flex justify-center items-center h-8"
       >
-        <MoreVertical  strokeWidth={1}  size={16} />
+        <MoreVertical strokeWidth={1} size={16} />
       </button>
-
+      </div>
+      
+      {/* Set Type Popover Menu */}
+      {showSetTypeMenu && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowSetTypeMenu(false)}>
+          <div 
+            ref={setTypeMenuRef}
+            className="absolute bg-white rounded-lg shadow-lg z-50 w-48 p-2 border border-gray-200"
+            style={{
+              top: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().bottom + 5 : 0,
+              left: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().left : 0
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="space-y-1">
+              {/* Warmup Set */}
+              {getSetTypeButton('isWarmup', 'Warmup', 'bg-orange-500', false, hasNonWarmupType)}
+              
+              {/* PR Set */}
+              {getSetTypeButton('isPR', 'PR', 'bg-yellow-400', false, set.isWarmup)}
+              
+              {/* Failure Set */}
+              {getSetTypeButton('isFailure', 'Failure', 'bg-red-500', false, set.isWarmup)}
+              
+              {/* Drop Set */}
+              {getSetTypeButton('isDropset', 'Dropset', 'bg-purple-500', false, set.isWarmup)}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Main Options Menu */}
       {showMenu && (
         <RemoveScroll>
           <div
@@ -274,19 +388,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               <p className="text-sm text-gray-600">Set {set.setNumber}</p>
             </div>
             
-            <div className="p-4 space-y-2">
-              {/* Warmup Set */}
-              {getSetTypeButton('isWarmup', 'Warmup', 'bg-orange-500', true, hasNonWarmupType)}
-              
-              {/* PR Set */}
-              {getSetTypeButton('isPR', 'PR', 'bg-yellow-400', false, set.isWarmup)}
-              
-              {/* Failure Set */}
-              {getSetTypeButton('isFailure', 'Failure', 'bg-red-500', true, set.isWarmup)}
-              
-              {/* Drop Set */}
-              {getSetTypeButton('isDropset', 'Dropset', 'bg-purple-500', true, set.isWarmup)}
-              
+            <div className="p-4 space-y-2">              
               {/* Add Note */}
               {noteButton}
               
@@ -305,6 +407,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           </div>
         </RemoveScroll>
       )}
-    </div>
+    </>
   );
 };

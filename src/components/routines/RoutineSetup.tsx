@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { ExerciseSelector } from '../ExerciseSelector';
-import { Plus, X, Trash } from 'lucide-react';
+import { ExerciseSelectionModal } from '../ExerciseSelectionModal';
+import { Plus, X, Trash, MoveVertical, GripVertical, MoreVertical, RefreshCw } from 'lucide-react';
 import { Exercise } from '../../types/exercise';
 import { exercises as defaultExercises } from '../../data/exercises';
 import { Dropdown } from '../ui/Dropdown';
 import { LoadingButton } from '../ui/LoadingButton';
 import { FolderModal } from './FolderModal';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { SortableItem } from '../SortableItem';
+import { RemoveScroll } from 'react-remove-scroll';
 
 interface RoutineSetupProps {
   onClose: () => void;
@@ -14,6 +19,97 @@ interface RoutineSetupProps {
   routine?: any;
   folderId?: string | null;
 }
+
+// Exercise Reorder Modal Component
+interface ExerciseReorderModalProps {
+  exercises: any[];
+  onClose: () => void;
+  onReorder: (exercises: any[]) => void;
+}
+
+const ExerciseReorderModal: React.FC<ExerciseReorderModalProps> = ({
+  exercises,
+  onClose,
+  onReorder,
+}) => {
+  const [items, setItems] = React.useState(exercises);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+        delay: 100,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      setItems((items) => {
+        const oldIndex = items.findIndex(item => item.exercise.id === active.id);
+        const newIndex = items.findIndex(item => item.exercise.id === over.id);
+        return arrayMove(items, oldIndex, newIndex);
+      });
+    }
+  };
+
+  const handleSave = () => {
+    onReorder(items);
+    onClose();
+  };
+
+  return (
+    <RemoveScroll>
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-50 z-50"
+      >
+        <div className="fixed bottom-0 left-0 right-0 h-[80vh] bg-white rounded-t-xl flex flex-col animate-slide-up overflow-auto">
+          <div className="flex items-center justify-between p-4 border-b bg-white">
+            <h2 className="text-lg font-bold select-none">Reorder Exercises</h2>
+            <button
+              onClick={handleSave}
+              className="px-4 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium"
+            >
+              Done
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={items.map(item => item.exercise.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div>
+                  {items.map(({ exercise, sets }) => (
+                    <SortableItem key={exercise.id} id={exercise.id}>
+                      <div className="flex items-center px-4 py-3 border-b">
+                        <div className="touch-none select-none cursor-grab active:cursor-grabbing">
+                          <GripVertical className="h-5 w-5 text-gray-400 mr-3 flex-shrink-0" />
+                        </div>
+                        <span className="text-gray-900 select-none">{exercise.name}</span>
+                      </div>
+                    </SortableItem>
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        </div>
+      </div>
+    </RemoveScroll>
+  );
+};
 
 export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   onClose,
@@ -30,6 +126,10 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
   const [pendingFolderName, setPendingFolderName] = useState<string | null>(null);
+  const [showReorderModal, setShowReorderModal] = useState(false);
+  const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
+  const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
+  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
   // Initialize exercise data with initial values if provided
   useEffect(() => {
@@ -250,13 +350,24 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
             <div className="border-t pt-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm text-gray-700 font-medium">Exercises</h2>
-                <button
-                  onClick={() => setShowExerciseSelector(true)}
-                  className="flex items-center text-blue-600 text-sm"
-                >
-                  <Plus size={16} className="mr-1" />
-                  Add Exercise
-                </button>
+                <div className="flex space-x-3">
+                  {exerciseData.length > 1 && (
+                    <button
+                      onClick={() => setShowReorderModal(true)}
+                      className="flex items-center text-blue-600 text-sm"
+                    >
+                      <MoveVertical size={16} className="mr-1" />
+                      Reorder
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowExerciseSelector(true)}
+                    className="flex items-center text-blue-600 text-sm"
+                  >
+                    <Plus size={16} className="mr-1" />
+                    Add Exercise
+                  </button>
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -264,12 +375,39 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                   <div key={data.exercise.id} className="bg-white rounded-xl border border-gray-100 p-3">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-semibold text-sm">{data.exercise.name}</h3>
-                      <button
-                        onClick={() => setExerciseData(prev => prev.filter((_, i) => i !== exerciseIndex))}
-                        className="text-red-400 bg-red-50 hover:text-red-600 p-2 rounded-lg hover:bg-red-50"
-                      >
-                        <Trash size={14} />
-                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setActiveExerciseMenu(activeExerciseMenu === data.exercise.id ? null : data.exercise.id)}
+                          className="p-2 rounded-lg hover:bg-gray-100"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {activeExerciseMenu === data.exercise.id && (
+                          <div className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10">
+                            <button
+                              onClick={() => {
+                                setReplaceExerciseId(data.exercise.id);
+                                setShowExerciseSelector(true);
+                                setActiveExerciseMenu(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
+                            >
+                              <RefreshCw size={16} />
+                              <span>Replace Exercise</span>
+                            </button>
+                            <button
+                              onClick={() => {
+                                setExerciseData(prev => prev.filter((_, i) => i !== exerciseIndex));
+                                setActiveExerciseMenu(null);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center text-red-600"
+                            >
+                              <Trash size={16} className="mr-2" />
+                              <span>Remove Exercise</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="space-y-3">
                       {data.sets.map((set: any, setIndex: number) => (
@@ -347,30 +485,42 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
 
       
 
-      {/* Exercise Selector Modal */}
+      {/* Exercise Selection Modal */}
       {showExerciseSelector && (
-        <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-40" onClick={() => setShowExerciseSelector(false)} />
-          <div className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-2xl shadow-xl overflow-auto"
-               style={{ height: '90vh' }}>
-          <div className="flex items-center justify-between p-4 border-b">
-            <h2 className="text-lg font-semibold">Add Exercises</h2>
-            <button onClick={() => setShowExerciseSelector(false)} className="p-2 hover:bg-gray-100 rounded-full">
-              <X size={20} />
-            </button>
-          </div>
-
-          <ExerciseSelector
-            customExercises={customExercises}
-            recentExercises={[]}
-            allExercises={groupedExercises}
-            selectedExercises={exerciseData.map(data => data.exercise)}
-            onExerciseSelect={handleExerciseSelect}
-            onSelect={() => setShowExerciseSelector(false)}
-          />
-
-        </div>
-        </>
+        <ExerciseSelectionModal
+          isReplacing={replaceExerciseId !== null}
+          onClose={() => {
+            setShowExerciseSelector(false);
+            setReplaceExerciseId(null);
+          }}
+          onAdd={(selectedExercises) => {
+            if (replaceExerciseId) {
+              // Handle replacing an exercise
+              const exerciseToReplace = exerciseData.find(data => data.exercise.id === replaceExerciseId);
+              if (exerciseToReplace && selectedExercises.length === 1) {
+                // Create a new exercise with the same number of sets but with empty values
+                const newExerciseData = {
+                  exercise: selectedExercises[0],
+                  sets: exerciseToReplace.sets.map(set => ({
+                    weight: '',
+                    goal: ''
+                  }))
+                };
+                
+                // Replace the exercise in the exerciseData
+                setExerciseData(prev => 
+                  prev.map(data => data.exercise.id === replaceExerciseId ? newExerciseData : data)
+                );
+              }
+              setReplaceExerciseId(null);
+            } else {
+              // Normal add exercise flow
+              selectedExercises.forEach(exercise => handleExerciseSelect(exercise));
+            }
+            setShowExerciseSelector(false);
+          }}
+          currentExercises={exerciseData.map(data => data.exercise)}
+        />
       )}
       {showNewFolderModal && (
         <FolderModal
@@ -382,6 +532,18 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
           confirmText="Create"
           mode="rename"
           initialValue=""
+        />
+      )}
+
+      {/* Exercise Reorder Modal */}
+      {showReorderModal && (
+        <ExerciseReorderModal
+          exercises={exerciseData}
+          onClose={() => setShowReorderModal(false)}
+          onReorder={(reorderedExercises) => {
+            setExerciseData(reorderedExercises);
+            setShowReorderModal(false);
+          }}
         />
       )}
     </div>

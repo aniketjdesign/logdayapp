@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare, Clipboard } from 'lucide-react';
+import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare, Clipboard, Loader2 } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -19,6 +19,7 @@ export const Navigation: React.FC = () => {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isCannyLoading, setIsCannyLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { 
@@ -32,26 +33,55 @@ export const Navigation: React.FC = () => {
   const { isInstallable, isIOS } = useInstallPrompt();
   const cannyInitialized = useRef(false);
 
+  // Initialize Canny as soon as possible when user is available
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Canny && user?.email && !cannyInitialized.current) {
-      cannyInitialized.current = true;
+    const initCanny = async () => {
+      if (typeof window !== 'undefined' && user?.email && !cannyInitialized.current) {
+        // If Canny is not loaded yet, wait for it
+        if (!window.Canny) {
+          const checkCannyLoaded = () => {
+            return new Promise<void>((resolve) => {
+              const checkInterval = setInterval(() => {
+                if (window.Canny) {
+                  clearInterval(checkInterval);
+                  resolve();
+                }
+              }, 100);
+              
+              // Set a timeout to avoid infinite waiting
+              setTimeout(() => {
+                clearInterval(checkInterval);
+                resolve(); // Resolve anyway after timeout
+              }, 5000);
+            });
+          };
+          
+          await checkCannyLoaded();
+        }
+        
+        if (window.Canny) {
+          cannyInitialized.current = true;
 
-      window.Canny('identify', {
-        appID: '672e7aa3fb3f5695ec02ebee',
-        user: {
-          email: `${user.id}@logday.app`,
-          id: user.id,
-          name: `User_${user.id.slice(0, 8)}`,
-        },
-      });
+          window.Canny('identify', {
+            appID: '672e7aa3fb3f5695ec02ebee',
+            user: {
+              email: `${user.id}@logday.app`,
+              id: user.id,
+              name: `User_${user.id.slice(0, 8)}`,
+            },
+          });
 
-      window.Canny('initChangelog', {
-        appID: '672e7aa3fb3f5695ec02ebee',
-        position: 'bottom',
-        align: 'right',
-        theme: 'light'
-      });
-    }
+          window.Canny('initChangelog', {
+            appID: '672e7aa3fb3f5695ec02ebee',
+            position: 'bottom',
+            align: 'right',
+            theme: 'light'
+          });
+        }
+      }
+    };
+    
+    initCanny();
   }, [user]);
 
   const handleRefresh = () => {
@@ -215,10 +245,42 @@ export const Navigation: React.FC = () => {
                 <RefreshCw size={16} strokeWidth={2} className={`${isRefreshing ? 'animate-spin' : ''}`} />
               </button>
               <button
+                onClick={() => {
+                  if (!cannyInitialized.current) {
+                    setIsCannyLoading(true);
+                    // Try to initialize Canny on click if not already initialized
+                    if (window.Canny && user?.email) {
+                      cannyInitialized.current = true;
+                      window.Canny('identify', {
+                        appID: '672e7aa3fb3f5695ec02ebee',
+                        user: {
+                          email: `${user.id}@logday.app`,
+                          id: user.id,
+                          name: `User_${user.id.slice(0, 8)}`,
+                        },
+                      });
+                      window.Canny('initChangelog', {
+                        appID: '672e7aa3fb3f5695ec02ebee',
+                        position: 'bottom',
+                        align: 'right',
+                        theme: 'light',
+                        onLoad: () => setIsCannyLoading(false)
+                      });
+                    } else {
+                      // If Canny still isn't available, stop loading after a timeout
+                      setTimeout(() => setIsCannyLoading(false), 3000);
+                    }
+                  }
+                }}
                 data-canny-changelog
-                className="p-2.5 rounded-lg text-gray-600 hover:bg-gray-100"
+                className="p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 relative"
+                disabled={isCannyLoading}
               >
-                <Bell size={16} strokeWidth={2} />
+                {isCannyLoading ? (
+                  <Loader2 size={16} strokeWidth={2} className="animate-spin" />
+                ) : (
+                  <Bell size={16} strokeWidth={2} />
+                )}
               </button>
             </div>
           </div>

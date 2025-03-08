@@ -10,7 +10,9 @@ import { WorkoutLogs } from './components/WorkoutLogs';
 import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
-import { MigrationStatus } from './components/MigrationStatus';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage';
+
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
 import { UpdateNotification } from './components/UpdateNotification';
@@ -71,13 +73,24 @@ const AppContent = () => {
     );
   }
 
-  // Handle public routes
-  if (!user) {
-    if (location.pathname === '/login' || location.pathname === '/signup') {
+  // Handle public routes and special case for password reset
+  // Check if we're on the reset-password-confirm route
+  const isResetPasswordConfirmRoute = location.pathname === '/reset-password-confirm';
+  
+  // If user is not authenticated or we're on the reset-password-confirm route (even if authenticated)
+  if (!user || isResetPasswordConfirmRoute) {
+    if (
+      location.pathname === '/login' || 
+      location.pathname === '/signup' || 
+      location.pathname === '/reset-password' || 
+      isResetPasswordConfirmRoute
+    ) {
       return (
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/reset-password-confirm" element={<ResetPasswordConfirmPage />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       );
@@ -98,12 +111,12 @@ const AppContent = () => {
           <Route path="/logs" element={<WorkoutLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/contact" element={<ContactForm />} />
-          <Route path="/migration-status" element={<MigrationStatus />} />
+
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-      <MigrationStatus />
+
     </div>
   );
 };

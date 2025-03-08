@@ -165,6 +165,11 @@ const {
     // Check for previous notes for each exercise and set
     const updatedExercises = currentWorkout.exercises.map(ex => {
       const updatedSets = ex.sets.map((set, index) => {
+        // If comments is null, it means it was explicitly unpinned, so don't apply last note
+        if (set.comments === null) {
+          return set;
+        }
+
         // Find the most recent note for this exercise and set number
         const lastNote = workoutLogs
           .flatMap(log => 

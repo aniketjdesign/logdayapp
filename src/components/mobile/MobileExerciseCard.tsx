@@ -67,15 +67,9 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
   return (
     <div className="bg-white rounded-xl shadow-sm">
       <div className="border-b px-3 py-2 border-gray-100">
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-start">
           <div className="flex-1">
             <h3 className="font-bold text-[15px] text-gray-900 pr-2">{exercise.name}</h3>
-            {supersetPartner && (
-              <div className="mt-1 flex gap-2 items-center text-sm text-lime-600">
-                <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
-                Superset w/ {supersetPartner.exercise.name}
-              </div>
-            )}
           </div>
           <div className="flex items-center gap-1">
             <MobileExerciseTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -86,7 +80,14 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               <MoreHorizontal strokeWidth={1.33} size={16} />
             </button>
           </div>
+          
         </div>
+        {supersetPartner && (
+              <div className="mt-1 flex gap-2 items-start text-sm text-lime-600">
+                <div className="w-2.5 h-2.5 mt-1.5 rounded-full bg-lime-500" />
+                Superset w/ {supersetPartner.exercise.name}
+              </div>
+            )}
         {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
       </div>
 
