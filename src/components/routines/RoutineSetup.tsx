@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
-import { ExerciseSelector } from '../ExerciseSelector';
 import { ExerciseSelectionModal } from '../ExerciseSelectionModal';
 import { Plus, X, Trash, MoveVertical, GripVertical, MoreVertical, RefreshCw } from 'lucide-react';
-import { Exercise } from '../../types/exercise';
-import { exercises as defaultExercises } from '../../data/exercises';
 import { Dropdown } from '../ui/Dropdown';
 import { LoadingButton } from '../ui/LoadingButton';
 import { FolderModal } from './FolderModal';
@@ -12,12 +9,31 @@ import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, us
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from '../SortableItem';
 import { RemoveScroll } from 'react-remove-scroll';
+import { SetIndicatorPopover } from '../mobile/SetIndicatorPopover';
+import { Exercise } from '../../types/workout';
 
 interface RoutineSetupProps {
   onClose: () => void;
   onSave: (data: any) => void;
   routine?: any;
   folderId?: string | null;
+}
+
+interface RoutineSet {
+  weight: string;
+  goal: string;
+  isWarmup?: boolean;
+  isDropset?: boolean;
+  isFailure?: boolean;
+  isPR?: boolean;
+  comments?: string;
+}
+
+interface RoutineExerciseData {
+  exercise: Exercise;
+  sets: RoutineSet[];
+  setRefs?: (HTMLDivElement | null)[];
+  showSetTypeMenu?: number | null;
 }
 
 // Exercise Reorder Modal Component
@@ -117,10 +133,10 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   routine,
   folderId,
 }) => {
-  const { folders, customExercises, addFolder, moveRoutine } = useWorkout();
+  const { folders, addFolder, moveRoutine } = useWorkout();
   const [name, setName] = useState(routine?.name || '');
   const [description, setDescription] = useState(routine?.description || '');
-  const [exerciseData, setExerciseData] = useState<any[]>([]);
+  const [exerciseData, setExerciseData] = useState<RoutineExerciseData[]>([]);
   const [showExerciseSelector, setShowExerciseSelector] = useState(false);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(folderId || routine?.folder_id || null);
   const [isSaving, setIsSaving] = useState(false);
@@ -129,7 +145,6 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
-  const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
 
   // Initialize exercise data with initial values if provided
   useEffect(() => {
@@ -139,6 +154,11 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
         sets: data.sets.map((set: any) => ({
           weight: set.weight || '',
           goal: set.goal || '',
+          isWarmup: set.isWarmup || false,
+          isDropset: set.isDropset || false,
+          isFailure: set.isFailure || false,
+          isPR: set.isPR || false,
+          comments: set.comments || ''
         })),
       }));
       setExerciseData(initializedData);
@@ -156,18 +176,26 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
     }
   }, [folders, pendingFolderName]);
 
-  // Group exercises by first letter for ExerciseSelector
-  const groupedExercises = defaultExercises.reduce((acc, exercise) => {
+  // Group exercises by first letter for ExerciseSelector (not used directly in this component)
+  /* const groupedExercises = defaultExercises.reduce((acc, exercise) => {
     const firstLetter = exercise.name[0].toUpperCase();
     if (!acc[firstLetter]) {
       acc[firstLetter] = [];
     }
     acc[firstLetter].push(exercise);
     return acc;
-  }, {} as { [key: string]: Exercise[] });
+  }, {} as { [key: string]: Exercise[] }); */
 
   const handleAddSet = (exerciseIndex: number) => {
-    const newSet = { weight: '', goal: '' };
+    const newSet = { 
+      weight: '', 
+      goal: '', 
+      isWarmup: false, 
+      isDropset: false, 
+      isFailure: false, 
+      isPR: false,
+      comments: ''
+    };
     setExerciseData(prev => {
       const updated = [...prev];
       updated[exerciseIndex] = {
@@ -183,7 +211,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
       const updated = [...prev];
       updated[exerciseIndex] = {
         ...updated[exerciseIndex],
-        sets: updated[exerciseIndex].sets.filter((_, i) => i !== setIndex)
+        sets: updated[exerciseIndex].sets.filter((_, i: number) => i !== setIndex)
       };
       return updated;
     });
@@ -192,14 +220,14 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   const handleSetChange = (
     exerciseIndex: number,
     setIndex: number,
-    field: 'weight' | 'goal',
-    value: string
+    field: 'weight' | 'goal' | 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR' | 'comments',
+    value: string | boolean
   ) => {
     setExerciseData(prev => {
       const updated = [...prev];
       updated[exerciseIndex] = {
         ...updated[exerciseIndex],
-        sets: updated[exerciseIndex].sets.map((set, i) => 
+        sets: updated[exerciseIndex].sets.map((set, i: number) => 
           i === setIndex ? { ...set, [field]: value } : set
         )
       };
@@ -214,7 +242,15 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
     } else {
       setExerciseData(prev => [...prev, {
         exercise,
-        sets: [{ weight: '', goal: '' }],
+        sets: [{ 
+          weight: '', 
+          goal: '', 
+          isWarmup: false, 
+          isDropset: false, 
+          isFailure: false, 
+          isPR: false,
+          comments: ''
+        }],
       }]);
     }
   };
@@ -264,7 +300,9 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
     }
   };
 
-  const handleCreateFolder = async (name: string) => {
+  const handleCreateFolder = async (name: string | undefined) => {
+    if (!name) return;
+    
     try {
       setPendingFolderName(name);
       await addFolder({ name });
@@ -321,7 +359,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter routine description"
-                  className="w-full px-3 py-2  text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-24 resize-none"
+                  className="w-full px-3 py-2  text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 h-12 resize-none"
                 />
               </div>
 
@@ -338,7 +376,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                       value: folder.id,
                       label: folder.name
                     })),
-                    { value: 'new', label: '+ New Folder', className: 'border-t text-blue-600 sticky bottom-0 bg-white hover:bg-blue-50' }
+                    { value: 'new', label: '+ New Folder' }
                   ]}
                   placeholder="Select a folder"
                   className="w-full text-sm"
@@ -415,8 +453,42 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                           key={setIndex}
                           className="flex items-center space-x-3"
                         >
-                          <div className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-500 flex-shrink-0">
-                            {setIndex + 1}
+                          {/* Set Indicator */}
+                          <div className="flex-shrink-0" ref={el => {
+                            // Create a ref for each set number element
+                            if (!data.setRefs) data.setRefs = [];
+                            data.setRefs[setIndex] = el;
+                          }}>
+                            <SetIndicatorPopover
+                              set={{
+                                ...set,
+                                id: `${data.exercise.id}-${setIndex}`,
+                                setNumber: setIndex + 1,
+                                performedReps: '',
+                                comments: set.comments || '',
+                                isWarmup: set.isWarmup || false,
+                                isDropset: set.isDropset || false,
+                                isFailure: set.isFailure || false,
+                                isPR: set.isPR || false
+                              }}
+                              showSetTypeMenu={data.showSetTypeMenu === setIndex}
+                              setShowSetTypeMenu={(show) => {
+                                setExerciseData(prev => {
+                                  const updated = [...prev];
+                                  // Close any other open menus first
+                                  updated.forEach(ex => ex.showSetTypeMenu = null);
+                                  // Set the current menu state
+                                  updated[exerciseIndex].showSetTypeMenu = show ? setIndex : null;
+                                  return updated;
+                                });
+                              }}
+                              setNumberRef={{ current: data.setRefs?.[setIndex] || null }}
+                              handleSetTypeUpdate={(type, value) => {
+                                handleSetChange(exerciseIndex, setIndex, type, value);
+                              }}
+                              hasNonWarmupType={set.isDropset || set.isFailure}
+                              hidePROption={true}
+                            />
                           </div>
                           <div className="flex-1 grid grid-cols-2 gap-3 text-sm">
                             <input
@@ -430,7 +502,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                                   e.target.value
                                 )
                               }
-                              className="w-full p-2 border rounded-lg"
+                              className="w-full p-2 border rounded-lg  focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Weight (kg)"
                             />
                             <input
@@ -444,7 +516,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                                   e.target.value
                                 )
                               }
-                              className="w-full p-2 border rounded-lg"
+                              className="w-full p-2 border rounded-lg  focus:outline-none focus:ring-2 focus:ring-blue-500"
                               placeholder="Goal (reps)"
                             />
                           </div>
@@ -503,7 +575,12 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                   exercise: selectedExercises[0],
                   sets: exerciseToReplace.sets.map(set => ({
                     weight: '',
-                    goal: ''
+                    goal: '',
+                    isWarmup: set.isWarmup || false,
+                    isDropset: set.isDropset || false,
+                    isFailure: set.isFailure || false,
+                    isPR: set.isPR || false,
+                    comments: set.comments || ''
                   }))
                 };
                 
