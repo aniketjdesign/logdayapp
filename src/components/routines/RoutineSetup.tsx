@@ -275,10 +275,24 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
         await moveRoutine(routine.id, selectedFolderId);
       }
 
+      // Clean exerciseData by removing DOM references and UI state
+      const cleanExercises = exerciseData.map(item => ({
+        exercise: item.exercise,
+        sets: item.sets.map(set => ({
+          weight: set.weight,
+          goal: set.goal,
+          isWarmup: set.isWarmup || false,
+          isDropset: set.isDropset || false,
+          isFailure: set.isFailure || false,
+          isPR: set.isPR || false,
+          comments: set.comments || ''
+        }))
+      }));
+
       const routineData = {
         name,
         description,
-        exercises: exerciseData,
+        exercises: cleanExercises,
         folder_id: selectedFolderId,
       };
 
