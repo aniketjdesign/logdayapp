@@ -1,6 +1,7 @@
 // In ExerciseList.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Exercise } from '../types/exercise';
 import { useWorkout } from '../context/WorkoutContext';
 import { generateWorkoutName } from '../utils/workoutNameGenerator';
@@ -92,26 +93,61 @@ export const ExerciseList: React.FC = () => {
       </div>
       <InstallAppToast />
      
-      <div className= {`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
-      <div className= "px-4">
-        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-3">
-          <h1 className="text-lg font-bold">Quick Start</h1>
-          <p className="text-sm text-gray-500">Select your exercises and click Start Workout</p>
-        </div>
-      </div>
+      <motion.div 
+        initial={{ opacity: 0.3 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className={`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+      <motion.div 
+        className="px-4"
+        initial={{ y: 10, opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.25, delay: 0.05 }}>
+        <motion.div 
+          className="heading-wrapper flex-col gap-y-2 pt-4 pb-3"
+          initial={{ y: 5, opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.2, delay: 0.1 }}>
+          <motion.h1 
+            className="text-lg font-bold"
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.12 }}>
+            Quick Start
+          </motion.h1>
+          <motion.p 
+            className="text-sm text-gray-500"
+            initial={{ opacity: 0.5 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.15 }}>
+            Select your exercises and click Start Workout
+          </motion.p>
+        </motion.div>
+      </motion.div>
 
-      <ExerciseSelector
-        customExercises={customExercises}
-        recentExercises={recentExercises}
-        allExercises={groupedExercises}
-        selectedExercises={selectedExercises}
-        onExerciseSelect={handleExerciseSelect}
-        onAddCustomExercise={() => setIsAddModalOpen(true)}
-        currentWorkout={currentWorkout}
-      />
+      <motion.div
+        initial={{ y: 10, opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.25, delay: 0.2 }}>
+        <ExerciseSelector
+          customExercises={customExercises}
+          recentExercises={recentExercises}
+          allExercises={groupedExercises}
+          selectedExercises={selectedExercises}
+          onExerciseSelect={handleExerciseSelect}
+          onAddCustomExercise={() => setIsAddModalOpen(true)}
+          currentWorkout={currentWorkout}
+        />
+      </motion.div>
 
-      <div className={`fixed max-w-3xl mx-auto bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-white border-t ${currentWorkout ? 'opacity-100' : ''}`}>
-        <button
+      <motion.div 
+        initial={{ y: 20, opacity: 0.5 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.25, delay: 0.25 }}
+        className={`fixed max-w-3xl mx-auto bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-white border-t ${currentWorkout ? 'opacity-100' : ''}`}>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
           onClick={handleStartWorkout}
           disabled={currentWorkout || selectedExercises.length === 0}
           className={`w-full py-3 px-4 rounded-xl text-white font-medium 
@@ -121,8 +157,8 @@ export const ExerciseList: React.FC = () => {
             }`}
         >
           Start Workout ({selectedExercises.length} Exercise{selectedExercises.length !== 1 ? 's' : ''})
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
       <AddExerciseModal
         isOpen={isAddModalOpen}
@@ -132,7 +168,7 @@ export const ExerciseList: React.FC = () => {
           setIsAddModalOpen(false);
         }}
       />
-    </div>
+      </motion.div>
     </div>
   );
 };

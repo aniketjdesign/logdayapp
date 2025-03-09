@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, Link2, Trash2, RefreshCw } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
@@ -207,7 +208,15 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const renderExerciseMenu = (exerciseId: string) => (
-    <div className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10">
+    <AnimatePresence>
+      {activeExerciseMenu === exerciseId && (
+        <motion.div 
+          className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10"
+          initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+        >
       <button
         onClick={() => {
           toggleRestTimer(exerciseId);
@@ -257,7 +266,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         <Trash2 size={16} className="mr-2" />
         <span>Remove Exercise</span>
       </button>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   const stats = getWorkoutStats();
@@ -285,19 +296,20 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       />
 
       <div className="px-4 space-y-6 pt-32 pb-40">
-        {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
-          if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
-            return null;
-          }
+        <AnimatePresence>
+          {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
+            if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
+              return null;
+            }
 
-          const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
+            const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
 
-          return (
-            <MobileExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              sets={sets}
-              supersetWith={supersetWith}
+            return (
+              <MobileExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                sets={sets}
+                supersetWith={supersetWith}
               exerciseHistory={exerciseHistory}
               weightUnit={weightUnit}
               onUpdateSet={onUpdateSet}
@@ -309,9 +321,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               activeExerciseMenu={activeExerciseMenu}
               renderExerciseMenu={renderExerciseMenu}
               supersetPartner={supersetPartner}
+              animationDelay={index * 0.1}
             />
-          );
-        })}
+            );
+          })}
+        </AnimatePresence>
 
         <MobileWorkoutFooter
           onFinish={() => setShowFinishConfirmation(true)}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { Search, Calendar, Clock, Dumbbell, MoreVertical, Trash2, ArrowLeft, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
@@ -40,15 +41,21 @@ export const WorkoutLogs: React.FC = () => {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
-          <h1 className="text-lg font-bold">Workout History</h1>
-          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
+          <div className="mb-1 animate-pulse">
+            <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+          </div>
+          <div className="mb-4 animate-pulse">
+            <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+          </div>
         
 
         {currentWorkout && <OngoingWorkoutMessage />}
 
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
+            <div 
+              key={i} 
+              className="bg-white rounded-lg shadow-sm p-6 animate-pulse">
               <div className="flex justify-between items-start mb-4">
                 <div className="space-y-3 flex-1">
                   <div className="h-4 bg-gray-200 rounded w-1/3"></div>
@@ -69,14 +76,31 @@ export const WorkoutLogs: React.FC = () => {
   if (workoutLogs.length === 0 && !search) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
-          <h1 className="text-lg font-bold">Workout History</h1>
-          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
+          <motion.h1 
+            className="text-lg font-bold"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}>
+            Workout History
+          </motion.h1>
+          <motion.p 
+            className="text-sm text-gray-500"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3, delay: 0.1 }}>
+            View, analyze or repeat your past workouts
+          </motion.p>
 
         {currentWorkout && <OngoingWorkoutMessage />}
-        <EmptyState
-          currentWorkout={currentWorkout}
-          onNavigate={() => navigate(currentWorkout ? '/workout' : '/')}
-        />
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.2 }}>
+          <EmptyState
+            currentWorkout={currentWorkout}
+            onNavigate={() => navigate(currentWorkout ? '/workout' : '/')}
+          />
+        </motion.div>
       </div>
     );
   }
@@ -85,12 +109,41 @@ export const WorkoutLogs: React.FC = () => {
     <div className="max-w-4xl mx-auto px-4 sm:p-6 pb-32">
       {currentWorkout && <OngoingWorkoutMessage />}
 
-      <div className="mb-6">
-        <div className="heading-wrapper flex-col gap-y-2 pt-4 pb-4">
-          <h1 className="text-lg font-bold">Workout History</h1>
-          <p className="text-sm text-gray-500">View, analyze or repeat your past workouts</p>
-        </div>
-        <div className="relative">
+      <motion.div 
+        initial={{ opacity: 0.3 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.3 }}
+        className={`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+        <motion.div 
+          className="mb-6"
+          initial={{ y: 10, opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25, delay: 0.05 }}>
+          <motion.div 
+            className="heading-wrapper flex-col gap-y-2 pt-4 pb-4"
+            initial={{ y: 5, opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.2, delay: 0.1 }}>
+            <motion.h1 
+              className="text-lg font-bold"
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.12 }}>
+              Workout History
+            </motion.h1>
+            <motion.p 
+              className="text-sm text-gray-500"
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.15 }}>
+              View, analyze or repeat your past workouts
+            </motion.p>
+          </motion.div>
+        <motion.div 
+          className="relative"
+          initial={{ y: 10, opacity: 0.5 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.25, delay: 0.2 }}>
           <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
           <input
             type="text"
@@ -99,29 +152,55 @@ export const WorkoutLogs: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
+      </motion.div>
 
       {workoutLogs.length === 0 && search ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 text-sm">No workouts found matching "{search}"</p>
-          <button
+        <motion.div 
+          className="text-center py-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}>
+          <motion.p 
+            className="text-gray-500 text-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.1, duration: 0.2 }}>
+            No workouts found matching "{search}"
+          </motion.p>
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.2 }}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
             onClick={() => setSearch('')}
             className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
           >
             Clear search
-          </button>
-        </div>
+          </motion.button>
+        </motion.div>
       ) : (
-        <div className="space-y-4 sm:space-y-6">
-          {workoutLogs.map(log => (
-            <WorkoutLogCard
+        <motion.div 
+          className="space-y-4 sm:space-y-6"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}>
+          {workoutLogs.map((log, index) => (
+            <motion.div
               key={log.id}
-              log={log}
-              onDelete={() => handleDeleteClick(log.id)}
-            />
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
+            >
+              <WorkoutLogCard
+                log={log}
+                onDelete={() => handleDeleteClick(log.id)}
+              />
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       )}
 
       <ConfirmationModal

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MoreHorizontal, Plus, FileText, BarChart2 } from 'lucide-react';
 import { Exercise, WorkoutLog } from '../../types/workout';
 import { MobileSetRow } from '../MobileSetRow';
@@ -20,6 +21,7 @@ interface MobileExerciseCardProps {
   activeExerciseMenu: string | null;
   renderExerciseMenu: (exerciseId: string) => React.ReactNode;
   supersetPartner?: { exercise: Exercise; sets: any[] };
+  animationDelay?: number;
 }
 
 export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
@@ -37,11 +39,14 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
   activeExerciseMenu,
   renderExerciseMenu,
   supersetPartner,
+  animationDelay = 0,
 }) => {
   const [activeTab, setActiveTab] = React.useState<'log' | 'previous'>('log');
   const [showChart, setShowChart] = React.useState(false);
   const [logContentHeight, setLogContentHeight] = React.useState<number>(0);
   const logContentRef = React.useRef<HTMLDivElement>(null);
+  const [prevSetCount, setPrevSetCount] = useState(sets.length);
+
   const isBodyweight = exercise.name.includes('(Bodyweight)');
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
@@ -58,14 +63,27 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
     return exerciseData.sets[setNumber - 1];
   };
 
+
+
   React.useEffect(() => {
     if (logContentRef.current) {
       setLogContentHeight(logContentRef.current.offsetHeight);
     }
   }, [sets, supersetPartner]);
+  
+  // Track when new sets are added
+  useEffect(() => {
+    setPrevSetCount(sets.length);
+  }, [sets.length]);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
+    <motion.div 
+      className="bg-white rounded-xl shadow-sm relative"
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.5, delay: animationDelay }}
+      layout
+    >
       <div className="border-b px-3 py-2 border-gray-100">
         <div className="flex justify-between items-center">
           <div className="flex-1">
@@ -88,13 +106,26 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
                 Superset w/ {supersetPartner.exercise.name}
               </div>
             )}
-        {activeExerciseMenu === exercise.id && renderExerciseMenu(exercise.id)}
+        {renderExerciseMenu(exercise.id)}
       </div>
 
-      <div className="p-4">
-        {activeTab === 'log' ? (
-          <div ref={logContentRef}>
-            <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
+      <div className="p-4 overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          {activeTab === 'log' ? (
+            <motion.div 
+              key="log-tab"
+              ref={logContentRef}
+              initial={{ opacity: 0, x: -15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 15 }}
+              transition={{ 
+                duration: 0.25, 
+                ease: [0.25, 0.1, 0.25, 1.0],
+                height: { duration: 0.25, ease: [0.33, 1, 0.68, 1] }
+              }}
+              layout
+            >
+              <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
               <div>SET</div>
               {isCardio || isTimeBasedCore ? (
                 <>
@@ -115,23 +146,36 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               <div></div>
             </div>
 
-            {sets.map((set) => (
-              <MobileSetRow
-                key={set.id}
-                set={set}
-                exercise={exercise}
-                previousSet={getPreviousWorkoutSet(set.setNumber)}
-                onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-                onDelete={() => onDeleteSet(exercise.id, set.id)}
-                onOpenNoteModal={() => onOpenNoteModal({
-                  exerciseId: exercise.id,
-                  setId: set.id,
-                  exerciseName: exercise.name,
-                  setNumber: set.setNumber
-                })}
-                onSetComplete={() => onSetComplete(exercise.id)}
-              />
-            ))}
+            <AnimatePresence initial={false}>
+              {sets.map((set, index) => (
+                <motion.div
+                  key={set.id}
+                  initial={index >= prevSetCount ? { opacity: 0, height: 0, y: -20 } : { opacity: 1, height: 'auto', y: 0 }}
+                  animate={{ opacity: 1, height: 'auto', y: 0 }}
+                  transition={{ 
+                    type: "spring", 
+                    stiffness: 300, 
+                    damping: 25,
+                    duration: 0.3
+                  }}
+                >
+                  <MobileSetRow
+                    set={set}
+                    exercise={exercise}
+                    previousSet={getPreviousWorkoutSet(set.setNumber)}
+                    onUpdate={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+                    onDelete={() => onDeleteSet(exercise.id, set.id)}
+                    onOpenNoteModal={() => onOpenNoteModal({
+                      exerciseId: exercise.id,
+                      setId: set.id,
+                      exerciseName: exercise.name,
+                      setNumber: set.setNumber
+                    })}
+                    onSetComplete={() => onSetComplete(exercise.id)}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
 
             {!supersetPartner && (
               <button
@@ -183,37 +227,49 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
                 </button>
               </>
             )}
-          </div>
-        ) : (
-          <>
-            <MobileExerciseHistory
-              exercise={exercise}
-              exerciseHistory={exerciseHistory}
-              weightUnit={weightUnit}
-              showChart={showChart}
-              onToggleChart={() => setShowChart(!showChart)}
-              contentHeight={logContentHeight}
-            />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="previous-tab"
+              initial={{ opacity: 0, x: 15 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -15 }}
+              transition={{ 
+                duration: 0.25, 
+                ease: [0.25, 0.1, 0.25, 1.0],
+                height: { duration: 0.25, ease: [0.33, 1, 0.68, 1] }
+              }}
+              layout
+            >
+              <MobileExerciseHistory
+                exercise={exercise}
+                exerciseHistory={exerciseHistory}
+                weightUnit={weightUnit}
+                showChart={showChart}
+                onToggleChart={() => setShowChart(!showChart)}
+                contentHeight={logContentHeight}
+              />
             
-            {supersetPartner && (
-              <>
-                <div className="my-4 border-t border-lime-500" />
-                <div className="mb-2">
-                  <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
-                </div>
-                <MobileExerciseHistory
-                  exercise={supersetPartner.exercise}
-                  exerciseHistory={exerciseHistory}
-                  weightUnit={weightUnit}
-                  showChart={showChart}
-                  onToggleChart={() => setShowChart(!showChart)}
-                  contentHeight={logContentHeight}
-                />
-              </>
-            )}
-          </>
-        )}
+              {supersetPartner && (
+                <>
+                  <div className="my-4 border-t border-lime-500" />
+                  <div className="mb-2">
+                    <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
+                  </div>
+                  <MobileExerciseHistory
+                    exercise={supersetPartner.exercise}
+                    exerciseHistory={exerciseHistory}
+                    weightUnit={weightUnit}
+                    showChart={showChart}
+                    onToggleChart={() => setShowChart(!showChart)}
+                    contentHeight={logContentHeight}
+                  />
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-    </div>
+    </motion.div>
   );
 };

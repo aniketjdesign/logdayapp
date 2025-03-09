@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutSet } from '../../types/workout';
 
 interface SetIndicatorPopoverProps {
@@ -155,17 +156,22 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
       </div>
 
       {/* Set Type Popover Menu */}
-      {showSetTypeMenu && (
-        <div className="fixed inset-0 z-40" onClick={() => setShowSetTypeMenu(false)}>
-          <div 
-            ref={setTypeMenuRef}
-            className="absolute bg-white rounded-lg shadow-lg z-50 w-48 p-2 border border-gray-200"
-            style={{
-              top: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().bottom + 5 : 0,
-              left: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().left : 0
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
+      <AnimatePresence>
+        {showSetTypeMenu && (
+          <div className="fixed inset-0 z-40" onClick={() => setShowSetTypeMenu(false)}>
+            <motion.div 
+              ref={setTypeMenuRef}
+              className="absolute bg-white rounded-lg shadow-lg z-50 w-48 p-2 border border-gray-200"
+              style={{
+                top: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().bottom + 5 : 0,
+                left: setNumberRef.current ? setNumberRef.current.getBoundingClientRect().left : 0
+              }}
+              initial={{ opacity: 0, scale: 0.5, originX: 0, originY: 0 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
             <div className="space-y-1">
               {/* Warmup Set */}
               {getSetTypeButton('isWarmup', 'Warmup', 'bg-orange-500', false, hasNonWarmupType)}
@@ -179,9 +185,10 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
               {/* Drop Set */}
               {getSetTypeButton('isDropset', 'Dropset', 'bg-purple-500', false, set.isWarmup)}
             </div>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
     </>
   );
 };

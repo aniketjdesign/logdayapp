@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { AlertTriangle, X } from 'lucide-react';
 
 interface ConfirmationModalProps {
@@ -20,11 +21,25 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText,
   confirmButtonClass = 'bg-blue-600 hover:bg-blue-700'
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <motion.div 
+            className="fixed inset-0 bg-black z-40" 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+          />
+          <motion.div 
+            className="bg-white rounded-lg max-w-md w-full z-50"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
         <div className="p-6">
           <div className="flex justify-between items-start mb-4">
             <div className="flex items-center space-x-3">
@@ -56,7 +71,9 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </button>
           </div>
         </div>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

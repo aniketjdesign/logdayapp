@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { MoreVertical, X } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
@@ -25,6 +26,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
+  const [isSetComplete, setIsSetComplete] = useState(false);
+  const [showCompletionPulse, setShowCompletionPulse] = useState(false);
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
@@ -56,7 +59,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   };
 
   const getColumnClass = (hasValue: boolean) => 
-    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} rounded-lg text-sm w-full  focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
+    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} ${isSetComplete ? 'bg-green-50 bg-opacity-30' : ''} rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
 
   const handleSetTypeUpdate = (type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR', value: boolean) => {
     onUpdate(type, value);
@@ -72,8 +75,16 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
   const handlePerformedRepsBlur = () => {
     // Only trigger rest timer if there's a valid value
-    if (set.performedReps && onSetComplete) {
-      onSetComplete();
+    if (set.performedReps) {
+      setIsSetComplete(true);
+      setShowCompletionPulse(true);
+      
+      // Hide the pulse animation after 1 second
+      setTimeout(() => setShowCompletionPulse(false), 1000);
+      
+      if (onSetComplete) {
+        onSetComplete();
+      }
     }
   };
 
@@ -94,9 +105,26 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
 
 
+  // Check if set is complete when component mounts or when set data changes
+  useEffect(() => {
+    if (set.performedReps || set.time) {
+      setIsSetComplete(true);
+    } else {
+      setIsSetComplete(false);
+    }
+  }, [set.performedReps, set.time]);
+
   return (
     <>
       <div className="grid grid-cols-[40px_1fr_1fr_1fr_32px] gap-4 items-center py-1 relative">
+        {showCompletionPulse && (
+          <motion.div 
+            className="absolute inset-0 bg-green-100 rounded-md z-0"
+            initial={{ opacity: 0.7, scale: 0.95 }}
+            animate={{ opacity: 0, scale: 1.05 }}
+            transition={{ duration: 0.8 }}
+          />
+        )}
         <div className="flex items-center" ref={setNumberRef}>
           <SetIndicatorPopover 
             set={set}

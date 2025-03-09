@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { MuscleGroup } from '../types/workout';
 import { CustomExercise, NewCustomExercise } from '../types/exercise';
 import { exerciseService } from '../services/exerciseService';
@@ -73,11 +74,25 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     }
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 p-3 flex items-center justify-center z-50 ">
-      <div className="bg-white rounded-xl w-full max-w-md">
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 flex items-center justify-center p-3 z-50">
+          <motion.div 
+            className="fixed inset-0 bg-black z-40" 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+          />
+          <motion.div 
+            className="bg-white rounded-xl w-full max-w-md z-50"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
         <div className="flex flex-row space-x-4 items-center mb-4 p-4 border-b border-gray-100">
         <h2 className="text-lg font-semibold">Add Custom Exercise</h2>
         <span className="px-1.5 py-0.5 h-content text-xs font-medium bg-blue-50 text-blue-700 rounded">Beta</span></div>
@@ -145,7 +160,9 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 };

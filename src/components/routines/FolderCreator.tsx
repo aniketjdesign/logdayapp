@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { LoadingButton } from '../ui/LoadingButton';
 import { RemoveScroll } from 'react-remove-scroll';
@@ -31,11 +32,24 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
   };
 
   return (
-    <RemoveScroll>
-      <div 
-        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-      >
-        <div className="bg-white rounded-xl p-4 w-full max-w-md mx-4">
+    <AnimatePresence>
+      <RemoveScroll>
+        <div className="fixed inset-0 flex items-center justify-center p-4 z-50">
+          <motion.div 
+            className="fixed inset-0 bg-black z-40" 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={onClose}
+          />
+          <motion.div 
+            className="bg-white rounded-xl p-4 w-full max-w-md mx-4 z-50"
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+          >
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold">New Folder</h2>
             <button
@@ -80,8 +94,9 @@ export const FolderCreator: React.FC<FolderCreatorProps> = ({
               </LoadingButton>
             </div>
           </form>
+          </motion.div>
         </div>
-      </div>
-    </RemoveScroll>
+      </RemoveScroll>
+    </AnimatePresence>
   );
 };
