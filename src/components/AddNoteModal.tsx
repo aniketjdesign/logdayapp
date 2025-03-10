@@ -53,9 +53,10 @@ export const AddNoteModal: React.FC<AddNoteModalProps> = ({
   useEffect(() => {
     if (lastNote) {
       setIsLastNotePinned(true);
-      // If there's no current note, save the last note directly
+      // If there's no current note, set the note text to the last note
+      // but don't save it automatically to prevent closing the modal
       if (!currentNote) {
-        onSave(lastNote.note);
+        setNote(lastNote.note);
       }
     }
   }, [lastNote, currentNote]);

@@ -75,11 +75,11 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
           targetReps: set.goal || 0,
           performedReps: '',
           weight: set.weight || 0,
-          comments: '',
-          isPR: false,
-          isWarmup: false,
-          isDropset: false,
-          isFailure: false
+          comments: set.comments || '',
+          isPR: set.isPR || false,
+          isWarmup: set.isWarmup || false,
+          isDropset: set.isDropset || false,
+          isFailure: set.isFailure || false
         }))
       }));
       console.log('Starting workout with routine name:', routine.name);

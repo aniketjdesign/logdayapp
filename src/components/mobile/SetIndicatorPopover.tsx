@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutSet } from '../../types/workout';
 
@@ -58,14 +58,17 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
     disabled: boolean = false
   ) => (
     <button
-      onClick={() => {
+      onClick={(e) => {
+        e.stopPropagation(); // Prevent event from bubbling up
         handleSetTypeUpdate(type, !set[type]);
         // Automatically close the menu after selection
-        setShowSetTypeMenu(false);
+        setTimeout(() => {
+          setShowSetTypeMenu(false);
+        }, 50); // Small delay to ensure the click is processed
       }}
       disabled={disabled}
-      className={`w-full px-4 py-2 text-left text-sm flex items-center justify-between ${
-        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'
+      className={`w-full px-4 py-3 text-left text-sm flex items-center justify-between ${
+        disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50 active:bg-gray-100'
       } rounded-lg`}
     >
       <div className="flex items-center">
@@ -82,11 +85,38 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
     </span>
   );
 
+  // Close menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        setTypeMenuRef.current && 
+        !setTypeMenuRef.current.contains(event.target as Node) &&
+        setNumberRef.current &&
+        !setNumberRef.current.contains(event.target as Node)
+      ) {
+        setShowSetTypeMenu(false);
+      }
+    };
+
+    if (showSetTypeMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showSetTypeMenu, setShowSetTypeMenu]);
+
   return (
     <>
       <div 
-        className={`flex items-center justify-center w-[34px] h-[34px] rounded-lg border cursor-pointer hover:opacity-90 ${getSetTypeBgColor()} ${getSetTypeTextColor()} relative`}
-        onClick={() => setShowSetTypeMenu(true)}
+        className={`flex items-center justify-center w-[34px] h-[34px] rounded-lg border cursor-pointer hover:opacity-90 active:opacity-70 ${getSetTypeBgColor()} ${getSetTypeTextColor()} relative`}
+        onClick={(e) => {
+          e.stopPropagation();
+          setShowSetTypeMenu(true);
+        }}
       >
         <span className="text-sm font-medium">{getSetTypeAbbreviation()}</span>
         {/* Calculate the number of indicators */}
@@ -158,7 +188,13 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
       {/* Set Type Popover Menu */}
       <AnimatePresence>
         {showSetTypeMenu && (
-          <div className="fixed inset-0 z-40" onClick={() => setShowSetTypeMenu(false)}>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowSetTypeMenu(false);
+            }}
+          >
             <motion.div 
               ref={setTypeMenuRef}
               className="absolute bg-white rounded-lg shadow-lg z-50 w-48 p-2 border border-gray-200"
@@ -169,7 +205,7 @@ export const SetIndicatorPopover: React.FC<SetIndicatorPopoverProps> = ({
               initial={{ opacity: 0, scale: 0.5, originX: 0, originY: 0 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.5 }}
-              transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+              transition={{ duration: 0.15, type: "spring", stiffness: 400, damping: 30 }}
               onClick={(e) => e.stopPropagation()}
             >
             <div className="space-y-1">
