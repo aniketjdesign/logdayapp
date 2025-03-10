@@ -1,7 +1,7 @@
 // In ExerciseList.tsx
 import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Exercise } from '../types/exercise';
 import { useWorkout } from '../context/WorkoutContext';
 import { generateWorkoutName } from '../utils/workoutNameGenerator';
@@ -94,41 +94,41 @@ export const ExerciseList: React.FC = () => {
       <InstallAppToast />
      
       <motion.div 
-        initial={{ opacity: 0.3 }}
+        initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.5 }}
         className={`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
       <motion.div 
         className="px-4"
-        initial={{ y: 10, opacity: 0.5 }}
+        initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.25, delay: 0.05 }}>
+        transition={{ duration: 0.6, delay: 0.1 }}>
         <motion.div 
           className="heading-wrapper flex-col gap-y-2 pt-4 pb-3"
-          initial={{ y: 5, opacity: 0.5 }}
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.2, delay: 0.1 }}>
+          transition={{ duration: 0.6, delay: 0.2 }}>
           <motion.h1 
             className="text-lg font-bold"
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.12 }}>
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}>
             Quick Start
           </motion.h1>
           <motion.p 
             className="text-sm text-gray-500"
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.15 }}>
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}>
             Select your exercises and click Start Workout
           </motion.p>
         </motion.div>
       </motion.div>
 
       <motion.div
-        initial={{ y: 10, opacity: 0.5 }}
+        initial={{ y: 30, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.25, delay: 0.2 }}>
+        transition={{ duration: 0.7, delay: 0.5 }}>
         <ExerciseSelector
           customExercises={customExercises}
           recentExercises={recentExercises}
@@ -141,13 +141,14 @@ export const ExerciseList: React.FC = () => {
       </motion.div>
 
       <motion.div 
-        initial={{ y: 20, opacity: 0.5 }}
+        initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.25, delay: 0.25 }}
+        transition={{ duration: 0.8, delay: 0.6 }}
         className={`fixed max-w-3xl mx-auto bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-white border-t ${currentWorkout ? 'opacity-100' : ''}`}>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
+          transition={{ duration: 0.3 }}
           onClick={handleStartWorkout}
           disabled={currentWorkout || selectedExercises.length === 0}
           className={`w-full py-3 px-4 rounded-xl text-white font-medium 
@@ -160,14 +161,18 @@ export const ExerciseList: React.FC = () => {
         </motion.button>
       </motion.div>
 
-      <AddExerciseModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        onExerciseAdded={(exercise) => {
-          loadCustomExercises();
-          setIsAddModalOpen(false);
-        }}
-      />
+      <AnimatePresence>
+        {isAddModalOpen && (
+          <AddExerciseModal
+            isOpen={isAddModalOpen}
+            onClose={() => setIsAddModalOpen(false)}
+            onExerciseAdded={(exercise) => {
+              loadCustomExercises();
+              setIsAddModalOpen(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
       </motion.div>
     </div>
   );

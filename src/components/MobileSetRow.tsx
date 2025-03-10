@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { MoreVertical, X } from 'lucide-react';
+import { MoreVertical, X, Check } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 import { SetIndicatorPopover } from './mobile/SetIndicatorPopover';
@@ -28,6 +28,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const [isSetComplete, setIsSetComplete] = useState(false);
   const [showCompletionPulse, setShowCompletionPulse] = useState(false);
+  const [showInputError, setShowInputError] = useState(false);
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
@@ -59,7 +60,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   };
 
   const getColumnClass = (hasValue: boolean) => 
-    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} ${isSetComplete ? 'bg-green-50 bg-opacity-30' : ''} rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
+    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} ${isSetComplete ? 'bg-green-50 bg-opacity-30' : ''} ${showInputError ? 'border-red-500 bg-red-50' : ''} rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
 
   const handleSetTypeUpdate = (type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR', value: boolean) => {
     onUpdate(type, value);
@@ -105,6 +106,63 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
 
 
+  // Handle toggling set completion when checkmark is clicked
+  const handleCheckToggle = () => {
+    // Reset error state
+    setShowInputError(false);
+    
+    // If already complete, uncheck it
+    if (isSetComplete) {
+      // Just toggle the completion state without clearing values
+      setIsSetComplete(false);
+      return;
+    }
+    
+    // Check if weight is entered but no reps
+    if (set.weight && (!set.targetReps || !set.performedReps)) {
+      // Use placeholder value for target reps if available
+      const targetRepsValue = previousSet?.performedReps?.toString() || '8';
+      
+      // Update both target and performed reps to the same value
+      onUpdate('targetReps', parseInt(targetRepsValue));
+      onUpdate('performedReps', targetRepsValue);
+      
+      // Mark set as complete
+      setIsSetComplete(true);
+      setShowCompletionPulse(true);
+      
+      // Hide the pulse animation after 1 second
+      setTimeout(() => setShowCompletionPulse(false), 1000);
+      
+      if (onSetComplete) {
+        onSetComplete();
+      }
+    } 
+    // If all fields are empty, show error
+    else if (!set.weight && !set.targetReps && !set.performedReps && !set.time) {
+      setShowInputError(true);
+      
+      // Hide error after 2 seconds
+      setTimeout(() => setShowInputError(false), 2000);
+    }
+    // If all required fields are already filled, just mark as complete
+    else if (set.weight && set.targetReps && !set.performedReps) {
+      // Copy target reps to performed reps
+      onUpdate('performedReps', set.targetReps.toString());
+      
+      // Mark set as complete
+      setIsSetComplete(true);
+      setShowCompletionPulse(true);
+      
+      // Hide the pulse animation after 1 second
+      setTimeout(() => setShowCompletionPulse(false), 1000);
+      
+      if (onSetComplete) {
+        onSetComplete();
+      }
+    }
+  };
+
   // Check if set is complete when component mounts or when set data changes
   useEffect(() => {
     if (set.performedReps || set.time) {
@@ -112,11 +170,31 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     } else {
       setIsSetComplete(false);
     }
+    
+    // Reset error state when set data changes
+    setShowInputError(false);
   }, [set.performedReps, set.time]);
+  
+  // Add handlers for input changes to uncheck the set when edited
+  const handleWeightChange = (value: string) => {
+    onUpdate('weight', value);
+    // If set was complete and user is editing, mark as incomplete
+    if (isSetComplete) {
+      setIsSetComplete(false);
+    }
+  };
+  
+  const handleTargetRepsChange = (value: string) => {
+    onUpdate('targetReps', parseInt(value));
+    // If set was complete and user is editing, mark as incomplete
+    if (isSetComplete) {
+      setIsSetComplete(false);
+    }
+  };
 
   return (
     <>
-      <div className="grid grid-cols-[40px_1fr_1fr_1fr_32px] gap-4 items-center py-1 relative">
+      <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-4 items-center py-1 relative">
         {showCompletionPulse && (
           <motion.div 
             className="absolute inset-0 bg-green-100 rounded-md z-0"
@@ -155,7 +233,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             placeholder={previousSet?.weight?.toString() || '-'}
             className={getColumnClass(true)}
             value={set.weight || ''}
-            onChange={(e) => onUpdate('weight', e.target.value)}
+            onChange={(e) => handleWeightChange(e.target.value)}
           />
         )}
 
@@ -192,7 +270,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             placeholder={previousSet?.performedReps?.toString() || '0'}
             className={getColumnClass(true)}
             value={set.targetReps || ''}
-            onChange={(e) => onUpdate('targetReps', parseInt(e.target.value))}
+            onChange={(e) => handleTargetRepsChange(e.target.value)}
           />
         )}
 
@@ -243,12 +321,30 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           />
         )}
 
+<div className="flex items-center gap-1">
+        <button
+          onClick={handleCheckToggle}
+          className={`p-1 hover:bg-gray-100 rounded-lg flex justify-center items-center h-8`}
+          title={isSetComplete ? "Mark as incomplete" : "Auto-fill set data"}
+        >
+          {isSetComplete ? (
+            <div className="w-4 h-4 rounded-full bg-green-600 flex items-center justify-center">
+              <Check size={10} strokeWidth={2.5} className="text-white" />
+            </div>
+          ) : (
+            <div className="w-4 h-4 rounded-full border border-gray-400 flex items-center justify-center">
+              <Check size={10} strokeWidth={2} className="text-gray-400" />
+            </div>
+          )}
+        </button>
+        
         <button
           onClick={() => setShowMenu(true)}
           className="p-1 hover:bg-gray-100 text-gray-600 rounded-lg flex justify-center items-center h-8"
         >
           <MoreVertical strokeWidth={1} size={16} />
         </button>
+      </div>
       </div>
       
       {/* Main Options Menu */}

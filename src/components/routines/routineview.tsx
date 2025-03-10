@@ -5,7 +5,41 @@ import { RoutineCreator } from './RoutineCreator';
 import { FolderView } from './FolderView';
 import { Plus } from 'lucide-react';
 import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
+import { DeleteRoutinePopup } from '../ui/Popup';
 
+/**
+ * DeleteRoutineModal component - moved from separate file
+ * Used in RoutinePreviewCard and RoutinePreviewSheet components
+ */
+interface DeleteRoutineModalProps {
+  isOpen: boolean;
+  routineName: string;
+  onConfirm: () => Promise<void>;
+  onClose: () => void;
+  isLoading?: boolean;
+}
+
+export const DeleteRoutineModal: React.FC<DeleteRoutineModalProps> = ({
+  isOpen,
+  routineName,
+  onConfirm,
+  onClose,
+  isLoading = false,
+}) => {
+  return (
+    <DeleteRoutinePopup
+      isOpen={isOpen}
+      routineName={routineName}
+      onConfirm={onConfirm}
+      onClose={onClose}
+      isLoading={isLoading}
+    />
+  );
+};
+
+/**
+ * Main RoutineView component
+ */
 export const RoutineView = () => {
   const { currentWorkout } = useWorkout();
   const [showRoutineCreator, setShowRoutineCreator] = useState(false);

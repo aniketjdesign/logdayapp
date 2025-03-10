@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { MuscleGroup } from '../types/workout';
 import { CustomExercise, NewCustomExercise } from '../types/exercise';
 import { exerciseService } from '../services/exerciseService';
 import { ChevronDown } from 'lucide-react';
+import { Popup } from './ui/Popup';
 
 interface AddExerciseModalProps {
   isOpen: boolean;
@@ -26,18 +26,6 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'auto';
-    }
-
-    return () => {
-      document.body.style.overflow = 'auto';
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
@@ -48,6 +36,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Define muscle groups ensuring they match the MuscleGroup type
   const muscleGroups: MuscleGroup[] = [
     'Chest',
     'Back',
@@ -59,8 +48,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     'Forearms',
     'Glutes',
     'Calves',
-    'Core',
-    'Olympic'
+    'Core'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -74,30 +62,45 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     }
   };
 
+  // Using a string title with a custom header to include the Beta tag
+  const title = "Add Custom Exercise";
+
+  // Create a form reference to trigger submit from the footer buttons
+  const formRef = useRef<HTMLFormElement>(null);
+  
+  const footer = (
+    <div className="flex justify-end gap-2">
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={() => formRef.current?.requestSubmit()}
+        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+      >
+        Add Exercise
+      </button>
+    </div>
+  );
+
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 flex items-center justify-center p-3 z-50">
-          <motion.div 
-            className="fixed inset-0 bg-black z-40" 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.5 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            onClick={onClose}
-          />
-          <motion.div 
-            className="bg-white rounded-xl w-full max-w-md z-50"
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-          >
-        <div className="flex flex-row space-x-4 items-center mb-4 p-4 border-b border-gray-100">
-        <h2 className="text-lg font-semibold">Add Custom Exercise</h2>
-        <span className="px-1.5 py-0.5 h-content text-xs font-medium bg-blue-50 text-blue-700 rounded">Beta</span></div>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="px-4 mb-8 space-y-4">
+    <Popup
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      headerClassName="border-b border-gray-100"
+      modalClassName="rounded-xl"
+      footer={footer}
+      size="md"
+
+      contentClassName="px-4 py-4"
+    >
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
             <input
@@ -143,26 +146,8 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
               </div>
             )}
           </div>
-          </div>
-          <div className="flex justify-end gap-2 pt-4 px-4 pb-2 border-t">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Add Exercise
-            </button>
-          </div>
-        </form>
-          </motion.div>
         </div>
-      )}
-    </AnimatePresence>
+      </form>
+    </Popup>
   );
 };

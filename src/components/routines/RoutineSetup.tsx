@@ -4,7 +4,7 @@ import { ExerciseSelectionModal } from '../ExerciseSelectionModal';
 import { Plus, X, Trash, MoveVertical, GripVertical, MoreVertical, RefreshCw } from 'lucide-react';
 import { Dropdown } from '../ui/Dropdown';
 import { LoadingButton } from '../ui/LoadingButton';
-import { FolderModal } from './FolderModal';
+import { FolderModal } from './FolderOperations';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { SortableItem } from '../SortableItem';

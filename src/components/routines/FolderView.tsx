@@ -2,9 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, ChevronDown, Folder, Plus, MoreVertical } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
-import { RoutinePreview } from './RoutinePreview';
-import { FolderModal } from './FolderModal';
-import { FolderCreator } from './FolderCreator';
+import { RoutinePreviewCard } from './RoutinePreviewCard';
+import { FolderModal, FolderCreator } from './FolderOperations';
 import { MoveRoutineModal } from './MoveRoutineModal';
 
 interface FolderMenuProps {
@@ -259,7 +258,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.1 + (index * 0.05), duration: 0.2 }}
                     >
-                      <RoutinePreview
+                      <RoutinePreviewCard
                         routine={routine}
                         onEdit={() => onEditRoutine(routine)}
                         onDelete={async (routineId) => {

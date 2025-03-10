@@ -109,7 +109,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
         {renderExerciseMenu(exercise.id)}
       </div>
 
-      <div className="p-4 overflow-hidden">
+      <div className="py-4 pl-4 pr-2 overflow-hidden">
         <AnimatePresence mode="wait" initial={false}>
           {activeTab === 'log' ? (
             <motion.div 
@@ -125,7 +125,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               }}
               layout
             >
-              <div className="grid grid-cols-[50px_1fr_1fr_1fr_32px] gap-2 mb-2 text-xs font-medium text-gray-500">
+              <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-4 mb-2 text-xs font-medium text-gray-400">
               <div>SET</div>
               {isCardio || isTimeBasedCore ? (
                 <>

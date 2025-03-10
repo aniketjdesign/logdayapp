@@ -522,6 +522,7 @@ const {
                       )}
                       <div>NOTES</div>
                       <div>ACTIONS</div>
+                      <div>ACTIONS</div>
                     </div>
 
                     {sets.map(set => (

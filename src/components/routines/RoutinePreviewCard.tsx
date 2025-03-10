@@ -3,13 +3,13 @@ import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2, FolderSymlink, Copy } f
 import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { RoutinePreviewSheet } from './RoutinePreviewSheet';
-import { DeleteRoutineModal } from './DeleteRoutineModal';
-import { LoadingButton } from '../ui/LoadingButton';
+import { DeleteRoutineModal } from './routineview';
+// LoadingButton is not used in this component
 import { generateUUID } from '../../utils/uuid';
 import { MoveRoutineModal } from './MoveRoutineModal';
 import { motion, AnimatePresence } from 'framer-motion';
 
-interface RoutinePreviewProps {
+interface RoutinePreviewCardProps {
   routine: any;
   onEdit: () => void;
   onDelete?: (routineId: string) => void;
@@ -21,7 +21,7 @@ interface MuscleGroupSummary {
   totalSets: number;
 }
 
-export const RoutinePreview: React.FC<RoutinePreviewProps> = ({
+export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
   routine,
   onEdit,
   onDelete,

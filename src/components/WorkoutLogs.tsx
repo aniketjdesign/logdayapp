@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Calendar, Clock, Dumbbell, MoreVertical, Trash2, ArrowLeft, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
@@ -78,24 +78,24 @@ export const WorkoutLogs: React.FC = () => {
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
           <motion.h1 
             className="text-lg font-bold"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3 }}>
+            transition={{ duration: 0.2 }}>
             Workout History
           </motion.h1>
           <motion.p 
             className="text-sm text-gray-500"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, delay: 0.1 }}>
+            transition={{ duration: 0.2, delay: 0.1 }}>
             View, analyze or repeat your past workouts
           </motion.p>
 
         {currentWorkout && <OngoingWorkoutMessage />}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0.5, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.2 }}>
+          transition={{ duration: 0.25, delay: 0.2 }}>
           <EmptyState
             currentWorkout={currentWorkout}
             onNavigate={() => navigate(currentWorkout ? '/workout' : '/')}
@@ -159,20 +159,20 @@ export const WorkoutLogs: React.FC = () => {
       {workoutLogs.length === 0 && search ? (
         <motion.div 
           className="text-center py-8"
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0.5, y: 5 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}>
+          transition={{ duration: 0.25 }}>
           <motion.p 
             className="text-gray-500 text-sm"
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.1, duration: 0.2 }}>
             No workouts found matching "{search}"
           </motion.p>
           <motion.button
-            initial={{ opacity: 0 }}
+            initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.2 }}
+            transition={{ delay: 0.15, duration: 0.2 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => setSearch('')}
@@ -184,15 +184,15 @@ export const WorkoutLogs: React.FC = () => {
       ) : (
         <motion.div 
           className="space-y-4 sm:space-y-6"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 0.5 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.3 }}>
+          transition={{ duration: 0.25 }}>
           {workoutLogs.map((log, index) => (
             <motion.div
               key={log.id}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0.5, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.1 + index * 0.05 }}
+              transition={{ duration: 0.25, delay: 0.05 + index * 0.03 }}
             >
               <WorkoutLogCard
                 log={log}
@@ -203,15 +203,19 @@ export const WorkoutLogs: React.FC = () => {
         </motion.div>
       )}
 
-      <ConfirmationModal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        onConfirm={handleConfirmDelete}
-        title="Delete Workout Log?"
-        message="This action cannot be undone. Are you sure you want to delete this workout log?"
-        confirmText="Delete Log"
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
-      />
+      <AnimatePresence>
+        {showDeleteModal && (
+          <ConfirmationModal
+            isOpen={showDeleteModal}
+            onClose={() => setShowDeleteModal(false)}
+            onConfirm={handleConfirmDelete}
+            title="Delete Workout Log?"
+            message="This action cannot be undone. Are you sure you want to delete this workout log?"
+            confirmText="Delete Log"
+            confirmButtonClass="bg-red-600 hover:bg-red-700"
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
