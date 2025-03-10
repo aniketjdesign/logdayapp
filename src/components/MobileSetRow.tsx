@@ -28,7 +28,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const [isSetComplete, setIsSetComplete] = useState(false);
   const [showCompletionPulse, setShowCompletionPulse] = useState(false);
-  const [showInputError, setShowInputError] = useState(false);
+  const [inputErrors, setInputErrors] = useState<{weight: boolean; targetReps: boolean; performedReps: boolean}>({weight: false, targetReps: false, performedReps: false});
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
   const isBodyweight = exercise.name.includes('(Bodyweight)');
@@ -59,8 +59,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     }
   };
 
-  const getColumnClass = (hasValue: boolean) => 
-    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} ${isSetComplete ? 'bg-green-50 bg-opacity-30' : ''} ${showInputError ? 'border-red-500 bg-red-50' : ''} rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
+  const getColumnClass = (hasValue: boolean, fieldType: 'weight' | 'targetReps' | 'performedReps') => 
+    `px-2 py-1.5 border ${hasValue ? 'border-gray-200' : 'border-gray-200'} ${isSetComplete ? 'bg-green-50 bg-opacity-30' : ''} ${inputErrors[fieldType] ? 'border-red-500 bg-red-50' : ''} rounded-lg text-sm w-full focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasValue ? '' : 'bg-gray-50 text-gray-400'}`;
 
   const handleSetTypeUpdate = (type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR', value: boolean) => {
     onUpdate(type, value);
@@ -72,6 +72,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
   const handlePerformedRepsChange = (value: string) => {
     onUpdate('performedReps', value);
+    // Reset error state for this field
+    setInputErrors(prev => ({...prev, performedReps: false}));
   };
 
   const handlePerformedRepsBlur = () => {
@@ -108,8 +110,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
   // Handle toggling set completion when checkmark is clicked
   const handleCheckToggle = () => {
-    // Reset error state
-    setShowInputError(false);
+    // Reset error states
+    setInputErrors({weight: false, targetReps: false, performedReps: false});
     
     // If already complete, uncheck it
     if (isSetComplete) {
@@ -118,48 +120,46 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       return;
     }
     
-    // Check if weight is entered but no reps
-    if (set.weight && (!set.targetReps || !set.performedReps)) {
-      // Use placeholder value for target reps if available
-      const targetRepsValue = previousSet?.performedReps?.toString() || '8';
+    // Check if all required fields are filled
+    const needsWeight = !set.weight && !isBodyweight && !isTimeBasedCore;
+    const needsTargetReps = !set.targetReps && !isCardio && !isTimeBasedCore;
+    const needsPerformedReps = !set.performedReps && !isCardio && !isTimeBasedCore;
+    const needsTime = !set.time && isTimeBasedCore;
+    
+    // For cardio exercises, check specific fields based on metrics
+    const needsCardioFields = isCardio && (
+      (exercise.metrics?.distance && !set.distance) ||
+      (exercise.metrics?.difficulty && !set.difficulty) ||
+      (exercise.metrics?.incline && !set.incline) ||
+      (exercise.metrics?.pace && !set.pace) ||
+      (exercise.metrics?.reps && !set.performedReps)
+    );
+    
+    // If any required field is missing, highlight the missing fields
+    if (needsWeight || needsTargetReps || needsPerformedReps || needsTime || needsCardioFields) {
+      setInputErrors({
+        weight: needsWeight,
+        targetReps: needsTargetReps,
+        performedReps: needsPerformedReps
+      });
       
-      // Update both target and performed reps to the same value
-      onUpdate('targetReps', parseInt(targetRepsValue));
-      onUpdate('performedReps', targetRepsValue);
+      // Hide errors after 2 seconds
+      setTimeout(() => {
+        setInputErrors({weight: false, targetReps: false, performedReps: false});
+      }, 2000);
       
-      // Mark set as complete
-      setIsSetComplete(true);
-      setShowCompletionPulse(true);
-      
-      // Hide the pulse animation after 1 second
-      setTimeout(() => setShowCompletionPulse(false), 1000);
-      
-      if (onSetComplete) {
-        onSetComplete();
-      }
-    } 
-    // If all fields are empty, show error
-    else if (!set.weight && !set.targetReps && !set.performedReps && !set.time) {
-      setShowInputError(true);
-      
-      // Hide error after 2 seconds
-      setTimeout(() => setShowInputError(false), 2000);
+      return;
     }
-    // If all required fields are already filled, just mark as complete
-    else if (set.weight && set.targetReps && !set.performedReps) {
-      // Copy target reps to performed reps
-      onUpdate('performedReps', set.targetReps.toString());
-      
-      // Mark set as complete
-      setIsSetComplete(true);
-      setShowCompletionPulse(true);
-      
-      // Hide the pulse animation after 1 second
-      setTimeout(() => setShowCompletionPulse(false), 1000);
-      
-      if (onSetComplete) {
-        onSetComplete();
-      }
+    
+    // All required fields are filled, mark set as complete
+    setIsSetComplete(true);
+    setShowCompletionPulse(true);
+    
+    // Hide the pulse animation after 1 second
+    setTimeout(() => setShowCompletionPulse(false), 1000);
+    
+    if (onSetComplete) {
+      onSetComplete();
     }
   };
 
@@ -171,13 +171,15 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       setIsSetComplete(false);
     }
     
-    // Reset error state when set data changes
-    setShowInputError(false);
+    // Reset error states when set data changes
+    setInputErrors({weight: false, targetReps: false, performedReps: false});
   }, [set.performedReps, set.time]);
   
   // Add handlers for input changes to uncheck the set when edited
   const handleWeightChange = (value: string) => {
     onUpdate('weight', value);
+    // Reset error state for this field
+    setInputErrors(prev => ({...prev, weight: false}));
     // If set was complete and user is editing, mark as incomplete
     if (isSetComplete) {
       setIsSetComplete(false);
@@ -186,6 +188,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   
   const handleTargetRepsChange = (value: string) => {
     onUpdate('targetReps', parseInt(value));
+    // Reset error state for this field
+    setInputErrors(prev => ({...prev, targetReps: false}));
     // If set was complete and user is editing, mark as incomplete
     if (isSetComplete) {
       setIsSetComplete(false);
@@ -219,19 +223,19 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           <input
             type="text"
             placeholder="mm:ss"
-            className={getColumnClass(true)}
+            className={getColumnClass(true, 'weight')}
             value={set.time || ''}
             onChange={handleTimeChange}
           />
         ) : isBodyweight ? (
-          <div className={getColumnClass(false)}>BW</div>
+          <div className={getColumnClass(false, 'weight')}>BW</div>
         ) : (
           <input
             type="number"
             step="0.25"
             min="0"
             placeholder={previousSet?.weight?.toString() || '-'}
-            className={getColumnClass(true)}
+            className={getColumnClass(true, 'weight')}
             value={set.weight || ''}
             onChange={(e) => handleWeightChange(e.target.value)}
           />
@@ -244,7 +248,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               type="number"
               min="0"
               placeholder="Distance (m)"
-              className={getColumnClass(true)}
+              className={getColumnClass(true, 'targetReps')}
               value={set.distance || ''}
               onChange={(e) => onUpdate('distance', parseFloat(e.target.value))}
             />
@@ -253,22 +257,22 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               type="number"
               min="0"
               placeholder={previousSet?.performedReps?.toString() || '0'}
-              className={getColumnClass(true)}
+              className={getColumnClass(true, 'performedReps')}
               value={set.performedReps || ''}
               onChange={(e) => handlePerformedRepsChange(e.target.value)}
               onBlur={handlePerformedRepsBlur}
             />
           ) : (
-            <div className={getColumnClass(false)}>-</div>
+            <div className={getColumnClass(false, 'performedReps')}>-</div>
           )
         ) : isTimeBasedCore ? (
-          <div className={getColumnClass(false)}>-</div>
+          <div className={getColumnClass(false, 'performedReps')}>-</div>
         ) : (
           <input
             type="number"
             min="0"
             placeholder={previousSet?.performedReps?.toString() || '0'}
-            className={getColumnClass(true)}
+            className={getColumnClass(true, 'targetReps')}
             value={set.targetReps || ''}
             onChange={(e) => handleTargetRepsChange(e.target.value)}
           />
@@ -282,7 +286,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               min="0"
               max="20"
               placeholder="Difficulty"
-              className={getColumnClass(true)}
+              className={getColumnClass(true, 'targetReps')}
               value={set.difficulty || ''}
               onChange={(e) => onUpdate('difficulty', parseInt(e.target.value))}
             />
@@ -292,7 +296,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               min="0"
               max="15"
               placeholder="Incline %"
-              className={getColumnClass(true)}
+              className={getColumnClass(true, 'targetReps')}
               value={set.incline || ''}
               onChange={(e) => onUpdate('incline', parseInt(e.target.value))}
             />
@@ -300,22 +304,22 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
             <input
               type="text"
               placeholder="Pace"
-              className={getColumnClass(true)}
+              className={getColumnClass(true, 'performedReps')}
               value={set.pace || ''}
               onChange={(e) => onUpdate('pace', e.target.value)}
             />
           ) : (
-            <div className={getColumnClass(false)}>-</div>
+            <div className={getColumnClass(false, 'performedReps')}>-</div>
           )
         ) : isTimeBasedCore ? (
-          <div className={getColumnClass(false)}>-</div>
+          <div className={getColumnClass(false, 'performedReps')}>-</div>
         ) : (
           <input
             type="number"
             min="0"
             placeholder="0"
-            className={getColumnClass(true)}
-            value={set.performedReps}
+            className={getColumnClass(true, 'performedReps')}
+            value={set.performedReps || ''}
             onChange={(e) => handlePerformedRepsChange(e.target.value)}
             onBlur={handlePerformedRepsBlur}
           />
