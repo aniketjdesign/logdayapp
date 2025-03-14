@@ -125,7 +125,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               }}
               layout
             >
-              <div className="grid grid-cols-[40px_1fr_1fr_1fr_1fr] gap-4 mb-2 text-xs font-medium text-gray-400">
+              <div className="grid grid-cols-[40px_1fr_1fr_1fr_40px] gap-4 mb-2 text-xs font-medium text-gray-400">
               <div>SET</div>
               {isCardio || isTimeBasedCore ? (
                 <>

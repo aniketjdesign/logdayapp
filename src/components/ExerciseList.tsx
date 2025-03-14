@@ -109,7 +109,7 @@ export const ExerciseList: React.FC = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}>
           <motion.h1 
-            className="text-lg font-bold"
+            className="text-xl font-semibold tracking-tight text-slate-800"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}>
