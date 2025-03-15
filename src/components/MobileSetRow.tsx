@@ -374,7 +374,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               transition={{ duration: 0.2 }}
-              className="px-2 rounded-lg pb-2 pt-1 bg-gray-50 rounded-b-lg mb-2 mt-1 border-t border-gray-100 overflow-hidden"
+              className="px-2 rounded-lg pb-2 pt-1 bg-gray-50 rounded-xl mb-2 mt-1 border border-gray-200 overflow-hidden"
             >
               <SetIndicatorAccordion.Content
                 set={set}

@@ -224,13 +224,12 @@ SetIndicatorAccordion.Content = ({
           }
         }}
         disabled={disabled}
-        className={`flex flex-col items-center justify-center px-2 py-1.5 rounded-lg border text-xs font-medium transition-colors ${buttonStyle} ${
+        className={`flex flex-col items-center justify-center px-2.5 py-1 rounded-lg border text-sm tracking-tight transition-colors ${buttonStyle} ${
           disabled ? 'opacity-40 cursor-not-allowed' : ''
         }`}
       >
         <div className="flex items-center">
           <span>{label}</span>
-          {isNew && <span className="ml-1 inline-flex items-center px-1 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-600">NEW</span>}
         </div>
       </button>
     );
@@ -239,7 +238,7 @@ SetIndicatorAccordion.Content = ({
   return (
     <div className="space-y-1">
       {/* Set Type Buttons */}
-      <div className="flex flex-row items-center gap-4 py-1">
+      <div className="flex flex-row items-center gap-3 py-1">
         {/* Warmup Set */}
         {getSetTypeButton(
           'isWarmup', 
@@ -278,7 +277,7 @@ SetIndicatorAccordion.Content = ({
       </div>
 
       {/* Note Section */}
-      <div className="border-t border-gray-100 pt-2 mt-1">
+      <div className="pt-1">
         {/* Note input and controls - more compact layout */}
         <div className="space-y-2">
           {/* Compact text input with inline buttons */}
@@ -286,7 +285,7 @@ SetIndicatorAccordion.Content = ({
             <input
               type="text"
               placeholder="Add a note..."
-              className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md"
+              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={note}
               onChange={(e) => setNote(e.target.value)}
             />
@@ -298,7 +297,7 @@ SetIndicatorAccordion.Content = ({
                   className="p-1 text-gray-500 hover:text-gray-700 rounded-md"
                   title="Unpin note"
                 >
-                  <Pin size={14} style={{ transform: 'rotate(45deg)' }} />
+                  <Pin size={16} style={{ transform: 'rotate(45deg)' }} />
                 </button>
               )}
               <button
@@ -315,7 +314,7 @@ SetIndicatorAccordion.Content = ({
                 }`}
                 title="Pin note"
               >
-                <Pin size={14} />
+                <Pin size={16} />
               </button>
             </div>
           </div>
