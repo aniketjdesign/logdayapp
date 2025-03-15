@@ -77,7 +77,7 @@ export const WorkoutLogs: React.FC = () => {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
           <motion.h1 
-            className="text-lg font-bold"
+            className="text-2xl font-semibold tracking-tight text-slate-800"
             initial={{ opacity: 0.5 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.2 }}>
@@ -125,7 +125,7 @@ export const WorkoutLogs: React.FC = () => {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.1 }}>
             <motion.h1 
-              className="text-lg font-bold"
+              className="text-2xl font-semibold tracking-tight text-slate-800"
               initial={{ opacity: 0.5 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.12 }}>

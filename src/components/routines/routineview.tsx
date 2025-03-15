@@ -69,7 +69,7 @@ export const RoutineView = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.1 }}>
               <motion.h1 
-                className="text-lg font-bold flex items-center"
+                className="text-2xl font-semibold tracking-tight text-slate-800 flex items-center"
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.2, delay: 0.12 }}>
