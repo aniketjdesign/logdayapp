@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
@@ -18,17 +18,6 @@ import { ContactForm } from './components/ContactForm';
 import { UpdateNotification } from './components/UpdateNotification';
 import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
-
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user } = useAuth();
-  const location = useLocation();
-
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-
-  return <>{children}</>;
-};
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -103,20 +92,18 @@ const AppContent = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {showNavigation && <Navigation />}
-      <div className={showNavigation ? "pt-16" : ""}>
+      <div className={`${showNavigation ? "pb-16" : ""}`}>
         <Routes>
           <Route path="/" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
           <Route path="/logs" element={<WorkoutLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/contact" element={<ContactForm />} />
-
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>
-
+      {showNavigation && <Navigation />}
     </div>
   );
 };

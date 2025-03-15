@@ -120,7 +120,7 @@ export const WorkoutLogs: React.FC = () => {
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.25, delay: 0.05 }}>
           <motion.div 
-            className="heading-wrapper flex-col gap-y-2 pt-4 pb-4"
+            className="heading-wrapper flex-col gap-y-2 pt-8 pb-4"
             initial={{ y: 5, opacity: 0.5 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.2, delay: 0.1 }}>

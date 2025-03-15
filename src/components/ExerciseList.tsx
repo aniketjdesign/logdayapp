@@ -87,7 +87,7 @@ export const ExerciseList: React.FC = () => {
   }, []);
 
   return (
-    <div className="h-full max-w-3xl mx-auto">
+    <div className="h-full max-w-3xl mx-auto ">
       <div className="px-4 py-0">
       {currentWorkout && <OngoingWorkoutMessage />}
       </div>
@@ -104,7 +104,7 @@ export const ExerciseList: React.FC = () => {
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.1 }}>
         <motion.div 
-          className="heading-wrapper flex-col gap-y-2 pt-4 pb-3"
+          className="heading-wrapper flex-col gap-y-2 pt-8 pb-3"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.6, delay: 0.2 }}>
@@ -144,14 +144,14 @@ export const ExerciseList: React.FC = () => {
         initial={{ y: 40, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.6 }}
-        className={`fixed max-w-3xl mx-auto bottom-0 left-0 right-0 px-4 pt-4 pb-8 bg-white border-t ${currentWorkout ? 'opacity-100' : ''}`}>
+        className={`sticky mx-auto bottom-0 left-0 right-0 flex justify-center px-4 pt-4 pb-24 bg-transparent ${currentWorkout ? 'opacity-100' : ''}`}>
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           transition={{ duration: 0.3 }}
           onClick={handleStartWorkout}
           disabled={currentWorkout || selectedExercises.length === 0}
-          className={`w-full py-3 px-4 rounded-xl text-white font-medium 
+          className={` py-3 px-4 rounded-xl text-white font-medium 
             ${selectedExercises.length === 0 || currentWorkout
               ? 'bg-gray-300 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'

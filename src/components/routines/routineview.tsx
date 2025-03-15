@@ -64,7 +64,7 @@ export const RoutineView = () => {
             transition={{ duration: 0.3 }}
             className={`${currentWorkout ? 'opacity-50 pointer-events-none' : ''}`}>
             <motion.div 
-              className="heading-wrapper flex-col gap-y-2 py-4"
+              className="heading-wrapper flex-col gap-y-2 py-4 pt-8"
               initial={{ y: 5, opacity: 0.5 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ duration: 0.2, delay: 0.1 }}>
