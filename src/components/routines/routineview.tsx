@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useWorkout } from '../../context/WorkoutContext';
 import { RoutineCreator } from './RoutineCreator';
@@ -45,6 +45,7 @@ export const RoutineView = () => {
   const [showRoutineCreator, setShowRoutineCreator] = useState(false);
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleCreateRoutine = (folderId?: string) => {
     setSelectedRoutine(null);
@@ -52,12 +53,58 @@ export const RoutineView = () => {
     setShowRoutineCreator(true);
   };
 
+  // Simulate loading for demonstration purposes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 200);
+    
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex-1">
+          <div className="px-4 pb-20 max-w-2xl mx-auto">
+            {currentWorkout && <OngoingWorkoutMessage />}
+            
+            <div className="heading-wrapper flex-col gap-y-2 py-4 pt-8">
+              <div className="h-7 bg-gray-200 rounded w-1/3 animate-pulse mb-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse"></div>
+            </div>
+            
+            <div className="sticky top-0 z-10 bg-slate-50 py-3 mb-4 mx-auto w-full">
+              <div className="h-10 bg-gray-200 rounded-xl w-full animate-pulse"></div>
+            </div>
+            
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div 
+                  key={i} 
+                  className="bg-white rounded-lg shadow-sm p-4 animate-pulse">
+                  <div className="flex justify-between items-center">
+                    <div className="space-y-2 flex-1">
+                      <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                    </div>
+                    <div className="h-6 w-6 bg-gray-200 rounded-full"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto">
+      {/* Remove the overflow-y-auto from this div to prevent nested scrolling */}
+      <div className="flex-1">
         <div className="px-4 pb-20 max-w-2xl mx-auto">
           {currentWorkout && <OngoingWorkoutMessage />}
-
           <motion.div 
             initial={{ opacity: 0.3 }}
             animate={{ opacity: 1 }}
@@ -84,27 +131,28 @@ export const RoutineView = () => {
                 Create, view and manage your routines
               </motion.p>
             </motion.div>
+          </motion.div>
 
-            <motion.div 
-              className="flex items-center justify-between mb-6 max-w-md mx-auto w-full"
-              initial={{ y: 10, opacity: 0.5 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.25, delay: 0.2 }}>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => handleCreateRoutine()}
-                className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">
-                <Plus size={20} className="mr-1" />
-                New Routine
-              </motion.button>
-            </motion.div>
+          <motion.div 
+            className="sticky top-0 z-10 bg-slate-50 py-3 mb-4 mx-auto w-full"
+            initial={{ y: 10, opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.25, delay: 0.2 }}>
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => handleCreateRoutine()}
+              className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">
+              <Plus size={20} className="mr-1" />
+              New Routine
+            </motion.button>
+          </motion.div>
 
-            <motion.div
-              initial={{ y: 15, opacity: 0.5 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.25, delay: 0.25 }}>
-              <FolderView
+          <motion.div
+            initial={{ y: 15, opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.25, delay: 0.25 }}>
+            <FolderView
               selectedFolderId={selectedFolderId}
               onFolderSelect={setSelectedFolderId}
               onEditRoutine={(routine) => {
@@ -113,7 +161,6 @@ export const RoutineView = () => {
               }}
               onCreateRoutine={handleCreateRoutine}
               />
-            </motion.div>
           </motion.div>
         </div>
       </div>

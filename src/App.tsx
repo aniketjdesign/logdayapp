@@ -18,6 +18,7 @@ import { ContactForm } from './components/ContactForm';
 import { UpdateNotification } from './components/UpdateNotification';
 import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
+import ProfilePage from './pages/ProfilePage';
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -100,6 +101,7 @@ const AppContent = () => {
           <Route path="/settings" element={<Settings />} />
           <Route path="/contact" element={<ContactForm />} />
           <Route path="/routines" element={<RoutinesPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

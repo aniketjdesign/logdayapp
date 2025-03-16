@@ -106,116 +106,121 @@ export const WorkoutLogs: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:p-6 pb-32">
+    <div className="h-full flex flex-col max-w-4xl mx-auto">
       {currentWorkout && <OngoingWorkoutMessage />}
-
-      <motion.div 
-        initial={{ opacity: 0.3 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.3 }}
-        className={`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
-        <motion.div 
-          className="mb-6"
-          initial={{ y: 10, opacity: 0.5 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.25, delay: 0.05 }}>
+      
+      <div className="flex-1">
+        <div className="px-4 sm:px-6 pb-32">
           <motion.div 
-            className="heading-wrapper flex-col gap-y-2 pt-8 pb-4"
-            initial={{ y: 5, opacity: 0.5 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.2, delay: 0.1 }}>
-            <motion.h1 
-              className="text-2xl font-semibold tracking-tight text-slate-800"
-              initial={{ opacity: 0.5 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.12 }}>
-              Workout History
-            </motion.h1>
-            <motion.p 
-              className="text-sm text-gray-500"
-              initial={{ opacity: 0.5 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.2, delay: 0.15 }}>
-              View, analyze or repeat your past workouts
-            </motion.p>
+            initial={{ opacity: 0.3 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className={`${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+            <motion.div 
+              className="heading-wrapper flex-col gap-y-2 pt-8 pb-4"
+              initial={{ y: 5, opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.2, delay: 0.1 }}>
+              <motion.h1 
+                className="text-2xl font-semibold tracking-tight text-slate-800"
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.12 }}>
+                Workout History
+              </motion.h1>
+              <motion.p 
+                className="text-sm text-gray-500"
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: 0.15 }}>
+                View, analyze or repeat your past workouts
+              </motion.p>
+            </motion.div>
           </motion.div>
-        <motion.div 
-          className="relative"
-          initial={{ y: 10, opacity: 0.5 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.25, delay: 0.2 }}>
-          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-          <input
-            type="text"
-            placeholder="Search workouts..."
-            className="w-full pl-7 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base rounded-lg"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </motion.div>
-      </motion.div>
-      </motion.div>
 
-      {workoutLogs.length === 0 && search ? (
-        <motion.div 
-          className="text-center py-8"
-          initial={{ opacity: 0.5, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}>
-          <motion.p 
-            className="text-gray-500 text-sm"
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.1, duration: 0.2 }}>
-            No workouts found matching "{search}"
-          </motion.p>
-          <motion.button
-            initial={{ opacity: 0.5 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15, duration: 0.2 }}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setSearch('')}
-            className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
-          >
-            Clear search
-          </motion.button>
-        </motion.div>
-      ) : (
-        <motion.div 
-          className="space-y-4 sm:space-y-6"
-          initial={{ opacity: 0.5 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.25 }}>
-          {workoutLogs.map((log, index) => (
-            <motion.div
-              key={log.id}
-              initial={{ opacity: 0.5, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.05 + index * 0.03 }}
-            >
-              <WorkoutLogCard
-                log={log}
-                onDelete={() => handleDeleteClick(log.id)}
+          <motion.div 
+            className="sticky top-0 z-10 bg-slate-50 pt-2 pb-4"
+            initial={{ y: 10, opacity: 0.5 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.25, delay: 0.2 }}>
+            <motion.div 
+              className="relative"
+              initial={{ y: 10, opacity: 0.5 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ duration: 0.25, delay: 0.2 }}>
+              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+              <input
+                type="text"
+                placeholder="Search workouts..."
+                className="w-full pl-7 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm sm:text-base rounded-lg"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
               />
             </motion.div>
-          ))}
-        </motion.div>
-      )}
+          </motion.div>
 
-      <AnimatePresence>
-        {showDeleteModal && (
-          <ConfirmationModal
-            isOpen={showDeleteModal}
-            onClose={() => setShowDeleteModal(false)}
-            onConfirm={handleConfirmDelete}
-            title="Delete Workout Log?"
-            message="This action cannot be undone. Are you sure you want to delete this workout log?"
-            confirmText="Delete Log"
-            confirmButtonClass="bg-red-600 hover:bg-red-700"
-          />
-        )}
-      </AnimatePresence>
+          {workoutLogs.length === 0 && search ? (
+            <motion.div 
+              className="text-center py-8"
+              initial={{ opacity: 0.5, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}>
+              <motion.p 
+                className="text-gray-500 text-sm"
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.1, duration: 0.2 }}>
+                No workouts found matching "{search}"
+              </motion.p>
+              <motion.button
+                initial={{ opacity: 0.5 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.15, duration: 0.2 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSearch('')}
+                className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
+              >
+                Clear search
+              </motion.button>
+            </motion.div>
+          ) : (
+            <motion.div 
+              className="space-y-4 sm:space-y-6 overflow-y-auto"
+              initial={{ opacity: 0.5 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.25 }}>
+              {workoutLogs.map((log, index) => (
+                <motion.div
+                  key={log.id}
+                  initial={{ opacity: 0.5, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25, delay: 0.05 + index * 0.03 }}
+                >
+                  <WorkoutLogCard
+                    log={log}
+                    onDelete={() => handleDeleteClick(log.id)}
+                  />
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+
+          <AnimatePresence>
+            {showDeleteModal && (
+              <ConfirmationModal
+                isOpen={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Workout Log?"
+                message="This action cannot be undone. Are you sure you want to delete this workout log?"
+                confirmText="Delete Log"
+                confirmButtonClass="bg-red-600 hover:bg-red-700"
+              />
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
     </div>
   );
 };

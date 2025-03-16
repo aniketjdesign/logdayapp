@@ -120,13 +120,13 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      <div className="flex-1 overflow-y-auto pb-80 bg-white ">
-        <motion.div className="px-4 bg-gray-50">
+      <div className="flex-1 bg-white">
+        <motion.div className="sticky top-0 z-10 px-4 pt-3 pb-4 bg-gray-50">
           <motion.div 
             initial={{ opacity: 0.9, y: 2 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.1 }}
-            className="relative mb-5 flex gap-x-2 pt-3">
+            className="relative mb-5 flex gap-x-2">
             <input
               type="text"
               placeholder="Search exercises"
@@ -135,7 +135,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
               onChange={(e) => setSearch(e.target.value)}  
             />
             <motion.button 
-              className="absolute left-1 top-[1.9rem] -translate-y-1/2 p-1"
+              className="absolute left-1 top-[1.15rem] -translate-y-1/2 p-1"
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -157,11 +157,11 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
             initial={{ opacity: 0.9, y: 2 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.1, delay: 0.02 }}
-            className="relative flex justify-evenly pb-4 space-x-2">
+            className="relative flex justify-evenly space-x-2">
             {showLeftScroll && (
               <motion.button 
                 onClick={() => scrollCategories('left')}
-                className="bg-gray-100 rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+                className="bg-gray-100 rounded-full p-1.5 hover:bg-gray-100 transition-colors h-[32px]"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
@@ -197,7 +197,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
             {showRightScroll && (
               <motion.button 
                 onClick={() => scrollCategories('right')}
-                className="bg-gray-100 rounded-full p-1 hover:bg-gray-100 transition-colors"
+                className="bg-gray-100 rounded-full p-1 hover:bg-gray-100 transition-colors h-[32px]"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
               >
