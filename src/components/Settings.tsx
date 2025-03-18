@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
-import { Scale, Lock } from 'lucide-react';
+import { Scale, Lock, Clock, Home } from 'lucide-react';
 import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
 
 export const Settings: React.FC = () => {
-  const { weightUnit, setWeightUnit } = useSettings();
+  const { weightUnit, setWeightUnit, disableRestTimer, setDisableRestTimer, defaultHomePage, setDefaultHomePage } = useSettings();
   const { currentWorkout } = useWorkout();
   const { updatePassword } = useAuth();
   const [newPassword, setNewPassword] = useState('');
@@ -70,6 +70,81 @@ export const Settings: React.FC = () => {
                     }`}
                   >
                     Pounds (lbs)
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex flex-col mx-0">
+                <h3 className="text-lg font-semibold mb-0">Rest Timer</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  Toggle rest timer for all workouts
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setDisableRestTimer(true)}
+                    className={`px-4 py-2 rounded-lg text-left ${
+                      disableRestTimer
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    Disable Rest Timer
+                  </button>
+                  <button
+                    onClick={() => setDisableRestTimer(false)}
+                    className={`px-4 py-2 rounded-lg text-left ${
+                      !disableRestTimer
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    Enable Rest Timer
+                  </button>
+                  <p className="text-gray-500 text-xs mt-1 px-2">
+                    You can still enable rest timers for individual workouts while in a workout session
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow-sm p-4">
+            <div className="flex flex-col items-start gap-4">
+              <div className="p-2 bg-blue-50 rounded-lg">
+                <Home className="h-6 w-6 text-blue-600" />
+              </div>
+              <div className="flex flex-col mx-0">
+                <h3 className="text-lg font-semibold mb-0">Default Home Page</h3>
+                <p className="text-gray-600 text-sm mb-4">
+                  Choose which page to show when you open the app
+                </p>
+                <div className="flex flex-col gap-2">
+                  <button
+                    onClick={() => setDefaultHomePage('routines')}
+                    className={`px-4 py-2 rounded-lg text-left ${
+                      defaultHomePage === 'routines'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    Routines
+                  </button>
+                  <button
+                    onClick={() => setDefaultHomePage('exercises')}
+                    className={`px-4 py-2 rounded-lg text-left ${
+                      defaultHomePage === 'exercises'
+                        ? 'bg-blue-50 text-blue-700'
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
+                    Exercise List
                   </button>
                 </div>
               </div>

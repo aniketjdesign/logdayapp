@@ -16,7 +16,7 @@ interface WorkoutReviewProps {
 export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }) => {
   const navigate = useNavigate();
   const { clearWorkoutState, searchLogs } = useWorkout();
-  const { weightUnit, convertWeight } = useSettings();
+  const { weightUnit, convertWeight, defaultHomePage } = useSettings();
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const [animationSegment, setAnimationSegment] = useState<[number, number]>([0, 110]);
 
@@ -128,7 +128,9 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
   const handleStartNew = () => {
     clearWorkoutState();
     onClose();
-    navigate('/');
+    // Navigate to the user's default home page instead of always going to '/'
+    const homePath = defaultHomePage === 'routines' ? '/routines' : '/';
+    navigate(homePath);
   };
 
   const { totalWeight, totalSets, totalPRs, totalDistance, totalTime } = calculateStats();

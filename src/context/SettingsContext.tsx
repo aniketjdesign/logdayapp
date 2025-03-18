@@ -6,7 +6,11 @@ import { Analytics } from '../services/analytics';
 
 interface SettingsContextType {
   weightUnit: WeightUnit;
+  disableRestTimer: boolean;
+  defaultHomePage: 'routines' | 'exercises';
   setWeightUnit: (unit: WeightUnit) => void;
+  setDisableRestTimer: (disable: boolean) => void;
+  setDefaultHomePage: (page: 'routines' | 'exercises') => void;
   convertWeight: (weight: number, from: WeightUnit, to: WeightUnit) => number;
 }
 
@@ -15,14 +19,18 @@ const SettingsContext = createContext<SettingsContextType | undefined>(undefined
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [weightUnit, setWeightUnitState] = useState<WeightUnit>('lbs');
+  const [disableRestTimer, setDisableRestTimerState] = useState<boolean>(false);
+  const [defaultHomePage, setDefaultHomePageState] = useState<'routines' | 'exercises'>('exercises');
 
   // Load settings from Supabase
   useEffect(() => {
     const loadSettings = async () => {
       if (user?.id) {
-        const { weightUnit: savedUnit, error } = await supabaseService.getUserSettings();
-        if (!error && savedUnit) {
-          setWeightUnitState(savedUnit);
+        const { weightUnit: savedUnit, disableRestTimer: savedDisableRestTimer, defaultHomePage: savedDefaultHomePage, error } = await supabaseService.getUserSettings();
+        if (!error) {
+          if (savedUnit) setWeightUnitState(savedUnit);
+          if (savedDisableRestTimer !== undefined) setDisableRestTimerState(savedDisableRestTimer);
+          if (savedDefaultHomePage) setDefaultHomePageState(savedDefaultHomePage);
         }
       }
     };
@@ -37,7 +45,31 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       previousValue: weightUnit
     });
     if (user?.id) {
-      await supabaseService.saveUserSettings(unit);
+      await supabaseService.saveUserSettings({ weightUnit: unit, disableRestTimer, defaultHomePage });
+    }
+  };
+
+  const setDisableRestTimer = async (disable: boolean) => {
+    setDisableRestTimerState(disable);
+    Analytics.settingsChanged({
+      setting: 'disableRestTimer',
+      value: disable,
+      previousValue: disableRestTimer
+    });
+    if (user?.id) {
+      await supabaseService.saveUserSettings({ weightUnit, disableRestTimer: disable, defaultHomePage });
+    }
+  };
+
+  const setDefaultHomePage = async (page: 'routines' | 'exercises') => {
+    setDefaultHomePageState(page);
+    Analytics.settingsChanged({
+      setting: 'defaultHomePage',
+      value: page,
+      previousValue: defaultHomePage
+    });
+    if (user?.id) {
+      await supabaseService.saveUserSettings({ weightUnit, disableRestTimer, defaultHomePage: page });
     }
   };
 
@@ -48,7 +80,15 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <SettingsContext.Provider value={{ weightUnit, setWeightUnit, convertWeight }}>
+    <SettingsContext.Provider value={{ 
+      weightUnit, 
+      disableRestTimer, 
+      defaultHomePage, 
+      setWeightUnit, 
+      setDisableRestTimer, 
+      setDefaultHomePage, 
+      convertWeight 
+    }}>
       {children}
     </SettingsContext.Provider>
   );

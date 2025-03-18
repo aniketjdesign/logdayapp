@@ -185,7 +185,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
       exercises: workoutExercises,
       startTime: new Date().toISOString(),
       endTime: '',
-      duration: 0
+      duration: 0,
+      workoutRestTimer: true,
+      workoutRestTimerOverride: false
     };
     
     // Initialize timer state with auto-start (not paused)

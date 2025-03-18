@@ -26,7 +26,7 @@ const {
   setSelectedExercises,
   clearWorkoutState 
 } = useWorkout();
-  const { weightUnit } = useSettings();
+  const { weightUnit, defaultHomePage } = useSettings();
   const [workoutName, setWorkoutName] = useState(currentWorkout?.name || '');
   const [duration, setDuration] = useState(0);
   const [isPaused, setIsPaused] = useState(true);
@@ -252,7 +252,9 @@ const {
       clearWorkoutState();
       localStorage.removeItem(WORKOUT_TIMER_KEY);
       setShowCancelConfirmation(false);
-      navigate('/');
+      
+      const homePath = defaultHomePage === 'routines' ? '/routines' : '/';
+      navigate(homePath);
     } catch (error) {
       console.error('Error canceling workout:', error);
       alert('Failed to cancel workout. Please try again.');

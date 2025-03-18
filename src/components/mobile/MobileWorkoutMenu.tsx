@@ -7,6 +7,7 @@ interface MobileWorkoutMenuProps {
   position: { top: number; right: number };
   isPaused: boolean;
   workoutRestTimer: boolean;
+  disableRestTimer?: boolean;
   onClose: () => void;
   onFinishWorkout: () => void;
   onPauseResume: () => void;
@@ -22,6 +23,7 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
   position,
   isPaused,
   workoutRestTimer,
+  disableRestTimer = false,
   onClose,
   onFinishWorkout,
   onPauseResume,
@@ -100,9 +102,9 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
           }}
           className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
         >
-          <Clock size={18} className={`mr-3 ${workoutRestTimer ? "text-gray-600" : "text-gray-600"}`} />
+          <Clock size={18} className="mr-3 text-gray-600" />
           <span className="text-sm font-medium">
-            {workoutRestTimer ? 'Disable Rest Timers' : 'Enable Rest Timers'}
+            {workoutRestTimer ? 'Disable Rest Timer' : 'Enable Rest Timer'}
           </span>
         </button>
         <button

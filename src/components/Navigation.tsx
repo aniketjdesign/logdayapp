@@ -15,7 +15,7 @@ export const Navigation: React.FC = () => {
   const navigateToHome = () => {
     setSelectedExercises([]);
     setCurrentView('exercises');
-    navigate('/');
+    navigate('/quickstart');
   };
 
   const navigateToWorkout = () => {
@@ -66,7 +66,7 @@ export const Navigation: React.FC = () => {
           <button
             onClick={navigateToHome}
             className={`flex flex-col items-center justify-center flex-1 py-2 ${
-              location.pathname === '/' ? 'text-blue-600' : 'text-gray-600'
+              location.pathname === '/quickstart' || location.pathname === '/' && location.key !== 'default' ? 'text-blue-600' : 'text-gray-600'
             }`}
           >
             <Zap size={24} strokeWidth={2} />

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
-import { SettingsProvider } from './context/SettingsContext';
+import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { Navigation } from './components/Navigation';
 import { ExerciseList } from './components/ExerciseList';
 import { WorkoutSession } from './components/WorkoutSession';
@@ -23,6 +23,7 @@ import ProfilePage from './pages/ProfilePage';
 const AppContent = () => {
   const { user } = useAuth();
   const { currentWorkout } = useWorkout();
+  const { defaultHomePage } = useSettings();
   const location = useLocation();
   const navigate = useNavigate();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -91,18 +92,27 @@ const AppContent = () => {
   // Hide navigation on mobile during workout
   const showNavigation = !isMobile || (isMobile && (!currentWorkout || !isWorkoutRoute));
 
+  // Determine the default home path based on user settings
+  const defaultHomePath = defaultHomePage === 'routines' ? '/routines' : '/';
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className={`${showNavigation ? "pb-16" : ""}`}>
         <Routes>
-          <Route path="/" element={<ExerciseList />} />
+          <Route path="/" element={
+            // Only redirect to default homepage when directly accessing root URL
+            defaultHomePage === 'routines' ? 
+            <Navigate to="/routines" replace /> : 
+            <ExerciseList />
+          } />
+          <Route path="/quickstart" element={<ExerciseList />} />
           <Route path="/workout" element={<WorkoutSession />} />
           <Route path="/logs" element={<WorkoutLogs />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/contact" element={<ContactForm />} />
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={defaultHomePath} replace />} />
         </Routes>
       </div>
       {showNavigation && <Navigation />}

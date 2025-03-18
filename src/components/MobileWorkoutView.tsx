@@ -79,15 +79,18 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     return initialState;
   });
 
+  const { setCurrentWorkout } = useWorkout();
+  const { weightUnit, disableRestTimer } = useSettings();
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (workout.workoutRestTimer !== undefined) {
       setWorkoutRestTimer(workout.workoutRestTimer);
+    } else {
+      // If not explicitly set in the workout, use the inverse of the global setting
+      setWorkoutRestTimer(!disableRestTimer);
     }
-  }, [workout.workoutRestTimer]);
-
-  const { setCurrentWorkout } = useWorkout();
-  const { weightUnit } = useSettings();
-  const navigate = useNavigate();
+  }, [workout.workoutRestTimer, disableRestTimer]);
 
   const getWorkoutStats = () => {
     const totalExercises = workout.exercises.length;
@@ -124,7 +127,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const handleSetComplete = (exerciseId: string) => {
-    if (workoutRestTimer && restTimerEnabled[exerciseId]) {
+    // Show rest timer if:
+    // 1. Global rest timer is not disabled OR workout-specific rest timer override is enabled
+    // 2. AND workout-level rest timer is enabled
+    // 3. AND exercise-specific rest timer is enabled
+    if (((!disableRestTimer) || workout.workoutRestTimerOverride) && workoutRestTimer && restTimerEnabled[exerciseId]) {
       setShowRestTimer(true);
     }
   };
@@ -276,9 +283,16 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const toggleWorkoutRestTimer = () => {
     const newValue = !workoutRestTimer;
     setWorkoutRestTimer(newValue);
+    
+    // If we're enabling the rest timer while it's globally disabled,
+    // we need to set the override flag
+    const needsOverride = newValue && disableRestTimer;
+    
     setCurrentWorkout({
       ...workout,
-      workoutRestTimer: newValue
+      workoutRestTimer: newValue,
+      // Set the override flag if we're enabling rest timers while they're globally disabled
+      workoutRestTimerOverride: needsOverride ? true : workout.workoutRestTimerOverride
     });
   };
 
@@ -474,6 +488,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         position={menuPosition}
         isPaused={isPaused}
         workoutRestTimer={workoutRestTimer}
+        disableRestTimer={disableRestTimer}
         onClose={() => setShowMenu(false)}
         onFinishWorkout={() => setShowFinishConfirmation(true)}
         onPauseResume={onPauseResume}
