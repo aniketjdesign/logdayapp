@@ -23,7 +23,7 @@ export function UpdateNotification({
   const handleUpdate = onUpdate || updateApp
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-[9999] bg-blue-600 text-white p-4 rounded-lg shadow-lg flex justify-between items-center animate-fade-in">
+    <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-[9999] max-w-md w-full mx-auto bg-blue-600 text-white p-4 rounded-lg shadow-lg flex justify-between items-center animate-fade-in">
       <span className="text-sm">{message}</span>
       <button
         onClick={handleUpdate}

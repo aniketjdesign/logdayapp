@@ -7,6 +7,9 @@ import { Plus } from 'lucide-react';
 import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
 import { DeleteRoutinePopup } from '../ui/Popup';
 
+// This key will be used to store in localStorage if we've shown the loading animation
+const ROUTINES_LOADING_KEY = 'logday_routines_loaded';
+
 /**
  * DeleteRoutineModal component - moved from separate file
  * Used in RoutinePreviewCard and RoutinePreviewSheet components
@@ -46,6 +49,7 @@ export const RoutineView = () => {
   const [selectedRoutine, setSelectedRoutine] = useState<any>(null);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   const handleCreateRoutine = (folderId?: string) => {
     setSelectedRoutine(null);
@@ -53,16 +57,40 @@ export const RoutineView = () => {
     setShowRoutineCreator(true);
   };
 
-  // Simulate loading for demonstration purposes
   useEffect(() => {
+    // Check if this is a page load/refresh or navigation
+    const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+    const isPageLoadOrRefresh = navigationEntries.length > 0 && 
+      (navigationEntries[0].type === "reload" || navigationEntries[0].type === "navigate");
+    
+    // Only show loading on actual page load or refresh, not on navigation between pages
+    const shouldShowLoading = isPageLoadOrRefresh && !localStorage.getItem(ROUTINES_LOADING_KEY);
+    setShowSkeleton(shouldShowLoading);
+    
+    // Simulate loading for demonstration purposes
     const timer = setTimeout(() => {
       setIsLoading(false);
+      
+      // Store that we've loaded the page
+      if (shouldShowLoading) {
+        localStorage.setItem(ROUTINES_LOADING_KEY, 'true');
+      }
     }, 200);
     
-    return () => clearTimeout(timer);
+    // Clear localStorage on page unload (refresh)
+    const handleBeforeUnload = () => {
+      localStorage.removeItem(ROUTINES_LOADING_KEY);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
-  if (isLoading) {
+  if (isLoading && showSkeleton) {
     return (
       <div className="h-full flex flex-col">
         <div className="flex-1">

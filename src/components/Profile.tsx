@@ -25,6 +25,8 @@ interface WorkoutInsights {
 // Date period options for filtering
 type DatePeriod = 'week' | 'lastWeek' | 'month' | 'year' | 'all';
 
+const PROFILE_LOADING_KEY = 'logday_profile_loaded';
+
 export const Profile: React.FC = () => {
   const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -38,6 +40,7 @@ export const Profile: React.FC = () => {
   const [datePeriod, setDatePeriod] = useState<DatePeriod>('week');
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
   
   const navigate = useNavigate();
   const { 
@@ -71,13 +74,37 @@ export const Profile: React.FC = () => {
     }
   }, [workoutLogs, datePeriod]);
 
-  // Simulate loading for demonstration purposes
   useEffect(() => {
+    // Check if this is a page load/refresh or navigation
+    const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+    const isPageLoadOrRefresh = navigationEntries.length > 0 && 
+      (navigationEntries[0].type === "reload" || navigationEntries[0].type === "navigate");
+    
+    // Only show loading on actual page load or refresh, not on navigation between pages
+    const shouldShowLoading = isPageLoadOrRefresh && !localStorage.getItem(PROFILE_LOADING_KEY);
+    setShowSkeleton(shouldShowLoading);
+    
+    // Simulate loading for demonstration purposes
     const timer = setTimeout(() => {
       setIsLoading(false);
+      
+      // Store that we've loaded the page
+      if (shouldShowLoading) {
+        localStorage.setItem(PROFILE_LOADING_KEY, 'true');
+      }
     }, 200);
     
-    return () => clearTimeout(timer);
+    // Clear localStorage on page unload (refresh)
+    const handleBeforeUnload = () => {
+      localStorage.removeItem(PROFILE_LOADING_KEY);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   // Calculate all workout insights
@@ -94,13 +121,23 @@ export const Profile: React.FC = () => {
 
   // Calculate weekly workouts
   const calculateWeeklyWorkouts = (logs: WorkoutLog[]): number => {
-    // Get workouts from the last week
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    // Get the current date
+    const today = new Date();
     
+    // Calculate the start of the week (Sunday)
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay()); // Sunday (0) of current week
+    startOfWeek.setHours(0, 0, 0, 0); // Start of the day
+    
+    // Calculate the end of the week (Saturday)
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6); // Saturday (6) of current week
+    endOfWeek.setHours(23, 59, 59, 999); // End of the day
+    
+    // Filter logs to only include those within the current week (Sunday to Saturday)
     const weeklyLogs = logs.filter(log => {
       const logDate = new Date(log.endTime);
-      return logDate >= oneWeekAgo;
+      return logDate >= startOfWeek && logDate <= endOfWeek;
     });
     
     return weeklyLogs.length;
@@ -270,7 +307,7 @@ export const Profile: React.FC = () => {
 
   return (
     <>
-      {isLoading ? (
+      {isLoading && showSkeleton ? (
         // Skeleton loading state
         <div className="px-4 pt-8 pb-32">
           {/* Skeleton for heading */}

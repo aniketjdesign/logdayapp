@@ -13,24 +13,59 @@ import { supabaseService } from '../services/supabaseService';
 import { exercises } from '../data/exercises';
 import { ExerciseSelector } from './ExerciseSelector';
 
+// This key will be used to store in localStorage if we've shown the loading animation
+const LOADING_KEY = 'logday_quickstart_loaded';
+
 export const ExerciseList: React.FC = () => {
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [recentExercises, setRecentExercises] = useState<Exercise[]>([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [showSkeleton, setShowSkeleton] = useState(false);
   const navigate = useNavigate();
   const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout, setCurrentView } = useWorkout();
 
   useEffect(() => {
+    // Check if this is a page load/refresh or navigation
+    // Navigation performance entry type will be "navigate"
+    const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+    const isPageLoadOrRefresh = navigationEntries.length > 0 && 
+      (navigationEntries[0].type === "reload" || navigationEntries[0].type === "navigate");
+    
+    // Only show loading on actual page load or refresh, not on navigation between pages
+    const shouldShowLoading = isPageLoadOrRefresh && !localStorage.getItem(LOADING_KEY);
+    setShowSkeleton(shouldShowLoading);
+    
     const loadData = async () => {
-      await Promise.all([
-        loadCustomExercises(),
-        loadRecentExercises()
-      ]);
-      setIsLoading(false);
+      try {
+        await Promise.all([
+          loadCustomExercises(),
+          loadRecentExercises()
+        ]);
+        
+        // Store that we've loaded the page
+        if (shouldShowLoading) {
+          localStorage.setItem(LOADING_KEY, 'true');
+        }
+        
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        setIsLoading(false);
+      }
     };
     
     loadData();
+    
+    // Clear localStorage on page unload (refresh)
+    const handleBeforeUnload = () => {
+      localStorage.removeItem(LOADING_KEY);
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const loadCustomExercises = async () => {
@@ -94,7 +129,7 @@ export const ExerciseList: React.FC = () => {
     }, {} as { [key: string]: Exercise[] });
   }, []);
 
-  if (isLoading) {
+  if (isLoading && showSkeleton) {
     return (
       <div className="h-full max-w-3xl mx-auto">
         <div className="px-4 py-0">

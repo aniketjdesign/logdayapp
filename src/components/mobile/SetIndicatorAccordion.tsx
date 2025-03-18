@@ -5,7 +5,6 @@ import { useWorkout } from '../../context/WorkoutContext';
 
 interface SetIndicatorAccordionProps {
   set: WorkoutSet;
-  showSetTypeMenu: boolean;
 }
 
 interface SetIndicatorAccordionContentProps {
@@ -21,7 +20,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
   Content: React.FC<SetIndicatorAccordionContentProps>
 } = ({
   set,
-  showSetTypeMenu,
 }) => {
   // Get set type abbreviation
   const getSetTypeAbbreviation = () => {
@@ -137,8 +135,8 @@ SetIndicatorAccordion.Content = ({
   // Note state
   const [note, setNote] = useState(set.comments || '');
 
-  // Get the most recent note for this exercise and set number
-  const lastNote = exerciseId ? workoutLogs
+  // Get the most recent notes for this exercise and set number
+  const recentNotes = exerciseId ? workoutLogs
     .flatMap(log => 
       log.exercises
         .filter(ex => ex.exercise.id === exerciseId)
@@ -151,35 +149,37 @@ SetIndicatorAccordion.Content = ({
             }))
         )
     )
-    .sort((a, b) => b.date.getTime() - a.date.getTime())[0] : null;
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 2) : []; // Get last 2 pinned notes
     
-  // Set the last note as pinned by default when it's available
+  // No auto-pinning of previous notes
   useEffect(() => {
-    if (lastNote && !set.comments) {
-      setNote(lastNote.note);
+    // Initialize with existing comment if available
+    if (set.comments) {
+      setNote(set.comments);
     }
-  }, [lastNote, set.comments]);
+  }, [set.comments]);
 
-  // Handle unpinning all notes
-  const handleUnpinAllNotes = () => {
-    setNote('');
-    if (onUpdateNote) {
-      onUpdateNote(null);
-    }
-  };
-
-  // Pin the last note
-  const handlePinLastNote = () => {
-    if (lastNote && onUpdateNote) {
-      onUpdateNote(lastNote.note);
-    }
-  };
-
-  // Handle pinning the current note
-  const handlePinCurrentNote = () => {
-    if (note.trim() && onUpdateNote) {
+  // Toggle pin/unpin note
+  const togglePinNote = () => {
+    if (set.comments) {
+      // If note is already pinned, unpin it
+      if (onUpdateNote) {
+        onUpdateNote(null);
+      }
+    } else if (note.trim() && onUpdateNote) {
+      // If note is not pinned, pin it
       onUpdateNote(note);
     }
+  };
+
+  // Format date for display
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric',
+      year: date.getFullYear() !== new Date().getFullYear() ? 'numeric' : undefined
+    });
   };
 
   const buttonStyles = {
@@ -209,7 +209,6 @@ SetIndicatorAccordion.Content = ({
     type: 'isWarmup' | 'isDropset' | 'isFailure' | 'isPR',
     label: string,
     style: typeof buttonStyles.warmup,
-    isNew: boolean = false,
     disabled: boolean = false
   ) => {
     const isSelected = set[type];
@@ -244,7 +243,6 @@ SetIndicatorAccordion.Content = ({
           'isWarmup', 
           'Warmup', 
           buttonStyles.warmup, 
-          false, 
           hasNonWarmupType
         )}
         
@@ -253,7 +251,6 @@ SetIndicatorAccordion.Content = ({
           'isPR', 
           'PR', 
           buttonStyles.pr, 
-          false, 
           set.isWarmup
         )}
         
@@ -262,7 +259,6 @@ SetIndicatorAccordion.Content = ({
           'isFailure', 
           'Failure', 
           buttonStyles.failure, 
-          false, 
           set.isWarmup
         )}
         
@@ -271,7 +267,6 @@ SetIndicatorAccordion.Content = ({
           'isDropset', 
           'Dropset', 
           buttonStyles.dropset, 
-          false, 
           set.isWarmup
         )}
       </div>
@@ -284,59 +279,62 @@ SetIndicatorAccordion.Content = ({
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Add a note..."
-              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder={set.comments ? "Unpin to edit note" : "Add a note..."}
+              className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                set.comments ? 'bg-gray-100 cursor-not-allowed' : ''
+              }`}
               value={note}
               onChange={(e) => setNote(e.target.value)}
+              disabled={!!set.comments}
+              readOnly={!!set.comments}
             />
             
             <div className="flex gap-1">
-              {set.comments && (
-                <button
-                  onClick={handleUnpinAllNotes}
-                  className="p-1 text-gray-500 hover:text-gray-700 rounded-md"
-                  title="Unpin note"
-                >
-                  <Pin size={16} style={{ transform: 'rotate(45deg)' }} />
-                </button>
-              )}
               <button
-                onClick={() => {
-                  if (note.trim()) {
-                    handlePinCurrentNote();
-                  }
-                }}
-                disabled={!note.trim()}
-                className={`p-1 rounded-md ${
-                  note.trim() 
-                    ? 'text-blue-600 hover:text-blue-700' 
-                    : 'text-gray-300 cursor-not-allowed'
+                onClick={togglePinNote}
+                disabled={!note.trim() && !set.comments}
+                className={`p-1.5 rounded-md flex items-center justify-center ${
+                  set.comments
+                    ? 'bg-amber-500 hover:bg-amber-600' 
+                    : note.trim()
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-gray-300 cursor-not-allowed'
                 }`}
-                title="Pin note"
+                title={set.comments ? "Unpin note" : "Pin note"}
               >
-                <Pin size={16} />
+                <Pin 
+                  size={16} 
+                  className="text-white" 
+                  style={set.comments ? { transform: 'rotate(45deg)' } : undefined} 
+                />
               </button>
             </div>
           </div>
 
-          {/* Last Note - shown in a more compact way */}
-          {lastNote && !set.comments && (
-            <div className="flex items-center text-xs gap-1 text-gray-600">
-              <History size={12} className="text-gray-500 flex-shrink-0" />
-              <span 
-                className="flex-1 cursor-pointer hover:text-gray-800 truncate"
-                onClick={() => setNote(lastNote.note)}
-                title={lastNote.note}
-              >
-                {lastNote.note}
-              </span>
-              <button
-                onClick={handlePinLastNote}
-                className="text-gray-500 hover:text-blue-600 p-0.5 rounded-md flex-shrink-0"
-                title="Pin previous note"
-              >
-                <Pin size={12} />
-              </button>
+          {/* Past Notes Section - showing last 2 pinned notes with date stamp */}
+          {recentNotes.length > 0 && (
+            <div className="space-y-1 px-1">
+              <div className="flex items-center text-xs text-gray-600">
+                <History size={12} className="text-gray-400 mr-0.5 flex-shrink-0" />
+                <span className="text-xs font-medium text-gray-400">Past Notes</span>
+              </div>
+              
+              {recentNotes.map((pastNote, index) => (
+                <div key={index} className="flex items-center text-xs text-gray-600 bg-gray-50 p-1 border-b border-gray-200">
+                  <div className="flex flex-row justify-between w-full">
+                    <div 
+                      className="cursor-pointer hover:text-gray-800 line-clamp-2"
+                      onClick={() => setNote(pastNote.note)}
+                      title={pastNote.note}
+                    >
+                      {pastNote.note}
+                    </div>
+                    <div className="text-gray-400">
+                      {formatDate(pastNote.date)}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
