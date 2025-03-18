@@ -144,7 +144,7 @@ export const Settings: React.FC = () => {
                         : 'hover:bg-gray-50'
                     }`}
                   >
-                    Exercise List
+                    Quick Start
                   </button>
                 </div>
               </div>
