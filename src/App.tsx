@@ -12,7 +12,6 @@ import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage';
-
 import { LogDayLogo } from './components/LogDayLogo';
 import { ContactForm } from './components/ContactForm';
 import { UpdateNotification } from './components/UpdateNotification';
