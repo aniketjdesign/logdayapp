@@ -68,6 +68,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
               onExerciseSelect={handleExerciseSelect}
               onAddCustomExercise={() => setIsAddModalOpen(true)}
               currentWorkout={false}
+              stickyTopPosition="top-0"
             />
           </div>
 

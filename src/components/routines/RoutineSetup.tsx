@@ -146,6 +146,22 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
 
+  // Hide navigation when RoutineSetup is mounted
+  useEffect(() => {
+    // Hide navigation
+    const navElement = document.querySelector('.fixed.bottom-0.left-0.right-0');
+    if (navElement) {
+      navElement.classList.add('hidden');
+    }
+
+    // Show navigation when component unmounts
+    return () => {
+      if (navElement) {
+        navElement.classList.remove('hidden');
+      }
+    };
+  }, []);
+
   // Initialize exercise data with initial values if provided
   useEffect(() => {
     if (routine?.exercises) {
@@ -331,7 +347,9 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   return (
     <div className="fixed inset-0 bg-gray-50 z-50">
       <div className="flex flex-col h-full">
-        <div className="border-b">
+        <div className="border-b" style={{
+          paddingTop: 'env(safe-area-inset-top)'
+        }}>
           <div className="flex items-center justify-between p-4">
             <h1 className="text-lg font-bold">
               {routine ? 'Edit Routine' : 'Create Routine'}
@@ -350,7 +368,9 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
         </div>
 
         <div className="flex-1 overflow-auto">
-          <div className="p-4 space-y-6 pb-20 max-w-2xl mx-auto">
+          <div className="p-4 space-y-6 max-w-2xl mx-auto" style={{
+            paddingBottom: 'max(5rem, calc(5rem + env(safe-area-inset-bottom)))'
+          }}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -558,18 +578,18 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
             </div>
           </div>
         </div>
-        <div className="flex items-center p-4">
-        <LoadingButton
-              onClick={handleSave}
-              isLoading={isSaving}
-              className="text-md font-medium w-full py-3"
-            >
-              {routine ? 'Update' : 'Create'} Routine
-            </LoadingButton>
+        <div className="flex items-center p-4" style={{
+          paddingBottom: 'max(1rem, calc(1rem + env(safe-area-inset-bottom)))'
+        }}>
+          <LoadingButton
+            onClick={handleSave}
+            isLoading={isSaving}
+            className="text-md font-medium w-full py-3"
+          >
+            {routine ? 'Update' : 'Create'} Routine
+          </LoadingButton>
         </div>
       </div>
-
-      
 
       {/* Exercise Selection Modal */}
       {showExerciseSelector && (

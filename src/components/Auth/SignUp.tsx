@@ -130,7 +130,7 @@ export const SignUp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-50">
+    <div className="min-h-screen flex flex-col justify-between bg-gray-50 safe-area-inset-top safe-area-inset-bottom">
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">

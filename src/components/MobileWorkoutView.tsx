@@ -297,7 +297,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   return (
-    <div className="md:hidden app-layout bg-gray-50">
+    <div className="md:hidden app-layout bg-gray-50 safe-area-inset-left safe-area-inset-right">
       <MobileWorkoutHeader
         workoutName={workoutName}
         duration={duration}
@@ -309,7 +309,13 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onPauseResume={onPauseResume}
       />
 
-      <div className="px-4 space-y-6 pt-32 pb-40">
+      <div 
+        className="px-4 space-y-6 pb-40 overflow-y-auto" 
+        style={{
+          paddingTop: 'max(6rem, calc(6rem + env(safe-area-inset-top)))',
+          paddingBottom: 'max(10rem, calc(10rem + env(safe-area-inset-bottom)))'
+        }}
+      >
         <AnimatePresence>
           {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
             if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {

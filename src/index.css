@@ -2,6 +2,74 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Safe area variables and padding for notch handling - iOS specific */
+:root {
+  /* Default fallbacks if env() is not supported */
+  --ion-safe-area-top: 0px;
+  --ion-safe-area-bottom: 0px;
+  --ion-safe-area-left: 0px;
+  --ion-safe-area-right: 0px;
+}
+
+/* iOS specific safe areas using supports query */
+@supports(padding-top: env(safe-area-inset-top)) {
+  :root {
+    --ion-safe-area-top: env(safe-area-inset-top);
+    --ion-safe-area-bottom: env(safe-area-inset-bottom);
+    --ion-safe-area-left: env(safe-area-inset-left);
+    --ion-safe-area-right: env(safe-area-inset-right);
+  }
+  
+  /* Add padding to body for iOS to respect safe areas */
+  body {
+    padding-top: var(--ion-safe-area-top);
+    padding-bottom: var(--ion-safe-area-bottom);
+    padding-left: var(--ion-safe-area-left);
+    padding-right: var(--ion-safe-area-right);
+  }
+}
+
+/* Apply safe area padding to app container */
+.app-container {
+  padding-top: var(--ion-safe-area-top);
+  padding-bottom: var(--ion-safe-area-bottom);
+  padding-left: var(--ion-safe-area-left);
+  padding-right: var(--ion-safe-area-right);
+}
+
+/* Header-specific safe area adjustments */
+.safe-area-header {
+  padding-top: var(--ion-safe-area-top);
+}
+
+/* Sticky elements need to respect safe area */
+.sticky-top-safe {
+  top: var(--ion-safe-area-top);
+}
+
+/* Bottom navigation safe area */
+.safe-area-bottom {
+  padding-bottom: var(--ion-safe-area-bottom);
+}
+
+/* Workout click blocker overlay */
+#workout-click-blocker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: transparent;
+  z-index: 30;
+  pointer-events: all;
+}
+
+/* Ensure Navigation component remains clickable above the overlay */
+.fixed.bottom-0.z-40 {
+  pointer-events: auto !important;
+  z-index: 40 !important;
+}
+
 /* Prevent iOS zoom on input focus */
 @supports (-webkit-touch-callout: none) {
   input, textarea, select {
@@ -83,7 +151,7 @@
 .app-layout {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  max-height: 100vh;
   overflow: hidden;
 }
 
@@ -108,5 +176,25 @@
 @supports (-webkit-touch-callout: none) {
   .app-content {
     padding-bottom: calc(env(safe-area-inset-bottom, 120px) + 120px);
+  }
+}
+
+/* iOS-specific fixes for scrolling */
+.ios-fix-scroll {
+  -webkit-overflow-scrolling: touch;
+  touch-action: manipulation;
+  height: 100%;
+  position: relative;
+  overscroll-behavior: none;
+}
+
+/* Prevent unwanted scrolling on iOS when there's no content to scroll */
+@supports (-webkit-touch-callout: none) {
+  .ios-fix-scroll {
+    overflow: auto;
+  }
+  
+  .ios-fix-scroll::-webkit-scrollbar {
+    display: none;
   }
 }

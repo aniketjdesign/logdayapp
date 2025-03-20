@@ -18,6 +18,8 @@ import { UpdateNotification } from './components/UpdateNotification';
 import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
 import ProfilePage from './pages/ProfilePage';
+import { Capacitor } from '@capacitor/core';
+import { capacitorService } from './services/capacitor';
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -29,6 +31,7 @@ const AppContent = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isWorkoutRoute = location.pathname === '/workout';
+  const isIOS = Capacitor.getPlatform() === 'ios';
 
   // Handle initial route and loading
   useEffect(() => {
@@ -43,6 +46,11 @@ const AppContent = () => {
     // Handle loading state
     const timer = setTimeout(() => {
       setIsLoading(false);
+      
+      // Hide the splash screen when the app is fully loaded
+      if (Capacitor.isNativePlatform()) {
+        capacitorService.hideSplashScreen();
+      }
     }, 500);
     
     return () => clearTimeout(timer);
@@ -50,6 +58,11 @@ const AppContent = () => {
 
   // Show loading state while checking auth and workout status
   if (isLoading) {
+    // Skip showing loading animation on iOS as we're using the native splash screen
+    if (isIOS) {
+      return null;
+    }
+    
     // Show skeleton loader for workout route when there's an active workout
     if (currentWorkout && isWorkoutRoute) {
       return <WorkoutSkeleton />;
@@ -95,8 +108,8 @@ const AppContent = () => {
   const defaultHomePath = defaultHomePage === 'routines' ? '/routines' : '/';
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className={`${showNavigation ? "pb-16" : ""}`}>
+    <div className="max-h-screen bg-gray-50">
+      <div className={`${showNavigation ? "" : ""}`}>
         <Routes>
           <Route path="/" element={
             // Only redirect to default homepage when directly accessing root URL

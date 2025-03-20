@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
 import { LogDayLogo } from './LogDayLogo';
 import { MuscleGroup, WorkoutLog } from '../types/workout';
+import { PageHeader } from './ui/PageHeader';
+import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
 
 declare global {
   interface Window {
@@ -52,6 +54,7 @@ export const Profile: React.FC = () => {
   const { isInstallable, isIOS } = useInstallPrompt();
   const cannyInitialized = useRef(false);
   const dateSelectorRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Close date selector when clicking outside
   useEffect(() => {
@@ -375,283 +378,278 @@ export const Profile: React.FC = () => {
         </div>
       ) : (
         <>
-          <motion.div 
-            className="px-4"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.35 }}>
-            <motion.div 
-              className="heading-wrapper flex-col gap-y-2 pt-8 pb-3"
-              initial={{ y: 20, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ duration: 0.35, delay: 0.05 }}>
-              <motion.h1 
-                className="text-2xl font-semibold tracking-tight text-slate-800"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: 0.1 }}>
-                Profile
-              </motion.h1>
-              <motion.p 
-                className="text-sm text-gray-500"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: 0.12 }}>
-                Configure settings, view your profile and more.
-              </motion.p>
-            </motion.div>
-          </motion.div>
-
-          <div className="pt-4 pb-32 px-4">
-            {/* User Info Card */}
-            <motion.div 
-              className="flex flex-row items-center p-5 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6 rounded-xl shadow-sm"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.15 }}>
-              <div className="bg-blue-100 rounded-full p-3 mr-4">
-                <User size={24} strokeWidth={2} className="text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-lg font-medium text-gray-800">{user?.email?.split('@')[0] || 'User'}</h2>
-                <p className="text-sm text-gray-500">{user?.email}</p>
-              </div>
-            </motion.div>
-
-            {/* Workout Insights */}
-            <motion.div 
-              className="mb-6"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}>
-              <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center">
-                <BarChart size={16} className="mr-2 text-blue-500" />
-                Workout Insights
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                {/* Total Workouts */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                  <div className="flex items-center mb-2">
-                    <TrendingUp size={16} className="text-blue-500 mr-2" />
-                    <span className="text-xs font-medium text-gray-500">Total Workouts</span>
-                  </div>
-                  <div className="flex items-baseline">
-                    <span className="text-2xl font-bold text-gray-800 mr-1">{insights.totalWorkouts}</span>
-                    <span className="text-xs text-gray-500">completed</span>
-                  </div>
-                </div>
+          <div className="h-full flex flex-col">
+          <div>
+          {currentWorkout && <OngoingWorkoutMessage />}
+        </div>
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {/* Scrollable content area */}
+              <div 
+                ref={scrollContainerRef} 
+                className="flex-1 overflow-y-auto pb-20"
+                style={{ WebkitOverflowScrolling: 'touch' }}>
                 
-                {/* Weekly Workouts */}
-                <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-                  <div className="flex items-center mb-2">
-                    <Clock size={16} className="text-green-500 mr-2" />
-                    <span className="text-xs font-medium text-gray-500">This Week</span>
-                  </div>
-                  <div className="flex items-baseline">
-                    <span className="text-2xl font-bold text-gray-800 mr-1">{insights.weeklyWorkouts}</span>
-                    <span className="text-xs text-gray-500">workouts</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* All Muscle Groups with Date Selector */}
-              <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center">
-                    <Award size={16} className="text-amber-500 mr-2" />
-                    <span className="text-xs font-medium text-gray-500">Muscle Groups</span>
-                  </div>
+                <div className="max-w-2xl mx-auto">
+                  <PageHeader
+                    title="Profile"
+                    subtitle="Configure settings, view your profile and more."
+                    scrollContainerRef={scrollContainerRef}
+                  />
                   
-                  {/* Date Period Selector */}
-                  <div className="relative" ref={dateSelectorRef}>
-                    <button 
-                      onClick={() => setShowDateSelector(!showDateSelector)}
-                      className="flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md"
-                    >
-                      {getDatePeriodText()}
-                      <ChevronDown size={14} className="ml-1" />
-                    </button>
-                    
-                    {showDateSelector && (
-                      <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-md border border-gray-100 z-10 w-32 py-1">
-                        <button 
-                          className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'week' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                          onClick={() => {
-                            setDatePeriod('week');
-                            setShowDateSelector(false);
-                          }}
-                        >
-                          This Week
-                        </button>
-                        <button 
-                          className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'lastWeek' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                          onClick={() => {
-                            setDatePeriod('lastWeek');
-                            setShowDateSelector(false);
-                          }}
-                        >
-                          Last Week
-                        </button>
-                        <button 
-                          className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'month' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                          onClick={() => {
-                            setDatePeriod('month');
-                            setShowDateSelector(false);
-                          }}
-                        >
-                          This Month
-                        </button>
-                        <button 
-                          className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'year' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                          onClick={() => {
-                            setDatePeriod('year');
-                            setShowDateSelector(false);
-                          }}
-                        >
-                          This Year
-                        </button>
-                        <button 
-                          className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
-                          onClick={() => {
-                            setDatePeriod('all');
-                            setShowDateSelector(false);
-                          }}
-                        >
-                          All Time
-                        </button>
+                  <div className="pt-4 pb-32 px-4">
+                    {/* User Info Card */}
+                    <motion.div 
+                      className="flex flex-row items-center p-5 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6 rounded-xl shadow-sm"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.15 }}>
+                      <div className="bg-blue-100 rounded-full p-3 mr-4">
+                        <User size={24} strokeWidth={2} className="text-blue-600" />
                       </div>
+                      <div>
+                        <h2 className="text-lg font-medium text-gray-800">{user?.email?.split('@')[0] || 'User'}</h2>
+                        <p className="text-sm text-gray-500">{user?.email}</p>
+                      </div>
+                    </motion.div>
+
+                    {/* Workout Insights */}
+                    <motion.div 
+                      className="mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}>
+                      <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                        <BarChart size={16} className="mr-2 text-blue-500" />
+                        Workout Insights
+                      </h3>
+                      
+                      <div className="grid grid-cols-2 gap-3 mb-4">
+                        {/* Total Workouts */}
+                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                          <div className="flex items-center mb-2">
+                            <TrendingUp size={16} className="text-blue-500 mr-2" />
+                            <span className="text-xs font-medium text-gray-500">Total Workouts</span>
+                          </div>
+                          <div className="flex items-baseline">
+                            <span className="text-2xl font-bold text-gray-800 mr-1">{insights.totalWorkouts}</span>
+                            <span className="text-xs text-gray-500">completed</span>
+                          </div>
+                        </div>
+                        
+                        {/* Weekly Workouts */}
+                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+                          <div className="flex items-center mb-2">
+                            <Clock size={16} className="text-green-500 mr-2" />
+                            <span className="text-xs font-medium text-gray-500">This Week</span>
+                          </div>
+                          <div className="flex items-baseline">
+                            <span className="text-2xl font-bold text-gray-800 mr-1">{insights.weeklyWorkouts}</span>
+                            <span className="text-xs text-gray-500">workouts</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* All Muscle Groups with Date Selector */}
+                      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center">
+                            <Award size={16} className="text-amber-500 mr-2" />
+                            <span className="text-xs font-medium text-gray-500">Muscle Groups</span>
+                          </div>
+                          
+                          {/* Date Period Selector */}
+                          <div className="relative" ref={dateSelectorRef}>
+                            <button 
+                              onClick={() => setShowDateSelector(!showDateSelector)}
+                              className="flex items-center text-xs font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded-md"
+                            >
+                              {getDatePeriodText()}
+                              <ChevronDown size={14} className="ml-1" />
+                            </button>
+                            
+                            {showDateSelector && (
+                              <div className="absolute right-0 mt-1 bg-white rounded-lg shadow-md border border-gray-100 z-10 w-32 py-1">
+                                <button 
+                                  className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'week' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    setDatePeriod('week');
+                                    setShowDateSelector(false);
+                                  }}
+                                >
+                                  This Week
+                                </button>
+                                <button 
+                                  className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'lastWeek' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    setDatePeriod('lastWeek');
+                                    setShowDateSelector(false);
+                                  }}
+                                >
+                                  Last Week
+                                </button>
+                                <button 
+                                  className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'month' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    setDatePeriod('month');
+                                    setShowDateSelector(false);
+                                  }}
+                                >
+                                  This Month
+                                </button>
+                                <button 
+                                  className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'year' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    setDatePeriod('year');
+                                    setShowDateSelector(false);
+                                  }}
+                                >
+                                  This Year
+                                </button>
+                                <button 
+                                  className={`w-full text-left px-3 py-1.5 text-xs ${datePeriod === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-50'}`}
+                                  onClick={() => {
+                                    setDatePeriod('all');
+                                    setShowDateSelector(false);
+                                  }}
+                                >
+                                  All Time
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        {getTrainedMuscleGroups().length > 0 ? (
+                          <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                            {getTrainedMuscleGroups().map((muscle, index) => (
+                              <div key={muscle.name} className="space-y-1">
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="font-medium text-gray-700">{muscle.name}</span>
+                                  <span className="text-gray-500">{muscle.sets} sets</span>
+                                </div>
+                                <div className="w-full bg-gray-100 rounded-full h-2">
+                                  <div 
+                                    className={`h-2 rounded-full ${
+                                      index % 3 === 0 ? 'bg-blue-500' : 
+                                      index % 3 === 1 ? 'bg-indigo-500' : 'bg-purple-500'
+                                    }`}
+                                    style={{ 
+                                      width: `${Math.min(100, (muscle.sets / getMaxSets()) * 100)}%` 
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-500 italic">No workouts recorded {datePeriod === 'all' ? 'yet' : `this ${datePeriod}`}</p>
+                        )}
+                      </div>
+
+                    </motion.div>
+
+                    {/* Settings and Actions */}
+                    <motion.div
+                      className="rounded-xl overflow-hidden shadow-sm border border-gray-100 mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}>
+                      <button
+                        onClick={navigateToSettings}
+                        className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
+                      >
+                        <Settings size={18} strokeWidth={2} className="mr-3 text-gray-500" />
+                        Settings
+                      </button>
+                      <button
+                        onClick={navigateToContact}
+                        className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
+                      >
+                        <MessageSquare size={18} className="mr-3 text-gray-500" />
+                        <span>Contact</span>
+                      </button>
+                      <button
+                        onClick={handleRefresh}
+                        disabled={isRefreshing}
+                        className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
+                      >
+                        <RefreshCw size={18} strokeWidth={2} className={`mr-3 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        <span>{isRefreshing ? 'Refreshing...' : 'Refresh App'}</span>
+                      </button>
+                      {/* <button
+                        onClick={() => {
+                          if (!cannyInitialized.current) {
+                            setIsCannyLoading(true);
+                            if (window.Canny && user?.email) {
+                              cannyInitialized.current = true;
+                              window.Canny('identify', {
+                                appID: '672e7aa3fb3f5695ec02ebee',
+                                user: {
+                                  email: `${user.id}@logday.app`,
+                                  id: user.id,
+                                  name: `User_${user.id.slice(0, 8)}`,
+                                },
+                              });
+                              window.Canny('initChangelog', {
+                                appID: '672e7aa3fb3f5695ec02ebee',
+                                position: 'bottom',
+                                align: 'right',
+                                theme: 'light',
+                                onLoad: () => setIsCannyLoading(false)
+                              });
+                            } else {
+                              setTimeout(() => setIsCannyLoading(false), 3000);
+                            }
+                          }
+                        }}
+                        data-canny-changelog
+                        className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 font-medium text-sm flex items-center"
+                        disabled={isCannyLoading}
+                      >
+                        <Bell size={18} strokeWidth={2} className="mr-3 text-gray-500" />
+                        <span>{isCannyLoading ? 'Loading...' : 'What\'s New'}</span>
+                      </button> */}
+                    </motion.div>
+
+                    {isInstallable && (
+                      <motion.div 
+                        className="p-4 bg-blue-50 rounded-xl mt-6 mb-4 shadow-sm"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: 0.2 }}>
+                        <div className="flex items-center text-blue-800 mb-1.5">
+                          <Share size={16} strokeWidth={2} className="mr-2 flex-shrink-0" />
+                          <span className="text-sm font-medium">Install Logday App</span>
+                        </div>
+                        <p className="text-xs text-blue-600 leading-relaxed">
+                          {isIOS ? 
+                            "Tap the share button in your browser and select 'Add to Home Screen'" :
+                            "Click the install button in your browser's address bar"}
+                        </p>
+                      </motion.div>
                     )}
+
+                    <motion.div 
+                      className="mt-6 space-y-4"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.2 }}>
+                      <button
+                        onClick={handleLogoutClick}
+                        disabled={isLoggingOut}
+                        className="w-full py-3 text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm"
+                      >
+                        <LogOut size={16} strokeWidth={2} />
+                        <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
+                      </button>
+                    </motion.div>
+
+                    <div className="flex justify-center mt-10">
+                      <LogDayLogo />
+                    </div>
                   </div>
                 </div>
-                
-                {getTrainedMuscleGroups().length > 0 ? (
-                  <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                    {getTrainedMuscleGroups().map((muscle, index) => (
-                      <div key={muscle.name} className="space-y-1">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-medium text-gray-700">{muscle.name}</span>
-                          <span className="text-gray-500">{muscle.sets} sets</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-2">
-                          <div 
-                            className={`h-2 rounded-full ${
-                              index % 3 === 0 ? 'bg-blue-500' : 
-                              index % 3 === 1 ? 'bg-indigo-500' : 'bg-purple-500'
-                            }`}
-                            style={{ 
-                              width: `${Math.min(100, (muscle.sets / getMaxSets()) * 100)}%` 
-                            }}
-                          ></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-gray-500 italic">No workouts recorded {datePeriod === 'all' ? 'yet' : `this ${datePeriod}`}</p>
-                )}
               </div>
-
-            </motion.div>
-
-            {/* Settings and Actions */}
-            <motion.div
-              className="rounded-xl overflow-hidden shadow-sm border border-gray-100 mb-6"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}>
-              <button
-                onClick={navigateToSettings}
-                className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
-              >
-                <Settings size={18} strokeWidth={2} className="mr-3 text-gray-500" />
-                Settings
-              </button>
-              <button
-                onClick={navigateToContact}
-                className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
-              >
-                <MessageSquare size={18} className="mr-3 text-gray-500" />
-                <span>Contact</span>
-              </button>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
-              >
-                <RefreshCw size={18} strokeWidth={2} className={`mr-3 text-gray-500 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span>{isRefreshing ? 'Refreshing...' : 'Refresh App'}</span>
-              </button>
-              {/* <button
-                onClick={() => {
-                  if (!cannyInitialized.current) {
-                    setIsCannyLoading(true);
-                    if (window.Canny && user?.email) {
-                      cannyInitialized.current = true;
-                      window.Canny('identify', {
-                        appID: '672e7aa3fb3f5695ec02ebee',
-                        user: {
-                          email: `${user.id}@logday.app`,
-                          id: user.id,
-                          name: `User_${user.id.slice(0, 8)}`,
-                        },
-                      });
-                      window.Canny('initChangelog', {
-                        appID: '672e7aa3fb3f5695ec02ebee',
-                        position: 'bottom',
-                        align: 'right',
-                        theme: 'light',
-                        onLoad: () => setIsCannyLoading(false)
-                      });
-                    } else {
-                      setTimeout(() => setIsCannyLoading(false), 3000);
-                    }
-                  }
-                }}
-                data-canny-changelog
-                className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 font-medium text-sm flex items-center"
-                disabled={isCannyLoading}
-              >
-                <Bell size={18} strokeWidth={2} className="mr-3 text-gray-500" />
-                <span>{isCannyLoading ? 'Loading...' : 'What\'s New'}</span>
-              </button> */}
-            </motion.div>
-
-            {isInstallable && (
-              <motion.div 
-                className="p-4 bg-blue-50 rounded-xl mt-6 mb-4 shadow-sm"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: 0.2 }}>
-                <div className="flex items-center text-blue-800 mb-1.5">
-                  <Share size={16} strokeWidth={2} className="mr-2 flex-shrink-0" />
-                  <span className="text-sm font-medium">Install Logday App</span>
-                </div>
-                <p className="text-xs text-blue-600 leading-relaxed">
-                  {isIOS ? 
-                    "Tap the share button in your browser and select 'Add to Home Screen'" :
-                    "Click the install button in your browser's address bar"}
-                </p>
-              </motion.div>
-            )}
-
-            <motion.div 
-              className="mt-6 space-y-4"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}>
-              <button
-                onClick={handleLogoutClick}
-                disabled={isLoggingOut}
-                className="w-full py-3 text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-sm"
-              >
-                <LogOut size={16} strokeWidth={2} />
-                <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-              </button>
-            </motion.div>
-
-            <div className="flex justify-center mt-10">
-              <LogDayLogo />
             </div>
           </div>
           

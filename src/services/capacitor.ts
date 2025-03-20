@@ -40,7 +40,7 @@ export class CapacitorService {
 
     // Set up status bar
     try {
-      await StatusBar.setStyle({ style: Style.Dark });
+      await StatusBar.setStyle({ style: Style.Light });
       // If we're on iOS, make the status bar overlay the content
       const info = await Device.getInfo();
       if (info.platform === 'ios') {
@@ -50,7 +50,16 @@ export class CapacitorService {
       console.error('Error setting up status bar', error);
     }
 
-    // Hide splash screen with fade
+    // We don't hide the splash screen automatically anymore
+    // It will be hidden when the app calls hideSplashScreen()
+  }
+
+  /**
+   * Hide the splash screen manually when the app is ready
+   */
+  public async hideSplashScreen(): Promise<void> {
+    if (!this.isNative) return;
+
     try {
       await SplashScreen.hide({
         fadeOutDuration: 500

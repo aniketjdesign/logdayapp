@@ -9,14 +9,14 @@
   "plugins": {
     "SplashScreen": {
       "launchShowDuration": 3000,
-      "launchAutoHide": true,
+      "launchAutoHide": false,
       "backgroundColor": "#f9fafb",
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER_CROP",
       "showSpinner": false,
       "androidSpinnerStyle": "large",
-      "iosSpinnerStyle": "small",
-      "spinnerColor": "#999999",
+      "iosSpinnerStyle": "large",
+      "spinnerColor": "#6366F1",
       "splashFullScreen": true,
       "splashImmersive": true
     }

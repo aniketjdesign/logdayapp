@@ -1,5 +1,5 @@
 // In ExerciseList.tsx
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Exercise } from '../types/exercise';
@@ -12,6 +12,7 @@ import { exerciseService } from '../services/exerciseService';
 import { supabaseService } from '../services/supabaseService';
 import { exercises } from '../data/exercises';
 import { ExerciseSelector } from './ExerciseSelector';
+import { PageHeader } from './ui/PageHeader';
 
 // This key will be used to store in localStorage if we've shown the loading animation
 const LOADING_KEY = 'logday_quickstart_loaded';
@@ -22,8 +23,24 @@ export const ExerciseList: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
   const navigate = useNavigate();
   const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout, setCurrentView } = useWorkout();
+
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+    
+    const handleScroll = () => {
+      // No action needed here as we're using the PageHeader component
+    };
+    
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => {
+      scrollContainer.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   useEffect(() => {
     // Check if this is a page load/refresh or navigation
@@ -132,10 +149,6 @@ export const ExerciseList: React.FC = () => {
   if (isLoading && showSkeleton) {
     return (
       <div className="h-full max-w-3xl mx-auto">
-        <div className="px-4 py-0">
-          {currentWorkout && <OngoingWorkoutMessage />}
-        </div>
-        <InstallAppToast />
         
         <div className="px-4">
           <div className="heading-wrapper flex-col gap-y-2 pt-8 pb-3">
@@ -173,49 +186,32 @@ export const ExerciseList: React.FC = () => {
   }
 
   return (
-    <div className="h-full max-w-3xl mx-auto flex flex-col overflow-y-auto">
-      <div className="px-4 py-0">
+    <div className="h-full max-w-3xl mx-auto flex flex-col overflow-hidden">
+      <div className="flex flex-row gap-y-4">
       {currentWorkout && <OngoingWorkoutMessage />}
+        <InstallAppToast />
       </div>
-      <InstallAppToast />
-     
+      
       <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
-        className={`flex-1 flex flex-col ${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
-        <motion.div 
-          className="px-4"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.05 }}>
-          <motion.div 
-            className="heading-wrapper flex-col gap-y-2 pt-8 pb-3"
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.4, delay: 0.1 }}>
-            <motion.h1 
-              className="text-2xl font-semibold tracking-tight text-slate-800"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.15 }}>
-              Quick Start
-            </motion.h1>
-            <motion.p 
-              className="text-sm text-gray-500"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: 0.2 }}>
-              Select your exercises and click Start Workout
-            </motion.p>
-          </motion.div>
-        </motion.div>
-
+        ref={scrollContainerRef}
+        className={`flex-1 flex flex-col overflow-y-auto ${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+        
+        <PageHeader 
+          title="Quick Start"
+          subtitle="Select your exercises and click Start Workout"
+          scrollContainerRef={scrollContainerRef}
+          bgColor="bg-slate-50"
+          minimalBgColor="bg-slate-50"
+        />
+        
         <motion.div
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, delay: 0.25 }}
-          className="flex-1">
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="pb-24">
           <ExerciseSelector
             customExercises={customExercises}
             recentExercises={recentExercises}
@@ -224,6 +220,7 @@ export const ExerciseList: React.FC = () => {
             onExerciseSelect={handleExerciseSelect}
             onAddCustomExercise={() => setIsAddModalOpen(true)}
             currentWorkout={currentWorkout}
+            stickyTopPosition="top-[36px]"
           />
         </motion.div>
 
@@ -231,7 +228,7 @@ export const ExerciseList: React.FC = () => {
           initial={{ y: 40, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, delay: 0.3 }}
-          className={`sticky mx-auto bottom-0 left-0 right-0 flex justify-center px-4 pt-4 pb-24 bg-transparent ${currentWorkout ? 'opacity-100' : ''}`}>
+          className={`fixed mx-auto bottom-0 left-0 right-0 flex justify-center px-4 pt-4 pb-32 bg-transparent ${currentWorkout ? 'opacity-100' : ''}`}>
           <motion.button
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}

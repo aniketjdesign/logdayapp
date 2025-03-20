@@ -12,6 +12,7 @@ interface ExerciseSelectorProps {
   onAddCustomExercise?: () => void;
   currentWorkout?: boolean;
   onSelect?: (exercises: Exercise[]) => void;
+  stickyTopPosition?: string;
 }
 
 const muscleGroups = [
@@ -40,6 +41,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   onAddCustomExercise,
   currentWorkout,
   onSelect,
+  stickyTopPosition = 'top-[36px]',
 }) => {
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string>('All');
@@ -121,7 +123,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   return (
     <div className="flex flex-col h-full bg-gray-50">
       <div className="flex-1 bg-white">
-        <motion.div className="sticky top-0 z-10 px-4 pt-3 pb-4 bg-gray-50">
+        <motion.div className={`px-4 pt-3 pb-4 bg-gray-50 sticky ${stickyTopPosition}`}>
           <motion.div 
             initial={{ opacity: 0.9, y: 2 }}
             animate={{ opacity: 1, y: 0 }}

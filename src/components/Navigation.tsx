@@ -40,7 +40,7 @@ export const Navigation: React.FC = () => {
     <>
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
-        <div className="flex justify-around items-start pt-1 h-20">
+        <div className="flex justify-around items-start pt-2 h-24">
           {currentWorkout && (
             <button
               onClick={navigateToWorkout}
