@@ -18,7 +18,7 @@
                BlueprintIdentifier = "504EC3031FED79650016851F"
                BuildableName = "Logday.app"
                BlueprintName = "Logday"
-               ReferencedContainer = "container:App.xcodeproj">
+               ReferencedContainer = "container:Logday.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -47,7 +47,7 @@
             BlueprintIdentifier = "504EC3031FED79650016851F"
             BuildableName = "Logday.app"
             BlueprintName = "Logday"
-            ReferencedContainer = "container:App.xcodeproj">
+            ReferencedContainer = "container:Logday.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -64,7 +64,7 @@
             BlueprintIdentifier = "504EC3031FED79650016851F"
             BuildableName = "Logday.app"
             BlueprintName = "Logday"
-            ReferencedContainer = "container:App.xcodeproj">
+            ReferencedContainer = "container:Logday.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
