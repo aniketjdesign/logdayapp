@@ -312,7 +312,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       <div 
         className="px-4 space-y-6 pb-40 overflow-y-auto" 
         style={{
-          paddingTop: 'max(6rem, calc(6rem + env(safe-area-inset-top)))',
+          paddingTop: 'max(8rem, calc(6rem + env(safe-area-inset-top)))',
           paddingBottom: 'max(10rem, calc(10rem + env(safe-area-inset-bottom)))'
         }}
       >
