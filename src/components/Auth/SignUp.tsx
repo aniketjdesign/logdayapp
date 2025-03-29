@@ -140,9 +140,6 @@ export const SignUp: React.FC = () => {
             <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
               Get Started
             </h2>
-            <p className="mt-1 text-sm text-gray-600">
-              To never skip Log day
-            </p>
           </div>
 
           {error && (
