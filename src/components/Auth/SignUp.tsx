@@ -141,7 +141,7 @@ export const SignUp: React.FC = () => {
               Get Started
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Progress is Personal
+              To never skip Log day
             </p>
           </div>
 
