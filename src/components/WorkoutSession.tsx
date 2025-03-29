@@ -15,17 +15,17 @@ const STORAGE_PREFIX = 'logday_';
 const WORKOUT_TIMER_KEY = `${STORAGE_PREFIX}workoutTimer`;
 
 export const WorkoutSession: React.FC = () => {
-const { 
-  currentWorkout, 
-  updateWorkoutExercise, 
-  workoutLogs,
-  completeWorkout,
-  deleteExercise,
-  addExercisesToWorkout,
-  setCurrentWorkout,
-  setSelectedExercises,
-  clearWorkoutState 
-} = useWorkout();
+  const { 
+    currentWorkout, 
+    updateWorkoutExercise, 
+    workoutLogs,
+    completeWorkout,
+    deleteExercise,
+    addExercisesToWorkout,
+    setCurrentWorkout,
+    setSelectedExercises,
+    clearWorkoutState 
+  } = useWorkout();
   const { weightUnit, defaultHomePage } = useSettings();
   const [workoutName, setWorkoutName] = useState(currentWorkout?.name || '');
   const [duration, setDuration] = useState(0);
@@ -34,6 +34,7 @@ const {
   const [completedWorkout, setCompletedWorkout] = useState(null);
   const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
+  const [isCompletingWorkout, setIsCompletingWorkout] = useState(false);
   const navigate = useNavigate();
   const lastTickRef = useRef<number>(0);
   const accumulatedTimeRef = useRef<number>(0);
@@ -200,10 +201,12 @@ const {
     const currentJson = JSON.stringify(currentWorkout.exercises);
     const updatedJson = JSON.stringify(updatedExercises);
     if (currentJson !== updatedJson) {
-      setCurrentWorkout(prev => ({
-        ...prev,
+      // Create a new workout object with updated exercises
+      const updatedWorkout = {
+        ...currentWorkout,
         exercises: updatedExercises
-      }));
+      };
+      setCurrentWorkout(updatedWorkout);
     }
   }, [currentWorkout?.exercises, workoutLogs]);
 
@@ -237,6 +240,7 @@ const {
     if (!currentWorkout) return;
     
     try {
+      setIsCompletingWorkout(true);
       const completed = await completeWorkout(workoutName);
       setCompletedWorkout(completed);
       setShowFinishConfirmation(false);
@@ -244,6 +248,7 @@ const {
     } catch (error) {
       console.error('Error completing workout:', error);
       alert('Failed to save workout. Please try again.');
+      setIsCompletingWorkout(false);
     }
   };
 
@@ -339,7 +344,19 @@ const {
 
   // Mobile View
   if (typeof window !== 'undefined' && window.innerWidth < 768) {
-    if (!currentWorkout && !completedWorkout) {
+    if (completedWorkout) {
+      return (
+        <WorkoutReview
+          workout={completedWorkout}
+          onClose={() => {
+            setCompletedWorkout(null);
+            navigate('/');
+          }}
+        />
+      );
+    }
+    
+    if (!currentWorkout && !completedWorkout && !isCompletingWorkout) {
       return (
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-center py-12">
@@ -359,40 +376,52 @@ const {
       );
     }
 
-    if (completedWorkout) {
+    // Don't render MobileWorkoutView during the completion transition
+    if (isCompletingWorkout) {
       return (
-        <WorkoutReview
-          workout={completedWorkout}
-          onClose={() => {
-            setCompletedWorkout(null);
-            navigate('/');
-          }}
-        />
+        <div className="flex items-center justify-center h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-600">Completing workout...</p>
+          </div>
+        </div>
       );
     }
 
     return (
-<MobileWorkoutView
-  workout={currentWorkout}
-  duration={duration}
-  workoutName={workoutName}
-  exerciseHistory={getExerciseHistory()}  
-  onNameChange={setWorkoutName}
-  onUpdateSet={handleUpdateSet}
-  onDeleteSet={handleDeleteSet}
-  onAddSet={handleAddSet}
-  onDeleteExercise={deleteExercise}
-  onShowExerciseModal={handleAddExercises}
-  onCompleteWorkout={handleCompleteWorkout}
-  onCancelWorkout={handleCancelWorkout}
-  isPaused={isPaused}
-  onPauseResume={handlePauseResume}
-/>
+      <MobileWorkoutView
+        workout={currentWorkout}
+        duration={duration}
+        workoutName={workoutName}
+        exerciseHistory={getExerciseHistory()}  
+        onNameChange={setWorkoutName}
+        onUpdateSet={handleUpdateSet}
+        onDeleteSet={handleDeleteSet}
+        onAddSet={handleAddSet}
+        onDeleteExercise={deleteExercise}
+        onShowExerciseModal={handleAddExercises}
+        onCompleteWorkout={handleCompleteWorkout}
+        onCancelWorkout={handleCancelWorkout}
+        isPaused={isPaused}
+        onPauseResume={handlePauseResume}
+      />
     );
   }
 
   // Desktop View
-  if (!currentWorkout && !completedWorkout) {
+  if (completedWorkout) {
+    return (
+      <WorkoutReview
+        workout={completedWorkout}
+        onClose={() => {
+          setCompletedWorkout(null);
+          navigate('/');
+        }}
+      />
+    );
+  }
+  
+  if (!currentWorkout && !completedWorkout && !isCompletingWorkout) {
     return (
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center py-12">
@@ -411,16 +440,15 @@ const {
       </div>
     );
   }
-
-  if (completedWorkout) {
+  
+  if (isCompletingWorkout) {
     return (
-      <WorkoutReview
-        workout={completedWorkout}
-        onClose={() => {
-          setCompletedWorkout(null);
-          navigate('/');
-        }}
-      />
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Completing workout...</p>
+        </div>
+      </div>
     );
   }
 

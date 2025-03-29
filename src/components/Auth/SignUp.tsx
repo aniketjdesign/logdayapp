@@ -130,18 +130,18 @@ export const SignUp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between bg-gray-50 safe-area-inset-top safe-area-inset-bottom">
+    <div className="min-h-screen flex flex-col justify-between bg-gray-50 safe-area-inset-top safe-area-inset-bottom pb-16">
       <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-md w-full space-y-8">
           <div className="text-center">
-            <div className="flex justify-center">
+            <div className="flex justify-center mb-4">
               <LogDayLogo className="h-16 w-16" />
             </div>
             <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
-              Join Logday
+              Get Started
             </h2>
             <p className="mt-1 text-sm text-gray-600">
-              Start your fitness journey today
+              Progress is Personal
             </p>
           </div>
 
@@ -156,7 +156,7 @@ export const SignUp: React.FC = () => {
             <div className="space-y-4">
               <div>
                 <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
-                  Email address
+                  Email address*
                 </label>
                 <input
                   id="email-address"
@@ -173,7 +173,7 @@ export const SignUp: React.FC = () => {
 
               <div>
                 <label htmlFor="password" className="block text-sm font-normal text-gray-500 mb-1">
-                  Password
+                  Password*
                 </label>
                 <div className="relative">
                   <input
@@ -200,7 +200,7 @@ export const SignUp: React.FC = () => {
 
               <div>
                 <label htmlFor="confirm-password" className="block text-sm font-normal text-gray-500 mb-1">
-                  Confirm Password
+                  Confirm Password*
                 </label>
                 <div className="relative">
                   <input
@@ -227,9 +227,9 @@ export const SignUp: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-normal text-gray-500 mb-1">
-                  Invite Code
+                  Invite Code*
                 </label>
-                <div className="flex gap-2 justify-between">
+                <div className="flex gap-1 justify-between">
                   {inviteCode.map((digit, index) => (
                     <input
                       key={index}
@@ -240,7 +240,7 @@ export const SignUp: React.FC = () => {
                       onChange={(e) => handleInviteCodeChange(index, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(index, e)}
                       onPaste={handlePaste}
-                      className="w-12 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300 uppercase"
+                      className="w-14 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300 uppercase"
                       required
                     />
                   ))}

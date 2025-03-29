@@ -171,7 +171,7 @@ export const RoutineView = () => {
                 initial={{ y: 15, opacity: 0.5 }}
                 animate={{ y: 0, opacity: 1 }}
                 transition={{ duration: 0.25, delay: 0.25 }}
-                className="px-4">
+                className="px-4 pb-8">
                 <FolderView
                   selectedFolderId={selectedFolderId}
                   onFolderSelect={setSelectedFolderId}

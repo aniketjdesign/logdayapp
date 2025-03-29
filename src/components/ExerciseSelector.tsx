@@ -1,6 +1,5 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, memo } from 'react';
 import { Plus, Check, ChevronLeft, ChevronRight, SearchIcon } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { Exercise } from '../types/exercise';
 
 interface ExerciseSelectorProps {
@@ -31,6 +30,30 @@ const muscleGroups = [
   'Cardio',
   'Olympic Lifts',
 ] as const;
+
+// Memoized muscle group button component to prevent unnecessary re-renders
+const MuscleGroupButton = memo(({ 
+  group, 
+  isSelected, 
+  onClick 
+}: { 
+  group: string; 
+  isSelected: boolean; 
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-sm font-normal transition-colors duration-150 whitespace-nowrap
+        ${isSelected
+          ? 'bg-gray-700 text-white'
+          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+        }`}
+    >
+      {group}
+    </button>
+  );
+});
 
 export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   customExercises,
@@ -66,6 +89,13 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
       });
     }
   };
+
+  // Memoized handler for muscle group selection
+  const handleMuscleGroupSelect = useCallback((group: string) => {
+    if (group !== selectedMuscleGroup) {
+      setSelectedMuscleGroup(group);
+    }
+  }, [selectedMuscleGroup]);
 
   const filteredCustomExercises = customExercises.filter(exercise => {
     const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
@@ -104,31 +134,11 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
     return defaultExercises;
   };
 
-  // Staggered animation for list items - optimized for faster transitions
-  const containerVariants = {
-    hidden: { opacity: 0.9 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.005 // Minimal stagger time for faster transitions
-      }
-    }
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0.9, y: 2 }, // Minimal initial offset
-    visible: { opacity: 1, y: 0, transition: { duration: 0.08 } } // Very fast animation
-  };
-
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col min-h-full bg-gray-50 pb-24">
       <div className="flex-1 bg-white">
-        <motion.div className={`px-4 pt-3 pb-4 bg-gray-50 sticky ${stickyTopPosition}`}>
-          <motion.div 
-            initial={{ opacity: 0.9, y: 2 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.1 }}
-            className="relative mb-5 flex gap-x-2">
+        <div className={`px-4 pt-3 pb-4 bg-gray-50 sticky ${stickyTopPosition}`}>
+          <div className="relative mb-5 flex gap-x-2">
             <input
               type="text"
               placeholder="Search exercises"
@@ -136,103 +146,64 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
               value={search}
               onChange={(e) => setSearch(e.target.value)}  
             />
-            <motion.button 
+            <button 
               className="absolute left-1 top-[1.15rem] -translate-y-1/2 p-1"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
             >
               <SearchIcon size={16} className="text-gray-400" />
-            </motion.button>
+            </button>
             {onAddCustomExercise && (
-              <motion.button 
+              <button 
                 className="py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded-lg" 
                 onClick={onAddCustomExercise}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
               >
                 <Plus size={16} className="text-gray-900" />
-              </motion.button>
+              </button>
             )}
-          </motion.div>
+          </div>
 
-          <motion.div 
-            initial={{ opacity: 0.9, y: 2 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.1, delay: 0.02 }}
-            className="relative flex justify-evenly space-x-2">
+          <div className="relative flex justify-evenly space-x-2">
             {showLeftScroll && (
-              <motion.button 
+              <button 
                 onClick={() => scrollCategories('left')}
                 className="bg-gray-100 rounded-full p-1.5 hover:bg-gray-100 transition-colors h-[32px]"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
               >
                 <ChevronLeft size={16} className="text-gray-900" />
-              </motion.button>
+              </button>
             )}
-            <motion.div 
+            <div 
               ref={scrollContainerRef}
               onScroll={handleScrollMuscleGroups}
               className="flex gap-2 overflow-x-auto scrollbar-none pb-3"
-              initial={{ opacity: 0.9 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.1, delay: 0.03 }}
             >
               {muscleGroups.map(group => (
-                <motion.button
+                <MuscleGroupButton
                   key={group}
-                  onClick={() => setSelectedMuscleGroup(group)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-normal transition-all whitespace-nowrap
-                    ${selectedMuscleGroup === group
-                      ? 'bg-gray-700 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-100'
-                    }`}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  animate={selectedMuscleGroup === group ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ duration: 0.2 }}
-                >
-                  {group}
-                </motion.button>
+                  group={group}
+                  isSelected={selectedMuscleGroup === group}
+                  onClick={() => handleMuscleGroupSelect(group)}
+                />
               ))}
-            </motion.div>
+            </div>
             {showRightScroll && (
-              <motion.button 
+              <button 
                 onClick={() => scrollCategories('right')}
                 className="bg-gray-100 rounded-full p-1 hover:bg-gray-100 transition-colors h-[32px]"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
               >
                 <ChevronRight size={16} className="text-gray-900" />
-              </motion.button>
+              </button>
             )}
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
 
         {/* Custom Exercises Section */}
         {filteredCustomExercises.length > 0 && (
-          <motion.div 
-            className="bg-white"
-            initial={{ opacity: 0.95 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.08, delay: 0.02 }}
-          >
-            <motion.h2 
-              className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500"
-              initial={{ opacity: 0.9 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.1 }}
-            >
+          <div className="bg-white">
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
               Your Exercises
-            </motion.h2>
-            <motion.div 
-              className="space-y-0"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+            </h2>
+            <div className="space-y-0">
               {filteredCustomExercises.map(exercise => (
-                <motion.div
+                <div
                   key={exercise.id}
                   onClick={() => !currentWorkout && onExerciseSelect(exercise)}
                   className={`flex items-center justify-between cursor-pointer border-b px-4 py-2.5 
@@ -240,9 +211,6 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       ? 'bg-blue-50 border-blue-300'
                       : 'border-gray-100 hover:bg-gray-50'
                     }`}
-                  variants={itemVariants}
-                  whileHover={{ backgroundColor: selectedExercises.find(e => e.id === exercise.id) ? '#e6f0ff' : '#f9fafb' }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <div>
                     <h3 className="text-sm font-medium">{exercise.name}</h3>
@@ -255,36 +223,21 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       <Plus size={14} />
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
 
         {/* Recent Exercises Section */}
         {filteredRecentExercises.length > 0 && (
-          <motion.div 
-            className="bg-white"
-            initial={{ opacity: 0.95 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.08, delay: 0.02 }}
-          >
-            <motion.h2 
-              className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500"
-              initial={{ opacity: 0.9 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.1 }}
-            >
+          <div className="bg-white">
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
               Recent
-            </motion.h2>
-            <motion.div 
-              className="space-y-0"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+            </h2>
+            <div className="space-y-0">
               {filteredRecentExercises.map(exercise => (
-                <motion.div
+                <div
                   key={exercise.id}
                   onClick={() => !currentWorkout && onExerciseSelect(exercise)}
                   className={`flex items-center justify-between px-4 py-2.5 cursor-pointer border-b
@@ -292,9 +245,6 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       ? 'bg-blue-50 border-blue-300'
                       : 'border-gray-100 hover:bg-gray-50'
                     }`}
-                  variants={itemVariants}
-                  whileHover={{ backgroundColor: selectedExercises.find(e => e.id === exercise.id) ? '#e6f0ff' : '#f9fafb' }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <div>
                     <h3 className="text-sm font-medium">{exercise.name}</h3>
@@ -307,37 +257,21 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       <Plus size={14} />
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         )}
 
         {/* Default Exercises Section */}
         {Object.entries(getFilteredExercises()).map(([letter, exercises], index) => (
-          <motion.div 
-            key={letter} 
-            className="bg-white"
-            initial={{ opacity: 0.95 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.08, delay: 0.02 + (index * 0.005) }}
-          >
-            <motion.h2 
-              className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500"
-              initial={{ opacity: 0.9 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.1 }}
-            >
+          <div key={letter} className="bg-white">
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
               {letter}
-            </motion.h2>
-            <motion.div 
-              className="space-y-0"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+            </h2>
+            <div className="space-y-0">
               {exercises.map(exercise => (
-                <motion.div
+                <div
                   key={exercise.id}
                   onClick={() => !currentWorkout && onExerciseSelect(exercise)}
                   className={`flex items-center justify-between px-4 py-2.5 cursor-pointer border-b
@@ -345,9 +279,6 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       ? 'bg-blue-50 border-blue-300'
                       : 'border-gray-100 hover:bg-gray-50'
                     }`}
-                  variants={itemVariants}
-                  whileHover={{ backgroundColor: selectedExercises.find(e => e.id === exercise.id) ? '#e6f0ff' : '#f9fafb' }}
-                  whileTap={{ scale: 0.98 }}
                 >
                   <div>
                     <h3 className="text-sm font-medium">{exercise.name}</h3>
@@ -360,30 +291,23 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
                       <Plus size={14} />
                     )}
                   </div>
-                </motion.div>
+                </div>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+          </div>
         ))}
       </div>
 
       {/* Bottom Button */}
       {onSelect && (
-        <motion.div 
-          className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t"
-          initial={{ y: 10, opacity: 0.8 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.15, delay: 0.1 }}
-        >
-          <motion.button
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+          <button
             onClick={() => onSelect(selectedExercises)}
             className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
           >
             Add exercises ({selectedExercises.length})
-          </motion.button>
-        </motion.div>
+          </button>
+        </div>
       )}
     </div>
   );

@@ -1,7 +1,14 @@
 import React from 'react';
-import { Timer, Clipboard, Zap, History, User } from 'lucide-react';
+import { 
+  Timer, 
+  Notebook, 
+  Lightning, 
+  CalendarCheck, 
+  UserCircle
+} from 'phosphor-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { motion } from 'framer-motion';
 
 export const Navigation: React.FC = () => {
   const navigate = useNavigate();
@@ -36,64 +43,117 @@ export const Navigation: React.FC = () => {
     navigate('/profile');
   };
 
+  const isActive = (path: string | string[]): boolean => {
+    if (Array.isArray(path)) {
+      return path.some(p => location.pathname === p);
+    }
+    if (path === '/quickstart') {
+      return location.pathname === '/quickstart' || (location.pathname === '/' && location.key !== 'default');
+    }
+    return location.pathname === path;
+  };
+
   return (
     <>
       {/* Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
-        <div className="flex justify-around items-start pt-2 h-24">
+        <div className="flex justify-around items-start pt-0 h-24">
           {currentWorkout && (
-            <button
+            <motion.button
               onClick={navigateToWorkout}
-              className={`flex flex-col items-center justify-center flex-1 py-2 ${
-                location.pathname === '/workout' ? 'text-blue-600' : 'text-gray-600'
+              className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+                isActive('/workout') ? 'text-blue-600' : 'text-gray-600'
               }`}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <Timer size={24} strokeWidth={2} />
+              {isActive('/workout') ? (
+                <>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                  <Timer size={24} weight="fill" />
+                </>
+              ) : (
+                <Timer size={24} weight="duotone" />
+              )}
               <span className="text-xs mt-1">Active</span>
-            </button>
+            </motion.button>
           )}
           
-          <button
+          <motion.button
             onClick={navigateToRoutines}
-            className={`flex flex-col items-center justify-center flex-1 py-2 ${
-              location.pathname === '/routines' ? 'text-blue-600' : 'text-gray-600'
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/routines') ? 'text-blue-600' : 'text-gray-600'
             }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Clipboard size={24} strokeWidth={2} />
+            {isActive('/routines') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <Notebook size={24} weight="fill" />
+              </>
+            ) : (
+              <Notebook size={24} weight="duotone" />
+            )}
             <span className="text-xs mt-1">Routines</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
             onClick={navigateToHome}
-            className={`flex flex-col items-center justify-center flex-1 py-2 ${
-              location.pathname === '/quickstart' || location.pathname === '/' && location.key !== 'default' ? 'text-blue-600' : 'text-gray-600'
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/quickstart') ? 'text-blue-600' : 'text-gray-600'
             }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Zap size={24} strokeWidth={2} />
+            {isActive('/quickstart') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <Lightning size={24} weight="fill" />
+              </>
+            ) : (
+              <Lightning size={24} weight="duotone" />
+            )}
             <span className="text-xs mt-1">Quick Start</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
             onClick={navigateToLogs}
-            className={`flex flex-col items-center justify-center flex-1 py-2 ${
-              location.pathname === '/logs' ? 'text-blue-600' : 'text-gray-600'
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/logs') ? 'text-blue-600' : 'text-gray-600'
             }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <History size={24} strokeWidth={2} />
+            {isActive('/logs') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <CalendarCheck size={24} weight="fill" />
+              </>
+            ) : (
+              <CalendarCheck size={24} weight="duotone" />
+            )}
             <span className="text-xs mt-1">Logs</span>
-          </button>
+          </motion.button>
           
-          <button
+          <motion.button
             onClick={navigateToProfile}
-            className={`flex flex-col items-center justify-center flex-1 py-2 ${
-              location.pathname === '/profile' || location.pathname === '/settings' || location.pathname === '/contact' 
-                ? 'text-blue-600' 
-                : 'text-gray-600'
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive(['/profile', '/settings', '/contact']) ? 'text-blue-600' : 'text-gray-600'
             }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <User size={24} strokeWidth={2} />
+            {isActive(['/profile', '/settings', '/contact']) ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <UserCircle size={24} weight="fill" />
+              </>
+            ) : (
+              <UserCircle size={24} weight="duotone" />
+            )}
             <span className="text-xs mt-1">Profile</span>
-          </button>
+          </motion.button>
         </div>
       </div>
     </>
