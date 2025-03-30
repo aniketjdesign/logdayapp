@@ -71,12 +71,16 @@ export const SignUp: React.FC = () => {
       if (rateLimit) {
         setIsRateLimitActive(true);
         const displayMessage = reason 
-          ? `Too many failed attempts from your ${reason}. Please try again after 5 minutes.`
-          : message || 'Too many failed attempts. Please try again after 5 minutes.';
+          ? `Too many attempts from your ${reason}. Please try again after 5 minutes.`
+          : message || 'Too many attempts. Please try again after 5 minutes.';
         setError(displayMessage);
         setLoading(false);
         return;
       }
+
+      // Record signup attempt (track all attempts, not just failures)
+      console.log('Recording signup attempt for:', email);
+      await recordFailedAttempt(email, 'signup');
 
       // Create user account
       console.log('Attempting to sign up with email:', email);
@@ -89,10 +93,6 @@ export const SignUp: React.FC = () => {
     } catch (err: any) {
       console.error('Signup error:', err);
       
-      // Record failed signup attempt
-      console.log('Signup failed, recording attempt for:', email);
-      await recordFailedAttempt(email, 'signup');
-      
       // Check if we are now rate limited after this failed attempt
       console.log('Checking if now rate limited after failed attempt');
       const { rateLimit, message, reason } = await checkRateLimit(email, 'signup');
@@ -101,8 +101,8 @@ export const SignUp: React.FC = () => {
       if (rateLimit) {
         setIsRateLimitActive(true);
         const displayMessage = reason 
-          ? `Too many failed attempts from your ${reason}. Please try again after 5 minutes.`
-          : message || 'Too many failed attempts. Please try again after 5 minutes.';
+          ? `Too many attempts from your ${reason}. Please try again after 5 minutes.`
+          : message || 'Too many attempts. Please try again after 5 minutes.';
         setError(displayMessage);
       } else {
         setError(err.message || 'Failed to create account');

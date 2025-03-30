@@ -12,7 +12,7 @@ const corsHeaders = {
 const EMAIL_LOGIN_THRESHOLD = 3;  // 3 failed login attempts per email
 const EMAIL_SIGNUP_THRESHOLD = 3; // 3 failed signup attempts per email
 const IP_LOGIN_THRESHOLD = 10;    // 10 failed login attempts per IP
-const IP_SIGNUP_THRESHOLD = 5;    // 5 failed signup attempts per IP
+const IP_SIGNUP_THRESHOLD = 2;    // 2 signup attempts (failed or successful) per IP every 5 minutes
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -152,10 +152,10 @@ serve(async (req) => {
       let rateLimitReason = '';
       if (isEmailRateLimited) {
         rateLimitReason = `email address (${emailAttempts.length} attempts)`;
-        console.log(`Rate limiting ${email} after ${emailAttempts.length} failed attempts`);
+        console.log(`Rate limiting ${email} after ${emailAttempts.length} ${action === 'signup' ? '' : 'failed '}attempts`);
       } else {
         rateLimitReason = `IP address (${ipAttempts.length} attempts)`;
-        console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} failed attempts`);
+        console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} ${action === 'signup' ? '' : 'failed '}attempts`);
       }
       
       console.log(`Returning 429 response due to ${rateLimitReason}`);
@@ -164,7 +164,9 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ 
           rateLimit: true, 
-          message: 'Too many failed attempts. Please try again after 5 minutes.',
+          message: action === 'signup' 
+            ? 'Maximum signup attempts reached. Please try again after 5 minutes.' 
+            : 'Too many failed attempts. Please try again after 5 minutes.',
           reason: rateLimitReason,
           attemptsCount: isEmailRateLimited ? emailAttempts.length : ipAttempts.length,
         }),
