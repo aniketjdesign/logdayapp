@@ -79,7 +79,7 @@ export const Login: React.FC = () => {
   
   // Check if an email is rate limited with the server
   const checkEmailRateLimit = async (emailToCheck: string) => {
-    if (!emailToCheck) return;
+    if (!emailToCheck) return false;
     
     try {
       console.log(`Checking rate limit for ${emailToCheck}`);
@@ -88,9 +88,10 @@ export const Login: React.FC = () => {
       if (rateLimit) {
         console.log(`${emailToCheck} is rate limited!`);
         setRateLimited(emailToCheck, true);
+        return true;
       }
       
-      return rateLimit;
+      return false;
     } catch (err) {
       console.error('Error checking rate limit:', err);
       return false;
@@ -103,13 +104,20 @@ export const Login: React.FC = () => {
       // Check if this email is already known to be rate limited
       const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
       if (rateLimitData) {
-        const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
-        
-        if (limited && limitedEmail === email && until > Date.now()) {
-          // This email is already known to be rate limited
-          setIsRateLimitActive(true);
-          setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
-          return;
+        try {
+          const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
+          
+          if (limited && limitedEmail === email && until > Date.now()) {
+            // This email is already known to be rate limited
+            setIsRateLimitActive(true);
+            setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+            return;
+          } else if (until < Date.now()) {
+            // Clear expired rate limit
+            localStorage.removeItem(RATE_LIMIT_KEY);
+          }
+        } catch (e) {
+          console.error('Error parsing rate limit data:', e);
         }
       }
       
@@ -134,7 +142,15 @@ export const Login: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // This will check rate limits first, then try to sign in
+      // Check for rate limiting BEFORE attempting login
+      const isLimited = await checkEmailRateLimit(email);
+      if (isLimited) {
+        console.log('Rate limited before login attempt');
+        setLoading(false);
+        return;
+      }
+
+      // Attempt to sign in
       await signIn(email, password);
       
       // If we reach here, login was successful
@@ -143,12 +159,28 @@ export const Login: React.FC = () => {
     } catch (err: any) {
       console.error('Login error:', err);
       
-      // Check if this is a rate limit error
-      if (err.message?.includes('Too many failed attempts')) {
-        setRateLimited(email, true);
-      } else {
-        // Regular auth error
-        setError(err.message || 'Failed to sign in. Please check your credentials.');
+      // Record failed login attempt
+      console.log('Login failed, recording failed attempt');
+      try {
+        await recordFailedAttempt(email, 'login');
+        
+        // Check if we've hit the rate limit with this attempt
+        const nowLimited = await checkEmailRateLimit(email);
+        if (nowLimited) {
+          console.log('Rate limit triggered after failed attempt');
+          // Error message is set by checkEmailRateLimit via setRateLimited
+        } else {
+          // Just a regular authentication error
+          if (err?.status === 400 || err?.name === 'AuthApiError') {
+            setError('Invalid email or password. Please try again.');
+          } else {
+            setError(err?.message || 'Failed to sign in. Please check your credentials.');
+          }
+        }
+      } catch (recordError) {
+        // If recording the failed attempt fails, still show the auth error
+        console.error('Error recording failed attempt:', recordError);
+        setError('Invalid email or password. Please try again.');
       }
     } finally {
       setLoading(false);

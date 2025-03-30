@@ -55,33 +55,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // First check for rate limiting BEFORE attempting authentication
-    try {
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      if (rateLimit) {
-        throw new Error(message || 'Too many failed attempts. Please try again later.');
-      }
-      
-      // If not rate limited, proceed with login attempt
-      const { error, data } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) throw error;
-      identifyUser(data.user);
-      Analytics.userSignedIn({
-        userId: data.user.id,
-        email: data.user.email || ''
-      });
-    } catch (err) {
-      // Check if this is not a rate limit error
-      if (!err.message?.includes('Too many failed attempts')) {
-        // Record the failed attempt before re-throwing
-        await recordFailedAttempt(email, 'login');
-      }
-      throw err;
-    }
+    const { error, data } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error) throw error;
+    identifyUser(data.user);
+    Analytics.userSignedIn({
+      userId: data.user.id,
+      email: data.user.email || ''
+    });
   };
 
   const signUp = async (email: string, password: string): Promise<AuthResponse> => {
@@ -124,8 +107,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if there's an error, we want to force logout
       if (error) {
         console.error('Error during sign out:', error);
-        // Force clear Supabase session
-        await supabase.auth.clearSession();
+        // Force clear Supabase session - using different approach
+        await supabase.auth.signOut();
       }
 
       // Force reload to clear all app state and redirect
@@ -137,7 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signInWithGoogle = async () => {
+  const signInWithGoogle = async (): Promise<void> => {
     try {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -151,10 +134,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       
       if (error) throw error;
-      if (data.user) {
-        identifyUser(data.user);
-      }
-      return data;
+      // The actual user data will be available through the auth state change event
+      // No need to return anything from this function
     } catch (error) {
       console.error('Google sign in error:', error);
       throw error;
