@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
+import { checkRateLimit, recordFailedAttempt } from '../../utils/rateLimiting';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -20,12 +21,25 @@ export const Login: React.FC = () => {
     try {
       setError('');
       setLoading(true);
+
+      // Check if user is rate limited
+      const { rateLimit, message } = await checkRateLimit(email, 'login');
+      if (rateLimit) {
+        setError(message || 'Too many failed attempts. Please try again later.');
+        setLoading(false);
+        return;
+      }
+
+      // Attempt to sign in
       await signIn(email, password);
       
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
+      // Record failed login attempt
+      await recordFailedAttempt(email, 'login');
+      
       if (err?.name === 'AuthApiError' && err?.status === 400) {
         setError('Invalid email or password. Please try again.');
       } else {

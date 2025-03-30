@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
+import { checkRateLimit, recordFailedAttempt } from '../../utils/rateLimiting';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -39,6 +40,14 @@ export const SignUp: React.FC = () => {
       setError('');
       setLoading(true);
 
+      // Check if user is rate limited
+      const { rateLimit, message } = await checkRateLimit(email, 'signup');
+      if (rateLimit) {
+        setError(message || 'Too many failed attempts. Please try again later.');
+        setLoading(false);
+        return;
+      }
+
       // Create user account
       const { error: signUpError } = await signUp(email, password);
       if (signUpError) throw signUpError;
@@ -46,6 +55,9 @@ export const SignUp: React.FC = () => {
       // Navigate to login
       navigate('/login');
     } catch (err: any) {
+      // Record failed signup attempt
+      await recordFailedAttempt(email, 'signup');
+      
       console.error('Signup error:', err);
       setError(err.message || 'Failed to create account');
     } finally {
