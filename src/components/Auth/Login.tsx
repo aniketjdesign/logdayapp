@@ -134,42 +134,21 @@ export const Login: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Final check for rate limiting before attempting login
-      const isLimited = await checkEmailRateLimit(email);
-      if (isLimited) {
-        setLoading(false);
-        return; // Stop here if rate limited
-      }
-
-      // Attempt to sign in
+      // This will check rate limits first, then try to sign in
       await signIn(email, password);
       
-      // Redirect to the originally requested URL or default to home
+      // If we reach here, login was successful
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
       
-      // Record failed login attempt and update rate limit status
-      try {
-        console.log('Login failed, recording attempt');
-        await recordFailedAttempt(email, 'login');
-        
-        // Check if we are now rate limited after this failed attempt
-        const { rateLimit } = await checkRateLimit(email, 'login');
-        if (rateLimit) {
-          console.log('Rate limit activated after failed attempt');
-          setRateLimited(email, true);
-        } else {
-          if (err?.name === 'AuthApiError' && err?.status === 400) {
-            setError('Invalid email or password. Please try again.');
-          } else {
-            setError('Failed to sign in. Please check your credentials and try again.');
-          }
-        }
-      } catch (recordError) {
-        console.error('Error handling failed attempt:', recordError);
-        setError('An error occurred. Please try again later.');
+      // Check if this is a rate limit error
+      if (err.message?.includes('Too many failed attempts')) {
+        setRateLimited(email, true);
+      } else {
+        // Regular auth error
+        setError(err.message || 'Failed to sign in. Please check your credentials.');
       }
     } finally {
       setLoading(false);
