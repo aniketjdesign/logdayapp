@@ -22,11 +22,11 @@ serve(async (req) => {
       );
     }
 
-    // Get Supabase URL and key from environment
+    // Get Supabase URL and SERVICE ROLE key from environment
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
-    if (!supabaseUrl || !supabaseKey) {
+    if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase environment variables');
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
@@ -34,17 +34,12 @@ serve(async (req) => {
       );
     }
 
-    // Create a Supabase client
+    // Create a Supabase client with service role key for full access
     const supabaseAdmin = createClient(
       supabaseUrl,
-      supabaseKey,
+      supabaseServiceKey,
       { 
-        auth: { persistSession: false },
-        global: { 
-          headers: { 
-            Authorization: req.headers.get('Authorization') || '',
-          } 
-        }
+        auth: { persistSession: false }
       }
     );
 
