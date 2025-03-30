@@ -6,6 +6,9 @@ import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
 import { checkRateLimit, recordFailedAttempt, isRateLimited } from '../../utils/rateLimiting';
 
+// Key for storing rate limit data in localStorage
+const RATE_LIMIT_KEY = 'logday_rate_limit_data';
+
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,77 +20,125 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Check for rate limits when email changes
+  // Load rate limit data from localStorage on component mount
   useEffect(() => {
-    // First, check if we have a saved email from previous login attempts
-    const savedEmail = localStorage.getItem('lastLoginEmail') || '';
-    
-    if (savedEmail) {
-      // If we have a saved email and current email is empty, use the saved one
-      if (!email && savedEmail) {
-        setEmail(savedEmail);
-      }
-      
-      // Check for rate limits on the saved email
-      const checkSavedEmailRateLimit = async () => {
-        try {
-          const isLimited = await isRateLimited(savedEmail, 'login');
-          setIsRateLimitActive(isLimited);
-          
-          if (isLimited) {
-            setError('Too many failed attempts. Please try again after 5 minutes.');
+    const loadRateLimitData = () => {
+      try {
+        const savedEmail = localStorage.getItem('lastLoginEmail') || '';
+        if (savedEmail) {
+          // If we have a saved email and current email is empty, use the saved one
+          if (!email) {
+            setEmail(savedEmail);
           }
-        } catch (err) {
-          console.error('Error checking initial rate limit:', err);
+          
+          // Check for stored rate limit info
+          const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+          if (rateLimitData) {
+            const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
+            
+            // If this email is rate limited and the timeout hasn't expired
+            if (limited && limitedEmail === savedEmail && until > Date.now()) {
+              setIsRateLimitActive(true);
+              setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+              return;
+            } else if (until < Date.now()) {
+              // Clear expired rate limit
+              localStorage.removeItem(RATE_LIMIT_KEY);
+            }
+          }
+          
+          // Double-check with the server
+          checkEmailRateLimit(savedEmail);
         }
-      };
-      
-      checkSavedEmailRateLimit();
-    }
+      } catch (err) {
+        console.error('Error loading rate limit data:', err);
+      }
+    };
+    
+    loadRateLimitData();
   }, []);
   
-  // Check for rate limits when the email changes
+  // Save rate limit state to localStorage
+  const setRateLimited = (emailToLimit: string, limitActive: boolean) => {
+    setIsRateLimitActive(limitActive);
+    
+    if (limitActive) {
+      // Set rate limit for 5 minutes
+      const until = Date.now() + (5 * 60 * 1000);
+      localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
+        limited: true,
+        email: emailToLimit,
+        until
+      }));
+      
+      setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+    } else {
+      localStorage.removeItem(RATE_LIMIT_KEY);
+    }
+  };
+  
+  // Check if an email is rate limited with the server
+  const checkEmailRateLimit = async (emailToCheck: string) => {
+    if (!emailToCheck) return;
+    
+    try {
+      console.log(`Checking rate limit for ${emailToCheck}`);
+      const { rateLimit, message } = await checkRateLimit(emailToCheck, 'login');
+      
+      if (rateLimit) {
+        console.log(`${emailToCheck} is rate limited!`);
+        setRateLimited(emailToCheck, true);
+      }
+      
+      return rateLimit;
+    } catch (err) {
+      console.error('Error checking rate limit:', err);
+      return false;
+    }
+  };
+  
+  // Handle email changes - check for rate limits
   useEffect(() => {
     if (email) {
-      const checkCurrentEmailRateLimit = async () => {
-        try {
-          const isLimited = await isRateLimited(email, 'login');
-          setIsRateLimitActive(isLimited);
-          
-          if (isLimited && !error) {
-            setError('Too many failed attempts. Please try again after 5 minutes.');
-          } else if (!isLimited && error === 'Too many failed attempts. Please try again after 5 minutes.') {
-            setError('');
-          }
-        } catch (err) {
-          console.error('Error checking rate limit on email change:', err);
+      // Check if this email is already known to be rate limited
+      const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
+      if (rateLimitData) {
+        const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
+        
+        if (limited && limitedEmail === email && until > Date.now()) {
+          // This email is already known to be rate limited
+          setIsRateLimitActive(true);
+          setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+          return;
         }
-      };
+      }
       
-      checkCurrentEmailRateLimit();
+      // Otherwise check with the server
+      checkEmailRateLimit(email);
     }
   }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Block submission if rate limited
+    if (isRateLimitActive) {
+      console.log('Login blocked: Rate limit is active');
+      return;
+    }
+    
     // Save email for rate limit checks
     localStorage.setItem('lastLoginEmail', email);
     
     try {
-      setError('');
       setLoading(true);
+      setError('');
 
-      // Check if user is rate limited
-      console.log('Checking rate limit before login attempt');
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      console.log('Rate limit check result:', { rateLimit, message });
-      
-      if (rateLimit) {
-        setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
+      // Final check for rate limiting before attempting login
+      const isLimited = await checkEmailRateLimit(email);
+      if (isLimited) {
         setLoading(false);
-        return;
+        return; // Stop here if rate limited
       }
 
       // Attempt to sign in
@@ -97,24 +148,29 @@ export const Login: React.FC = () => {
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
-      // Record failed login attempt
-      console.log('Login failed, recording attempt');
-      await recordFailedAttempt(email, 'login');
+      console.error('Login error:', err);
       
-      // Check if we are now rate limited after this failed attempt
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      if (rateLimit) {
-        setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
-      } else {
-        if (err?.name === 'AuthApiError' && err?.status === 400) {
-          setError('Invalid email or password. Please try again.');
+      // Record failed login attempt and update rate limit status
+      try {
+        console.log('Login failed, recording attempt');
+        await recordFailedAttempt(email, 'login');
+        
+        // Check if we are now rate limited after this failed attempt
+        const { rateLimit } = await checkRateLimit(email, 'login');
+        if (rateLimit) {
+          console.log('Rate limit activated after failed attempt');
+          setRateLimited(email, true);
         } else {
-          setError('Failed to sign in. Please check your credentials and try again.');
+          if (err?.name === 'AuthApiError' && err?.status === 400) {
+            setError('Invalid email or password. Please try again.');
+          } else {
+            setError('Failed to sign in. Please check your credentials and try again.');
+          }
         }
+      } catch (recordError) {
+        console.error('Error handling failed attempt:', recordError);
+        setError('An error occurred. Please try again later.');
       }
-      
-      console.error('Sign in error:', err);
     } finally {
       setLoading(false);
     }

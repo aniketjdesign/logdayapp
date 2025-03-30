@@ -1,11 +1,28 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Standard headers for all responses
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-record-failed-attempt',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
+  'Content-Type': 'application/json',
+};
+
+// Helper to create standard response objects
+const createResponse = (
+  status: number, 
+  body: Record<string, unknown>, 
+  additionalHeaders: Record<string, string> = {}
+) => {
+  return new Response(
+    JSON.stringify(body),
+    { 
+      status, 
+      headers: { ...corsHeaders, ...additionalHeaders } 
+    }
+  );
 };
 
 serve(async (req) => {
@@ -15,16 +32,38 @@ serve(async (req) => {
   }
 
   try {
-    const { email, action } = await req.json();
-    
-    console.log(`Request received for ${email}, action: ${action}`);
-    console.log(`Request method: ${req.method}, record failed attempt header: ${req.headers.get('x-record-failed-attempt')}`);
-    
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Parse request body
+    let email, action;
+    try {
+      const body = await req.json();
+      email = body.email;
+      action = body.action;
+      
+      console.log(`Request received for ${email || 'unknown'}, action: ${action || 'unknown'}`);
+      console.log(`Request method: ${req.method}, record failed attempt header: ${req.headers.get('x-record-failed-attempt')}`);
+      
+      if (!email) {
+        return createResponse(400, { 
+          error: true,
+          code: 'MISSING_EMAIL',
+          message: 'Email is required' 
+        });
+      }
+      
+      if (!action) {
+        return createResponse(400, { 
+          error: true,
+          code: 'MISSING_ACTION',
+          message: 'Action is required' 
+        });
+      }
+    } catch (parseError) {
+      console.error('Error parsing request body:', parseError);
+      return createResponse(400, { 
+        error: true, 
+        code: 'INVALID_REQUEST',
+        message: 'Invalid request body'
+      });
     }
 
     // Get Supabase URL and SERVICE ROLE key from environment
@@ -35,10 +74,11 @@ serve(async (req) => {
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase environment variables');
-      return new Response(
-        JSON.stringify({ error: 'Server configuration error' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return createResponse(500, { 
+        error: true,
+        code: 'CONFIGURATION_ERROR',
+        message: 'Server configuration error' 
+      });
     }
 
     // Create a Supabase client with service role key for full access
@@ -55,23 +95,51 @@ serve(async (req) => {
     
     if (isRecordFailedAttempt) {
       console.log('Recording failed attempt for', email);
-      const { error: insertError } = await supabaseAdmin
-        .from('auth_rate_limits')
-        .insert({ email, action });
+      try {
+        const { error: insertError } = await supabaseAdmin
+          .from('auth_rate_limits')
+          .insert({ email, action });
+          
+        if (insertError) {
+          console.error('Error recording failed attempt:', insertError);
+          return createResponse(500, { 
+            error: true,
+            code: 'DB_ERROR',
+            message: 'Error recording failed attempt',
+            details: insertError 
+          });
+        }
         
-      if (insertError) {
-        console.error('Error recording failed attempt:', insertError);
-        return new Response(
-          JSON.stringify({ error: 'Error recording failed attempt', details: insertError }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        console.log('Successfully recorded failed attempt');
+        
+        // Return success, but also check and include the current rate limit status
+        const { data: attempts, error: countError } = await supabaseAdmin
+          .from('auth_rate_limits')
+          .select('*')
+          .eq('email', email)
+          .eq('action', action)
+          .gte('created_at', new Date(Date.now() - 5 * 60 * 1000).toISOString());
+          
+        const attemptsCount = attempts?.length || 0;
+        const isNowRateLimited = attemptsCount >= 3;
+        
+        return createResponse(200, { 
+          success: true,
+          rateLimit: isNowRateLimited,
+          attemptsCount,
+          message: isNowRateLimited 
+            ? 'Too many failed attempts. Please try again after 5 minutes.' 
+            : `Attempt recorded. ${3 - attemptsCount} attempts remaining.`
+        });
+      } catch (dbError) {
+        console.error('Database error recording attempt:', dbError);
+        return createResponse(500, { 
+          error: true,
+          code: 'DB_ERROR',
+          message: 'Database error recording attempt',
+          details: dbError.message 
+        });
       }
-      
-      console.log('Successfully recorded failed attempt');
-      return new Response(
-        JSON.stringify({ success: true }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
     }
     
     // Otherwise, check for rate limits
@@ -94,47 +162,55 @@ serve(async (req) => {
     
     if (fetchError) {
       console.error('Error fetching rate limit data:', fetchError);
-      return new Response(
-        JSON.stringify({ error: 'Error checking rate limits', details: fetchError }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return createResponse(500, { 
+        error: true,
+        code: 'DB_ERROR',
+        message: 'Error checking rate limits',
+        details: fetchError 
+      });
     }
     
-    console.log(`Found ${attempts?.length || 0} recent failed attempts for ${email}`);
+    const attemptsCount = attempts?.length || 0;
+    console.log(`Found ${attemptsCount} recent failed attempts for ${email}`);
     
-    // Check if rate limited
-    if (attempts && attempts.length >= 3) {
-      console.log(`Rate limiting ${email} after ${attempts.length} failed attempts`);
+    // Check if rate limited (3 or more attempts in the last 5 minutes)
+    if (attemptsCount >= 3) {
+      console.log(`Rate limiting ${email} after ${attemptsCount} failed attempts`);
       
-      // Make sure we specify the proper headers for the 429 response
-      return new Response(
-        JSON.stringify({ 
-          rateLimit: true, 
-          message: 'Too many failed attempts. Please try again after 5 minutes.',
-          attemptsCount: attempts.length,
-        }),
-        { 
-          status: 429, 
-          headers: { 
-            ...corsHeaders, 
-            'Content-Type': 'application/json',
-            'Retry-After': '300' // 5 minutes in seconds
-          } 
-        }
-      );
+      // Create a timestamp for when they can try again
+      const retryAfter = 300; // 5 minutes in seconds
+      const retryTimestamp = new Date(Date.now() + retryAfter * 1000).toISOString();
+      
+      // Return a 429 Too Many Requests response
+      return createResponse(429, { 
+        error: true,
+        code: 'RATE_LIMITED',
+        rateLimit: true, 
+        message: 'Too many failed attempts. Please try again after 5 minutes.',
+        attemptsCount,
+        retryAfter,
+        retryAt: retryTimestamp
+      }, {
+        'Retry-After': retryAfter.toString()
+      });
     }
     
     console.log(`User ${email} is not rate limited`);
-    return new Response(
-      JSON.stringify({ rateLimit: false }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    
+    // Return rate limit status
+    return createResponse(200, { 
+      rateLimit: false,
+      attemptsCount,
+      remaining: Math.max(0, 3 - attemptsCount)
+    });
     
   } catch (error) {
     console.error('Error processing request:', error);
-    return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return createResponse(500, {
+      error: true,
+      code: 'SERVER_ERROR',
+      message: 'Internal server error',
+      details: error.message
+    });
   }
 }); 

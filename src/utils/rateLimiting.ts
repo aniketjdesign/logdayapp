@@ -1,35 +1,56 @@
 import { supabase } from '../lib/supabase';
 
-// Check if the user is rate limited
+/**
+ * Check if the user is rate limited
+ * 
+ * Returns an object with:
+ * - rateLimit: boolean - whether the user is rate limited
+ * - message: string | undefined - the error message if rate limited
+ */
 export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string }> => {
   try {
     console.log(`Checking rate limit for ${email} (${action})`);
+    
+    // Make the request to the Edge Function
     const response = await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
     });
 
-    console.log('Raw rate limit response:', response);
+    console.log('Raw rate limit response:', JSON.stringify(response));
 
-    // Check for 429 status in error object - Supabase puts this in error for non-2xx responses
+    // Handle API error responses (including 429)
     if (response.error) {
-      console.log('Response error:', response.error);
+      console.log('API Error detected:', response.error);
       
-      // Check if this is specifically a rate limit error
+      // Rate limit response (429)
       if (response.error.status === 429) {
         console.log('Rate limited by status code 429');
         
-        // Try to parse the error message from the response
+        // Try to parse the error message
         let errorMessage = 'Too many failed attempts. Please try again after 5 minutes.';
+        
         try {
-          // The error message might be in the error message or in the error data
+          // Try to extract a message from the error
           if (response.error.message) {
             errorMessage = response.error.message;
-          } else if (typeof response.error.context === 'string') {
-            const contextData = JSON.parse(response.error.context);
-            errorMessage = contextData.message || errorMessage;
+          }
+          
+          // If there's context data, try to parse it for more info
+          if (response.error.context) {
+            try {
+              const contextData = typeof response.error.context === 'string' 
+                ? JSON.parse(response.error.context)
+                : response.error.context;
+                
+              if (contextData.message) {
+                errorMessage = contextData.message;
+              }
+            } catch (e) {
+              console.error('Failed to parse error context:', e);
+            }
           }
         } catch (e) {
-          console.error('Error parsing rate limit message:', e);
+          console.error('Error parsing rate limit error details:', e);
         }
         
         return { 
@@ -38,13 +59,15 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
         };
       }
       
-      // For other errors, log but don't block the user
-      console.error('Rate limit check error:', response.error);
+      // For other API errors, log but don't block the user
+      console.error('Rate limit check API error:', response.error);
       return { rateLimit: false };
     }
 
+    // Handle normal responses
     console.log('Rate limit check response data:', response.data);
-    // Check the data payload as well
+    
+    // Check if the response data indicates rate limiting
     if (response.data?.rateLimit === true) {
       return { 
         rateLimit: true, 
@@ -52,15 +75,19 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
       };
     }
 
+    // No rate limiting
     return { rateLimit: false };
   } catch (error) {
-    console.error('Rate limit check error (exception):', error);
-    // Don't block the user if there's an error with rate limiting
+    console.error('Rate limit check exception:', error);
+    // Don't block the user if there's an exception with rate limiting
     return { rateLimit: false };
   }
 };
 
-// Function to directly check an email address for rate limiting
+/**
+ * Function to directly check if an email address is rate limited
+ * Returns a boolean indicating if the user is rate limited
+ */
 export const isRateLimited = async (email: string, action: string): Promise<boolean> => {
   if (!email) return false;
   
@@ -73,10 +100,14 @@ export const isRateLimited = async (email: string, action: string): Promise<bool
   }
 };
 
-// Record a failed attempt
+/**
+ * Record a failed authentication attempt
+ * This will increment the count of failed attempts for the user
+ */
 export const recordFailedAttempt = async (email: string, action: string): Promise<void> => {
   try {
     console.log(`Recording failed attempt for ${email} (${action})`);
+    
     const response = await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
       method: 'POST',
@@ -91,7 +122,7 @@ export const recordFailedAttempt = async (email: string, action: string): Promis
       console.error('Failed to record attempt:', response.error);
     }
   } catch (error) {
-    console.error('Record failed attempt error (exception):', error);
+    console.error('Record failed attempt exception:', error);
     // Just log the error, don't fail the application
   }
 }; 
