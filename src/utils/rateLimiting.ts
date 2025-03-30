@@ -4,61 +4,46 @@ import { supabase } from '../config/supabase';
 export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string }> => {
   try {
     console.log(`Checking rate limit for ${email} (${action})`);
-    const response = await supabase.functions.invoke('auth-rate-limit', {
-      body: { email, action },
+    
+    // Direct API call to ensure we get the proper status code
+    const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-rate-limit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`
+      },
+      body: JSON.stringify({ email, action })
     });
-
-    console.log('Raw rate limit response:', JSON.stringify(response));
-
-    // Case 1: Error object with 429 status
-    if (response.error) {
-      console.log('Response contains error:', response.error);
-      
-      // Check if this is specifically a rate limit error (status 429)
-      if (response.error.status === 429) {
-        console.log('Rate limited by status code 429');
-        
-        // Try to parse the error message from the response
-        let errorMessage = 'Too many failed attempts. Please try again after 5 minutes.';
-        try {
-          // The error message might be in the error message or in the error data
-          if (response.error.message) {
-            errorMessage = response.error.message;
-          } else if (typeof response.error.context === 'string') {
-            const contextData = JSON.parse(response.error.context);
-            errorMessage = contextData.message || errorMessage;
-          }
-        } catch (e) {
-          console.error('Error parsing rate limit message:', e);
-        }
-        
-        return { 
-          rateLimit: true, 
-          message: errorMessage 
-        };
-      }
-      
-      // For other errors, log but don't block the user
-      console.error('Rate limit check error (not 429):', response.error);
-      return { rateLimit: false };
-    }
-
-    // Case 2: Data object with rateLimit field
-    console.log('Rate limit check response data:', response.data);
-    if (response.data?.rateLimit === true) {
-      console.log('Rate limited by data.rateLimit flag');
+    
+    console.log('Rate limit check status:', response.status);
+    
+    // If status is 429, user is rate limited
+    if (response.status === 429) {
+      const data = await response.json().catch(() => ({}));
       return { 
         rateLimit: true, 
-        message: response.data.message || 'Too many failed attempts. Please try again after 5 minutes.'
+        message: data.message || 'Too many failed attempts. Please try again after 5 minutes.'
       };
     }
-
-    // If we got here, user is not rate limited
-    console.log('User is not rate limited');
+    
+    // For successful responses
+    if (response.ok) {
+      const data = await response.json();
+      if (data.rateLimit === true) {
+        return {
+          rateLimit: true,
+          message: data.message || 'Too many failed attempts. Please try again after 5 minutes.'
+        };
+      }
+      return { rateLimit: false };
+    }
+    
+    // For other error cases, log but don't block
+    console.error('Rate limit check unexpected response:', response.status);
     return { rateLimit: false };
   } catch (error) {
     console.error('Rate limit check error (exception):', error);
-    // Don't block the user if there's an error with rate limiting itself
+    // Don't block the user if there's an error with the check itself
     return { rateLimit: false };
   }
 };

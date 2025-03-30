@@ -60,6 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Starting sign-in process for email:", email);
       
+      // This needs to block if rate limited
       const { rateLimit, message } = await checkRateLimit(email, 'login');
       console.log("Rate limit check result:", { rateLimit, message });
       
