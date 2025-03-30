@@ -26,6 +26,7 @@ dist-ssr
 # Add to .gitignore
 .env
 .env.local
+.env.example
 .env.*.local
 
 # windsurf rules

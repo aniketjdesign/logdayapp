@@ -1,8 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { validateInviteCode, markInviteCodeAsUsed } from '../../services/inviteService';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
 
@@ -12,20 +11,11 @@ export const SignUp: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [inviteCode, setInviteCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  const inputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,37 +35,13 @@ export const SignUp: React.FC = () => {
       return;
     }
 
-    const code = inviteCode.join('').toUpperCase();
-    if (code.length !== 6) {
-      setError('Please enter a valid invite code');
-      return;
-    }
-
     try {
       setError('');
       setLoading(true);
 
-      // Validate invite code
-      const { valid, message } = await validateInviteCode(code);
-      if (!valid) {
-        setError(message);
-        setLoading(false);
-        return;
-      }
-
       // Create user account
-      const { error: signUpError, data } = await signUp(email, password);
+      const { error: signUpError } = await signUp(email, password);
       if (signUpError) throw signUpError;
-
-      if (!data.user?.id) {
-        throw new Error('Failed to create user account');
-      }
-
-      // Mark invite code as used
-      const { success, message: markUsedMessage } = await markInviteCodeAsUsed(code, data.user.id);
-      if (!success) {
-        throw new Error(markUsedMessage);
-      }
 
       // Navigate to login
       navigate('/login');
@@ -85,48 +51,6 @@ export const SignUp: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleInviteCodeChange = (index: number, value: string) => {
-    // Only allow alphanumeric characters
-    const sanitizedValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    
-    if (sanitizedValue.length <= 1) {
-      const newInviteCode = [...inviteCode];
-      newInviteCode[index] = sanitizedValue;
-      setInviteCode(newInviteCode);
-
-      // Move to next input if value is entered
-      if (sanitizedValue.length === 1 && index < 5) {
-        inputRefs[index + 1].current?.focus();
-      }
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
-      // Move to previous input on backspace if current input is empty
-      inputRefs[index - 1].current?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    const pastedArray = pastedData.split('').slice(0, 6);
-    const newInviteCode = [...inviteCode];
-    
-    pastedArray.forEach((char, index) => {
-      if (index < 6) {
-        newInviteCode[index] = char;
-      }
-    });
-    
-    setInviteCode(newInviteCode);
-    
-    // Focus last filled input or first empty input
-    const focusIndex = Math.min(pastedArray.length, 5);
-    inputRefs[focusIndex].current?.focus();
   };
 
   return (
@@ -219,28 +143,6 @@ export const SignUp: React.FC = () => {
                   >
                     {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-normal text-gray-500 mb-1">
-                  Invite Code*
-                </label>
-                <div className="flex gap-1 justify-between">
-                  {inviteCode.map((digit, index) => (
-                    <input
-                      key={index}
-                      ref={inputRefs[index]}
-                      type="text"
-                      maxLength={1}
-                      value={digit}
-                      onChange={(e) => handleInviteCodeChange(index, e.target.value)}
-                      onKeyDown={(e) => handleKeyDown(index, e)}
-                      onPaste={handlePaste}
-                      className="w-14 h-12 text-center border border-gray-300 rounded-lg text-lg font-semibold focus:border-blue-500 focus:ring-blue-500 placeholder-gray-300 uppercase"
-                      required
-                    />
-                  ))}
                 </div>
               </div>
 
