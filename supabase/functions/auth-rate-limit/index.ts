@@ -155,7 +155,11 @@ serve(async (req) => {
         console.log(`Rate limiting ${email} after ${emailAttempts.length} ${action === 'signup' ? '' : 'failed '}attempts`);
       } else {
         rateLimitReason = `IP address (${ipAttempts.length} attempts)`;
-        console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} ${action === 'signup' ? '' : 'failed '}attempts`);
+        if (action === 'signup') {
+          console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} signup attempts (limit: ${IP_SIGNUP_THRESHOLD})`);
+        } else {
+          console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} failed login attempts`);
+        }
       }
       
       console.log(`Returning 429 response due to ${rateLimitReason}`);
@@ -165,7 +169,7 @@ serve(async (req) => {
         JSON.stringify({ 
           rateLimit: true, 
           message: action === 'signup' 
-            ? 'Maximum signup attempts reached. Please try again after 5 minutes.' 
+            ? `Maximum of ${IP_SIGNUP_THRESHOLD} signup attempts per IP address allowed every 5 minutes.` 
             : 'Too many failed attempts. Please try again after 5 minutes.',
           reason: rateLimitReason,
           attemptsCount: isEmailRateLimited ? emailAttempts.length : ipAttempts.length,

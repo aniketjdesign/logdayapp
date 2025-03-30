@@ -87,6 +87,20 @@ export const SignUp: React.FC = () => {
       const { error: signUpError } = await signUp(email, password);
       if (signUpError) throw signUpError;
 
+      console.log('Signup successful, checking if rate limited for future attempts');
+      // Check if we're now rate limited for future attempts
+      const postSignupCheck = await checkRateLimit(email, 'signup');
+      if (postSignupCheck.rateLimit) {
+        console.log('Rate limited after successful signup, displaying message');
+        setIsRateLimitActive(true);
+        const displayMessage = postSignupCheck.reason 
+          ? `Account created successfully. However, ${postSignupCheck.message}`
+          : `Account created successfully. However, ${postSignupCheck.message || 'Maximum signup attempts reached. Please try again after 5 minutes.'}`;
+        setError(displayMessage);
+        setLoading(false);
+        return;
+      }
+
       console.log('Signup successful, navigating to login');
       // Navigate to login
       navigate('/login');

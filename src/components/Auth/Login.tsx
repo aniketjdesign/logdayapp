@@ -105,23 +105,17 @@ export const Login: React.FC = () => {
       console.log('Login failed, recording attempt for:', email);
       await recordFailedAttempt(email, 'login');
       
-      // Check if we are now rate limited after this failed attempt
-      console.log('Checking if now rate limited after failed attempt');
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      console.log('Post-failure rate limit check:', { rateLimit, message });
-      
-      if (rateLimit) {
-        setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
+      // Set appropriate error message based on error type
+      if (err?.message?.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (err?.name === 'AuthApiError' && err?.status === 400) {
+        setError('Invalid email or password. Please try again.');
       } else {
-        if (err?.message?.includes('Invalid login credentials')) {
-          setError('Invalid email or password. Please try again.');
-        } else if (err?.name === 'AuthApiError' && err?.status === 400) {
-          setError('Invalid email or password. Please try again.');
-        } else {
-          setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
-        }
+        setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
       }
+      
+      // Update rate limit status for UI
+      setIsRateLimitActive(await isRateLimited(email, 'login'));
     } finally {
       setLoading(false);
     }
