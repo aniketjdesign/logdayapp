@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
-import { checkRateLimit, recordFailedAttempt } from '../../utils/rateLimiting';
+import { checkRateLimit, recordFailedAttempt, isRateLimited } from '../../utils/rateLimiting';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -15,8 +15,31 @@ export const SignUp: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isRateLimitActive, setIsRateLimitActive] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  // Check for rate limits when email changes
+  useEffect(() => {
+    if (email) {
+      const checkCurrentEmailRateLimit = async () => {
+        try {
+          const isLimited = await isRateLimited(email, 'signup');
+          setIsRateLimitActive(isLimited);
+          
+          if (isLimited && !error) {
+            setError('Too many failed attempts. Please try again after 5 minutes.');
+          } else if (!isLimited && error === 'Too many failed attempts. Please try again after 5 minutes.') {
+            setError('');
+          }
+        } catch (err) {
+          console.error('Error checking rate limit on email change:', err);
+        }
+      };
+      
+      checkCurrentEmailRateLimit();
+    }
+  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,7 +66,8 @@ export const SignUp: React.FC = () => {
       // Check if user is rate limited
       const { rateLimit, message } = await checkRateLimit(email, 'signup');
       if (rateLimit) {
-        setError(message || 'Too many failed attempts. Please try again later.');
+        setIsRateLimitActive(true);
+        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
         setLoading(false);
         return;
       }
@@ -58,8 +82,16 @@ export const SignUp: React.FC = () => {
       // Record failed signup attempt
       await recordFailedAttempt(email, 'signup');
       
+      // Check if we are now rate limited after this failed attempt
+      const { rateLimit, message } = await checkRateLimit(email, 'signup');
+      if (rateLimit) {
+        setIsRateLimitActive(true);
+        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
+      } else {
+        setError(err.message || 'Failed to create account');
+      }
+      
       console.error('Signup error:', err);
-      setError(err.message || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -187,14 +219,14 @@ export const SignUp: React.FC = () => {
             <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || isRateLimitActive}
                 className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                  loading 
+                  loading || isRateLimitActive
                     ? 'bg-blue-400 cursor-not-allowed' 
                     : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 }`}
               >
-                {loading ? 'Creating account...' : 'Sign up'}
+                {loading ? 'Creating account...' : (isRateLimitActive ? 'Too many attempts' : 'Sign up')}
               </button>
             </div>
           </form>
