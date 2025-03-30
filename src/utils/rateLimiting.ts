@@ -9,12 +9,14 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
 
     if (error) {
       console.error('Rate limit check error:', error);
+      // Don't block the user if there's an error with rate limiting
       return { rateLimit: false };
     }
 
     return data as { rateLimit: boolean; message?: string };
   } catch (error) {
     console.error('Rate limit check error:', error);
+    // Don't block the user if there's an error with rate limiting
     return { rateLimit: false };
   }
 };
@@ -22,11 +24,16 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
 // Record a failed attempt
 export const recordFailedAttempt = async (email: string, action: string): Promise<void> => {
   try {
-    await supabase.functions.invoke('auth-rate-limit/recordFailedAttempt', {
+    // We'll use the same endpoint but include recordFailedAttempt in the URL
+    await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
       method: 'POST',
+      headers: {
+        'x-record-failed-attempt': 'true'
+      }
     });
   } catch (error) {
     console.error('Record failed attempt error:', error);
+    // Just log the error, don't fail the application
   }
 }; 

@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-record-failed-attempt',
 };
 
 serve(async (req) => {
@@ -22,14 +22,55 @@ serve(async (req) => {
       );
     }
 
-    // Create a Supabase client with the service role key
+    // Get Supabase URL and key from environment
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
+    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') || '';
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Missing Supabase environment variables');
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Create a Supabase client
     const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_KEY') ?? '',
-      { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
+      supabaseUrl,
+      supabaseKey,
+      { 
+        auth: { persistSession: false },
+        global: { 
+          headers: { 
+            Authorization: req.headers.get('Authorization') || '',
+          } 
+        }
+      }
     );
 
-    // Check for rate limits in a Supabase table
+    // Check if this is a request to record a failed attempt
+    const isRecordFailedAttempt = req.method === 'POST' && req.headers.get('x-record-failed-attempt') === 'true';
+    
+    if (isRecordFailedAttempt) {
+      const { error: insertError } = await supabaseAdmin
+        .from('auth_rate_limits')
+        .insert({ email, action });
+        
+      if (insertError) {
+        console.error('Error recording failed attempt:', insertError);
+        return new Response(
+          JSON.stringify({ error: 'Error recording failed attempt', details: insertError }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    // Otherwise, check for rate limits
     const tableName = 'auth_rate_limits';
     
     // Get current timestamp minus 5 minutes
@@ -48,7 +89,7 @@ serve(async (req) => {
     if (fetchError) {
       console.error('Error fetching rate limit data:', fetchError);
       return new Response(
-        JSON.stringify({ error: 'Error checking rate limits' }),
+        JSON.stringify({ error: 'Error checking rate limits', details: fetchError }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -63,21 +104,6 @@ serve(async (req) => {
         { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    // For "recordFailedAttempt" action, record the attempt
-    if (req.method === 'POST' && req.url.includes('recordFailedAttempt')) {
-      const { error: insertError } = await supabaseAdmin
-        .from(tableName)
-        .insert({ email, action });
-        
-      if (insertError) {
-        console.error('Error recording failed attempt:', insertError);
-        return new Response(
-          JSON.stringify({ error: 'Error recording failed attempt' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-    }
     
     return new Response(
       JSON.stringify({ rateLimit: false }),
@@ -87,7 +113,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error processing request:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: error.message }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
