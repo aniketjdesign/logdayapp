@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../config/supabase';
 
 // Check if the user is rate limited
 export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string }> => {
@@ -8,13 +8,13 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
       body: { email, action },
     });
 
-    console.log('Raw rate limit response:', response);
+    console.log('Raw rate limit response:', JSON.stringify(response));
 
-    // Check for 429 status in error object - Supabase puts this in error for non-2xx responses
+    // Case 1: Error object with 429 status
     if (response.error) {
-      console.log('Response error:', response.error);
+      console.log('Response contains error:', response.error);
       
-      // Check if this is specifically a rate limit error
+      // Check if this is specifically a rate limit error (status 429)
       if (response.error.status === 429) {
         console.log('Rate limited by status code 429');
         
@@ -39,23 +39,26 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
       }
       
       // For other errors, log but don't block the user
-      console.error('Rate limit check error:', response.error);
+      console.error('Rate limit check error (not 429):', response.error);
       return { rateLimit: false };
     }
 
+    // Case 2: Data object with rateLimit field
     console.log('Rate limit check response data:', response.data);
-    // Check the data payload as well
     if (response.data?.rateLimit === true) {
+      console.log('Rate limited by data.rateLimit flag');
       return { 
         rateLimit: true, 
         message: response.data.message || 'Too many failed attempts. Please try again after 5 minutes.'
       };
     }
 
+    // If we got here, user is not rate limited
+    console.log('User is not rate limited');
     return { rateLimit: false };
   } catch (error) {
     console.error('Rate limit check error (exception):', error);
-    // Don't block the user if there's an error with rate limiting
+    // Don't block the user if there's an error with rate limiting itself
     return { rateLimit: false };
   }
 };

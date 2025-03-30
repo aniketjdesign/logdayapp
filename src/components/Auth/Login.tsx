@@ -79,7 +79,7 @@ export const Login: React.FC = () => {
       setLoading(true);
 
       // Check if user is rate limited
-      console.log('Checking rate limit before login attempt');
+      console.log('Checking rate limit before login attempt for:', email);
       const { rateLimit, message } = await checkRateLimit(email, 'login');
       console.log('Rate limit check result:', { rateLimit, message });
       
@@ -91,30 +91,37 @@ export const Login: React.FC = () => {
       }
 
       // Attempt to sign in
+      console.log('Attempting to sign in with email:', email);
       await signIn(email, password);
+      console.log('Sign in successful, navigating...');
       
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
+      console.error('Login error:', err);
+      
       // Record failed login attempt
-      console.log('Login failed, recording attempt');
+      console.log('Login failed, recording attempt for:', email);
       await recordFailedAttempt(email, 'login');
       
       // Check if we are now rate limited after this failed attempt
+      console.log('Checking if now rate limited after failed attempt');
       const { rateLimit, message } = await checkRateLimit(email, 'login');
+      console.log('Post-failure rate limit check:', { rateLimit, message });
+      
       if (rateLimit) {
         setIsRateLimitActive(true);
         setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
       } else {
-        if (err?.name === 'AuthApiError' && err?.status === 400) {
+        if (err?.message?.includes('Invalid login credentials')) {
+          setError('Invalid email or password. Please try again.');
+        } else if (err?.name === 'AuthApiError' && err?.status === 400) {
           setError('Invalid email or password. Please try again.');
         } else {
-          setError('Failed to sign in. Please check your credentials and try again.');
+          setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
         }
       }
-      
-      console.error('Sign in error:', err);
     } finally {
       setLoading(false);
     }

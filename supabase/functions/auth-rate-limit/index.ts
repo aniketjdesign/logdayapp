@@ -17,10 +17,12 @@ serve(async (req) => {
   try {
     const { email, action } = await req.json();
     
+    console.log(`------------------------------`);
     console.log(`Request received for ${email}, action: ${action}`);
     console.log(`Request method: ${req.method}, record failed attempt header: ${req.headers.get('x-record-failed-attempt')}`);
     
     if (!email) {
+      console.log('Error: Email is required');
       return new Response(
         JSON.stringify({ error: 'Email is required' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -105,6 +107,7 @@ serve(async (req) => {
     // Check if rate limited
     if (attempts && attempts.length >= 3) {
       console.log(`Rate limiting ${email} after ${attempts.length} failed attempts`);
+      console.log(`Returning 429 response`);
       
       // Make sure we specify the proper headers for the 429 response
       return new Response(
@@ -124,7 +127,7 @@ serve(async (req) => {
       );
     }
     
-    console.log(`User ${email} is not rate limited`);
+    console.log(`User ${email} is not rate limited, returning 200 response`);
     return new Response(
       JSON.stringify({ rateLimit: false }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

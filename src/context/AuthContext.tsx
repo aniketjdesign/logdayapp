@@ -3,6 +3,7 @@ import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
 import { Analytics } from '../services/analytics';
+import { checkRateLimit, recordFailedAttempt } from '../utils/rateLimiting';
 
 interface AuthContextType {
   user: User | null;
@@ -57,27 +58,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signIn = async (email: string, password: string) => {
     // First check for rate limiting BEFORE attempting authentication
     try {
+      console.log("Starting sign-in process for email:", email);
+      
       const { rateLimit, message } = await checkRateLimit(email, 'login');
+      console.log("Rate limit check result:", { rateLimit, message });
+      
       if (rateLimit) {
+        console.error("Rate limited during sign-in attempt:", message);
         throw new Error(message || 'Too many failed attempts. Please try again later.');
       }
       
       // If not rate limited, proceed with login attempt
+      console.log("Attempting Supabase authentication...");
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase auth error:", error);
+        throw error;
+      }
+      
+      console.log("Authentication successful");
       identifyUser(data.user);
       Analytics.userSignedIn({
         userId: data.user.id,
         email: data.user.email || ''
       });
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Sign-in error details:", err);
+      
       // Check if this is not a rate limit error
       if (!err.message?.includes('Too many failed attempts')) {
         // Record the failed attempt before re-throwing
+        console.log("Recording failed authentication attempt");
         await recordFailedAttempt(email, 'login');
       }
       throw err;
