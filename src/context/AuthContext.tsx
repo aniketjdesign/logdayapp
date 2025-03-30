@@ -55,16 +55,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    identifyUser(data.user);
-    Analytics.userSignedIn({
-      userId: data.user.id,
-      email: data.user.email || ''
-    });
+    // First check if rate limited
+    const { rateLimit, message } = await checkRateLimit(email, 'login');
+    if (rateLimit) {
+      throw new Error(message || 'Too many failed attempts. Please try again later.');
+    }
+
+    try {
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      identifyUser(data.user);
+      // Authentication succeeded - user is signed in
+      Analytics.userSignedIn({
+        userId: data.user.id,
+        email: data.user.email || ''
+      });
+    } catch (err) {
+      // Record the failed attempt before re-throwing
+      await recordFailedAttempt(email, 'login');
+      throw err;
+    }
   };
 
   const signUp = async (email: string, password: string): Promise<AuthResponse> => {
