@@ -64,34 +64,49 @@ export const SignUp: React.FC = () => {
       setLoading(true);
 
       // Check if user is rate limited
-      const { rateLimit, message } = await checkRateLimit(email, 'signup');
+      console.log('Checking rate limit before signup attempt for:', email);
+      const { rateLimit, message, reason } = await checkRateLimit(email, 'signup');
+      console.log('Rate limit check result:', { rateLimit, message, reason });
+      
       if (rateLimit) {
         setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
+        const displayMessage = reason 
+          ? `Too many failed attempts from your ${reason}. Please try again after 5 minutes.`
+          : message || 'Too many failed attempts. Please try again after 5 minutes.';
+        setError(displayMessage);
         setLoading(false);
         return;
       }
 
       // Create user account
+      console.log('Attempting to sign up with email:', email);
       const { error: signUpError } = await signUp(email, password);
       if (signUpError) throw signUpError;
 
+      console.log('Signup successful, navigating to login');
       // Navigate to login
       navigate('/login');
     } catch (err: any) {
+      console.error('Signup error:', err);
+      
       // Record failed signup attempt
+      console.log('Signup failed, recording attempt for:', email);
       await recordFailedAttempt(email, 'signup');
       
       // Check if we are now rate limited after this failed attempt
-      const { rateLimit, message } = await checkRateLimit(email, 'signup');
+      console.log('Checking if now rate limited after failed attempt');
+      const { rateLimit, message, reason } = await checkRateLimit(email, 'signup');
+      console.log('Post-failure rate limit check:', { rateLimit, message, reason });
+      
       if (rateLimit) {
         setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
+        const displayMessage = reason 
+          ? `Too many failed attempts from your ${reason}. Please try again after 5 minutes.`
+          : message || 'Too many failed attempts. Please try again after 5 minutes.';
+        setError(displayMessage);
       } else {
         setError(err.message || 'Failed to create account');
       }
-      
-      console.error('Signup error:', err);
     } finally {
       setLoading(false);
     }

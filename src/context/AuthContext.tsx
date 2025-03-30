@@ -101,19 +101,52 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signUp = async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (response.data.user) {
-      identifyUser(response.data.user);
-      Analytics.userSignedUp({
-        userId: response.data.user.id,
-        email: response.data.user.email || '',
-        createdAt: response.data.user.created_at
+    try {
+      console.log("Starting sign-up process for email:", email);
+      
+      // Check for rate limiting before attempting signup
+      const { rateLimit, message } = await checkRateLimit(email, 'signup');
+      console.log("Rate limit check result:", { rateLimit, message });
+      
+      if (rateLimit) {
+        console.error("Rate limited during sign-up attempt:", message);
+        throw new Error(message || 'Too many failed attempts. Please try again later.');
+      }
+      
+      // If not rate limited, proceed with signup
+      console.log("Attempting Supabase signup...");
+      const response = await supabase.auth.signUp({
+        email,
+        password,
       });
+      
+      if (response.error) {
+        console.error("Supabase signup error:", response.error);
+        throw response.error;
+      }
+      
+      if (response.data.user) {
+        console.log("Signup successful");
+        identifyUser(response.data.user);
+        Analytics.userSignedUp({
+          userId: response.data.user.id,
+          email: response.data.user.email || '',
+          createdAt: response.data.user.created_at
+        });
+      }
+      
+      return response;
+    } catch (err: any) {
+      console.error("Sign-up error details:", err);
+      
+      // Check if this is not a rate limit error
+      if (!err.message?.includes('Too many failed attempts')) {
+        // Record the failed attempt before re-throwing
+        console.log("Recording failed signup attempt");
+        await recordFailedAttempt(email, 'signup');
+      }
+      throw err;
     }
-    return response;
   };
 
   const signOut = async () => {

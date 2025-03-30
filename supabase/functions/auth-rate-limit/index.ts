@@ -3,10 +3,16 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-record-failed-attempt',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-record-failed-attempt, x-real-ip, x-forwarded-for',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
 };
+
+// Rate limit thresholds
+const EMAIL_LOGIN_THRESHOLD = 3;  // 3 failed login attempts per email
+const EMAIL_SIGNUP_THRESHOLD = 3; // 3 failed signup attempts per email
+const IP_LOGIN_THRESHOLD = 10;    // 10 failed login attempts per IP
+const IP_SIGNUP_THRESHOLD = 5;    // 5 failed signup attempts per IP
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -17,8 +23,13 @@ serve(async (req) => {
   try {
     const { email, action } = await req.json();
     
+    // Get client IP address from request headers
+    const clientIp = req.headers.get('x-real-ip') || 
+                     req.headers.get('x-forwarded-for') || 
+                     'unknown-ip';
+    
     console.log(`------------------------------`);
-    console.log(`Request received for ${email}, action: ${action}`);
+    console.log(`Request received for ${email}, action: ${action}, IP: ${clientIp}`);
     console.log(`Request method: ${req.method}, record failed attempt header: ${req.headers.get('x-record-failed-attempt')}`);
     
     if (!email) {
@@ -56,10 +67,14 @@ serve(async (req) => {
     const isRecordFailedAttempt = req.method === 'POST' && req.headers.get('x-record-failed-attempt') === 'true';
     
     if (isRecordFailedAttempt) {
-      console.log('Recording failed attempt for', email);
+      console.log(`Recording failed attempt for ${email} (${action}) from IP: ${clientIp}`);
       const { error: insertError } = await supabaseAdmin
         .from('auth_rate_limits')
-        .insert({ email, action });
+        .insert({ 
+          email, 
+          action,
+          ip_address: clientIp 
+        });
         
       if (insertError) {
         console.error('Error recording failed attempt:', insertError);
@@ -85,8 +100,8 @@ serve(async (req) => {
     
     console.log('Checking for failed attempts since', fiveMinutesAgo.toISOString());
     
-    // Check for recent failed attempts
-    const { data: attempts, error: fetchError } = await supabaseAdmin
+    // 1. Check for email-based rate limiting
+    const { data: emailAttempts, error: emailFetchError } = await supabaseAdmin
       .from(tableName)
       .select('*')
       .eq('email', email)
@@ -94,27 +109,64 @@ serve(async (req) => {
       .gte('created_at', fiveMinutesAgo.toISOString())
       .order('created_at', { ascending: false });
     
-    if (fetchError) {
-      console.error('Error fetching rate limit data:', fetchError);
+    if (emailFetchError) {
+      console.error('Error fetching email rate limit data:', emailFetchError);
       return new Response(
-        JSON.stringify({ error: 'Error checking rate limits', details: fetchError }),
+        JSON.stringify({ error: 'Error checking email rate limits', details: emailFetchError }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    console.log(`Found ${attempts?.length || 0} recent failed attempts for ${email}`);
+    // 2. Check for IP-based rate limiting
+    const { data: ipAttempts, error: ipFetchError } = await supabaseAdmin
+      .from(tableName)
+      .select('*')
+      .eq('ip_address', clientIp)
+      .eq('action', action)
+      .gte('created_at', fiveMinutesAgo.toISOString())
+      .order('created_at', { ascending: false });
     
-    // Check if rate limited
-    if (attempts && attempts.length >= 3) {
-      console.log(`Rate limiting ${email} after ${attempts.length} failed attempts`);
-      console.log(`Returning 429 response`);
+    if (ipFetchError) {
+      console.error('Error fetching IP rate limit data:', ipFetchError);
+      return new Response(
+        JSON.stringify({ error: 'Error checking IP rate limits', details: ipFetchError }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    console.log(`Found ${emailAttempts?.length || 0} recent failed attempts for email ${email}`);
+    console.log(`Found ${ipAttempts?.length || 0} recent failed attempts for IP ${clientIp}`);
+    
+    // Determine thresholds based on action type
+    const emailThreshold = action === 'signup' ? EMAIL_SIGNUP_THRESHOLD : EMAIL_LOGIN_THRESHOLD;
+    const ipThreshold = action === 'signup' ? IP_SIGNUP_THRESHOLD : IP_LOGIN_THRESHOLD;
+    
+    // Check if rate limited by email
+    const isEmailRateLimited = emailAttempts && emailAttempts.length >= emailThreshold;
+    
+    // Check if rate limited by IP
+    const isIpRateLimited = ipAttempts && ipAttempts.length >= ipThreshold;
+    
+    // If either email or IP is rate limited, return 429
+    if (isEmailRateLimited || isIpRateLimited) {
+      let rateLimitReason = '';
+      if (isEmailRateLimited) {
+        rateLimitReason = `email address (${emailAttempts.length} attempts)`;
+        console.log(`Rate limiting ${email} after ${emailAttempts.length} failed attempts`);
+      } else {
+        rateLimitReason = `IP address (${ipAttempts.length} attempts)`;
+        console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} failed attempts`);
+      }
+      
+      console.log(`Returning 429 response due to ${rateLimitReason}`);
       
       // Make sure we specify the proper headers for the 429 response
       return new Response(
         JSON.stringify({ 
           rateLimit: true, 
           message: 'Too many failed attempts. Please try again after 5 minutes.',
-          attemptsCount: attempts.length,
+          reason: rateLimitReason,
+          attemptsCount: isEmailRateLimited ? emailAttempts.length : ipAttempts.length,
         }),
         { 
           status: 429, 
@@ -127,7 +179,7 @@ serve(async (req) => {
       );
     }
     
-    console.log(`User ${email} is not rate limited, returning 200 response`);
+    console.log(`User ${email} from IP ${clientIp} is not rate limited, returning 200 response`);
     return new Response(
       JSON.stringify({ rateLimit: false }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
