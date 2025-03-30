@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
@@ -15,15 +15,41 @@ export const Login: React.FC = () => {
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Debug: Check for existing rate limits when component loads
+  useEffect(() => {
+    const checkInitialRateLimit = async () => {
+      // Only check if there's an email in localStorage (from previous attempts)
+      const savedEmail = localStorage.getItem('lastLoginEmail');
+      if (savedEmail) {
+        console.log('Checking initial rate limit for', savedEmail);
+        const { rateLimit, message } = await checkRateLimit(savedEmail, 'login');
+        console.log('Initial rate limit check:', { rateLimit, message });
+        
+        if (rateLimit) {
+          setError(message || 'Too many failed attempts. Please try again later.');
+        }
+      }
+    };
+    
+    checkInitialRateLimit();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Save email for rate limit checks
+    localStorage.setItem('lastLoginEmail', email);
+    
     try {
       setError('');
       setLoading(true);
 
       // Check if user is rate limited
+      console.log('Checking rate limit before login attempt');
       const { rateLimit, message } = await checkRateLimit(email, 'login');
+      console.log('Rate limit check result:', { rateLimit, message });
+      
       if (rateLimit) {
         setError(message || 'Too many failed attempts. Please try again later.');
         setLoading(false);
@@ -38,6 +64,7 @@ export const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       // Record failed login attempt
+      console.log('Login failed, recording attempt');
       await recordFailedAttempt(email, 'login');
       
       if (err?.name === 'AuthApiError' && err?.status === 400) {

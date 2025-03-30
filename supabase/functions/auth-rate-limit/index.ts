@@ -15,6 +15,9 @@ serve(async (req) => {
   try {
     const { email, action } = await req.json();
     
+    console.log(`Request received for ${email}, action: ${action}`);
+    console.log(`Request method: ${req.method}, record failed attempt header: ${req.headers.get('x-record-failed-attempt')}`);
+    
     if (!email) {
       return new Response(
         JSON.stringify({ error: 'Email is required' }),
@@ -25,6 +28,8 @@ serve(async (req) => {
     // Get Supabase URL and SERVICE ROLE key from environment
     const supabaseUrl = Deno.env.get('SUPABASE_URL') || '';
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
+
+    console.log(`Environment variables: URL exists: ${!!supabaseUrl}, Service Key exists: ${!!supabaseServiceKey}`);
 
     if (!supabaseUrl || !supabaseServiceKey) {
       console.error('Missing Supabase environment variables');
@@ -47,6 +52,7 @@ serve(async (req) => {
     const isRecordFailedAttempt = req.method === 'POST' && req.headers.get('x-record-failed-attempt') === 'true';
     
     if (isRecordFailedAttempt) {
+      console.log('Recording failed attempt for', email);
       const { error: insertError } = await supabaseAdmin
         .from('auth_rate_limits')
         .insert({ email, action });
@@ -59,6 +65,7 @@ serve(async (req) => {
         );
       }
       
+      console.log('Successfully recorded failed attempt');
       return new Response(
         JSON.stringify({ success: true }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -71,6 +78,8 @@ serve(async (req) => {
     // Get current timestamp minus 5 minutes
     const fiveMinutesAgo = new Date();
     fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
+    
+    console.log('Checking for failed attempts since', fiveMinutesAgo.toISOString());
     
     // Check for recent failed attempts
     const { data: attempts, error: fetchError } = await supabaseAdmin
@@ -89,8 +98,11 @@ serve(async (req) => {
       );
     }
     
+    console.log(`Found ${attempts?.length || 0} recent failed attempts for ${email}`);
+    
     // Check if rate limited
     if (attempts && attempts.length >= 3) {
+      console.log(`Rate limiting ${email} after ${attempts.length} failed attempts`);
       return new Response(
         JSON.stringify({ 
           rateLimit: true, 
@@ -100,6 +112,7 @@ serve(async (req) => {
       );
     }
     
+    console.log(`User ${email} is not rate limited`);
     return new Response(
       JSON.stringify({ rateLimit: false }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
