@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 // Rate limit thresholds
-const EMAIL_LOGIN_THRESHOLD = 3;  // 3 failed login attempts per email
+const EMAIL_LOGIN_THRESHOLD = 5;  // 3 failed login attempts per email
 const EMAIL_SIGNUP_THRESHOLD = 3; // 3 failed signup attempts per email
 const IP_LOGIN_THRESHOLD = 10;    // 10 failed login attempts per IP
 const IP_SIGNUP_THRESHOLD = 2;    // 2 signup attempts (failed or successful) per IP every 5 minutes
