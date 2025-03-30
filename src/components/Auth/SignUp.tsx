@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
-import { checkRateLimit, recordFailedAttempt, isRateLimited } from '../../utils/rateLimiting';
+import { checkRateLimit, recordFailedAttempt, isRateLimited, checkIpRateLimit } from '../../utils/rateLimiting';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -18,6 +18,26 @@ export const SignUp: React.FC = () => {
   const [isRateLimitActive, setIsRateLimitActive] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+
+  // Check for IP-based rate limits when the component mounts
+  useEffect(() => {
+    const checkIpRateLimits = async () => {
+      try {
+        console.log('Checking IP-based rate limits on page load');
+        const { rateLimit, message } = await checkIpRateLimit('signup');
+        
+        if (rateLimit) {
+          console.log('IP is rate limited on page load');
+          setIsRateLimitActive(true);
+          setError(message || 'Maximum signup attempts reached. Please try again after 5 minutes.');
+        }
+      } catch (err) {
+        console.error('Error checking IP rate limit on page load:', err);
+      }
+    };
+    
+    checkIpRateLimits();
+  }, []);
 
   // Check for rate limits when email changes
   useEffect(() => {
