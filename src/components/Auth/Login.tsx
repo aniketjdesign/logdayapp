@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
 import { checkRateLimit, recordFailedAttempt, isRateLimited } from '../../utils/rateLimiting';
 
 // Key for storing rate limit data in localStorage
 const RATE_LIMIT_KEY = 'logday_rate_limit_data';
+const RATE_LIMIT_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -16,9 +17,59 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRateLimitActive, setIsRateLimitActive] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const timerRef = useRef<number | null>(null);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Format time remaining as MM:SS
+  const formatTimeRemaining = (milliseconds: number): string => {
+    if (milliseconds <= 0) return '00:00';
+    const totalSeconds = Math.ceil(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  };
+  
+  // Start countdown timer for rate limit
+  const startRateLimitCountdown = (endTimeMs: number) => {
+    // Clear any existing timer
+    if (timerRef.current) {
+      window.clearInterval(timerRef.current);
+    }
+    
+    // Calculate initial time remaining
+    const updateTimeRemaining = () => {
+      const remaining = endTimeMs - Date.now();
+      if (remaining <= 0) {
+        // Time's up, clear rate limit
+        setIsRateLimitActive(false);
+        setTimeRemaining(0);
+        setError('');
+        localStorage.removeItem(RATE_LIMIT_KEY);
+        window.clearInterval(timerRef.current!);
+        timerRef.current = null;
+      } else {
+        setTimeRemaining(remaining);
+      }
+    };
+    
+    // Set initial value
+    updateTimeRemaining();
+    
+    // Update every second
+    timerRef.current = window.setInterval(updateTimeRemaining, 1000);
+  };
+  
+  // Clean up timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+      }
+    };
+  }, []);
   
   // Load rate limit data from localStorage on component mount
   useEffect(() => {
@@ -39,7 +90,7 @@ export const Login: React.FC = () => {
             // If this email is rate limited and the timeout hasn't expired
             if (limited && limitedEmail === savedEmail && until > Date.now()) {
               setIsRateLimitActive(true);
-              setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+              startRateLimitCountdown(until);
               return;
             } else if (until < Date.now()) {
               // Clear expired rate limit
@@ -64,22 +115,29 @@ export const Login: React.FC = () => {
     
     if (limitActive) {
       // Set rate limit for 5 minutes
-      const until = Date.now() + (5 * 60 * 1000);
+      const until = Date.now() + RATE_LIMIT_DURATION_MS;
       localStorage.setItem(RATE_LIMIT_KEY, JSON.stringify({
         limited: true,
         email: emailToLimit,
         until
       }));
       
-      setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
+      // Start countdown timer
+      startRateLimitCountdown(until);
     } else {
       localStorage.removeItem(RATE_LIMIT_KEY);
+      // Clear timer if exists
+      if (timerRef.current) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setTimeRemaining(0);
     }
   };
   
   // Check if an email is rate limited with the server
   const checkEmailRateLimit = async (emailToCheck: string) => {
-    if (!emailToCheck) return false;
+    if (!emailToCheck) return;
     
     try {
       console.log(`Checking rate limit for ${emailToCheck}`);
@@ -88,10 +146,9 @@ export const Login: React.FC = () => {
       if (rateLimit) {
         console.log(`${emailToCheck} is rate limited!`);
         setRateLimited(emailToCheck, true);
-        return true;
       }
       
-      return false;
+      return rateLimit;
     } catch (err) {
       console.error('Error checking rate limit:', err);
       return false;
@@ -104,20 +161,13 @@ export const Login: React.FC = () => {
       // Check if this email is already known to be rate limited
       const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
       if (rateLimitData) {
-        try {
-          const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
-          
-          if (limited && limitedEmail === email && until > Date.now()) {
-            // This email is already known to be rate limited
-            setIsRateLimitActive(true);
-            setError(`Too many failed attempts. Please try again after ${new Date(until).toLocaleTimeString()}.`);
-            return;
-          } else if (until < Date.now()) {
-            // Clear expired rate limit
-            localStorage.removeItem(RATE_LIMIT_KEY);
-          }
-        } catch (e) {
-          console.error('Error parsing rate limit data:', e);
+        const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
+        
+        if (limited && limitedEmail === email && until > Date.now()) {
+          // This email is already known to be rate limited
+          setIsRateLimitActive(true);
+          startRateLimitCountdown(until);
+          return;
         }
       }
       
@@ -125,6 +175,9 @@ export const Login: React.FC = () => {
       checkEmailRateLimit(email);
     }
   }, [email]);
+
+  // Track failed login attempts
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,45 +195,51 @@ export const Login: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Check for rate limiting BEFORE attempting login
+      // Final check for rate limiting before attempting login
       const isLimited = await checkEmailRateLimit(email);
       if (isLimited) {
-        console.log('Rate limited before login attempt');
         setLoading(false);
-        return;
+        return; // Stop here if rate limited
       }
 
       // Attempt to sign in
       await signIn(email, password);
       
-      // If we reach here, login was successful
+      // Reset failed attempts counter on successful login
+      setFailedAttempts(0);
+      localStorage.removeItem('failedLoginAttempts');
+      
+      // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
       
-      // Record failed login attempt
-      console.log('Login failed, recording failed attempt');
+      // Increment failed attempts counter
+      const newFailedAttempts = failedAttempts + 1;
+      setFailedAttempts(newFailedAttempts);
+      localStorage.setItem('failedLoginAttempts', newFailedAttempts.toString());
+      
+      // Record failed login attempt and update rate limit status
       try {
+        console.log('Login failed, recording attempt');
         await recordFailedAttempt(email, 'login');
         
-        // Check if we've hit the rate limit with this attempt
-        const nowLimited = await checkEmailRateLimit(email);
-        if (nowLimited) {
-          console.log('Rate limit triggered after failed attempt');
-          // Error message is set by checkEmailRateLimit via setRateLimited
+        // Check if we are now rate limited after this failed attempt
+        const { rateLimit } = await checkRateLimit(email, 'login');
+        if (rateLimit || newFailedAttempts >= 3) {
+          console.log('Rate limit activated after failed attempt');
+          setRateLimited(email, true);
         } else {
-          // Just a regular authentication error
-          if (err?.status === 400 || err?.name === 'AuthApiError') {
-            setError('Invalid email or password. Please try again.');
+          if (err?.name === 'AuthApiError' && err?.status === 400) {
+            setError(`Invalid email or password. Please try again. (${3 - newFailedAttempts} attempts remaining)`);
           } else {
-            setError(err?.message || 'Failed to sign in. Please check your credentials.');
+            setError('Failed to sign in. Please check your credentials and try again.');
           }
         }
       } catch (recordError) {
-        // If recording the failed attempt fails, still show the auth error
-        console.error('Error recording failed attempt:', recordError);
-        setError('Invalid email or password. Please try again.');
+        console.error('Error handling failed attempt:', recordError);
+        setError('An error occurred. Please try again later.');
       }
     } finally {
       setLoading(false);
@@ -202,10 +261,14 @@ export const Login: React.FC = () => {
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center" role="alert">
+        {(error || isRateLimitActive) && (
+          <div className={`${isRateLimitActive ? 'bg-yellow-100 border-yellow-400 text-yellow-700' : 'bg-red-100 border-red-400 text-red-700'} px-4 py-3 rounded relative flex items-center`} role="alert">
             <AlertCircle className="h-5 w-5 mr-2" />
-            <span className="block sm:inline">{error}</span>
+            <span className="block sm:inline">
+              {isRateLimitActive 
+                ? `Too many failed login attempts. Please try again in ${formatTimeRemaining(timeRemaining)}.` 
+                : error}
+            </span>
           </div>
         )}
 
@@ -221,10 +284,11 @@ export const Login: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${isRateLimitActive ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'} placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="ronnie@coleman.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                disabled={isRateLimitActive}
               />
             </div>
 
@@ -239,14 +303,16 @@ export const Login: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  className={`appearance-none rounded-lg relative block w-full px-3 py-2 border ${isRateLimitActive ? 'border-yellow-300 bg-yellow-50' : 'border-gray-300'} placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                   placeholder="Make sure nobody is looking"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  disabled={isRateLimitActive}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  disabled={isRateLimitActive}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
@@ -257,7 +323,7 @@ export const Login: React.FC = () => {
 
           <div className="flex items-center justify-between">
             <div className="text-sm">
-              <Link to="/reset-password" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link to="/reset-password" className={`font-medium ${isRateLimitActive ? 'text-yellow-600 hover:text-yellow-500' : 'text-blue-600 hover:text-blue-500'}`}>
                 Forgot your password?
               </Link>
             </div>
@@ -268,12 +334,21 @@ export const Login: React.FC = () => {
               type="submit"
               disabled={loading || isRateLimitActive}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading || isRateLimitActive
+                loading
                   ? 'bg-blue-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                  : isRateLimitActive
+                    ? 'bg-yellow-500 cursor-not-allowed'
+                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
               }`}
             >
-              {loading ? 'Signing in...' : (isRateLimitActive ? 'Too many attempts' : 'Sign in')}
+              {loading ? 'Signing in...' : (
+                isRateLimitActive ? (
+                  <span className="flex items-center">
+                    <Lock className="w-4 h-4 mr-2" />
+                    Try again in {formatTimeRemaining(timeRemaining)}
+                  </span>
+                ) : 'Sign in'
+              )}
             </button>
           </div>
         </form>
