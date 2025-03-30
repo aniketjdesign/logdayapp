@@ -4,6 +4,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-record-failed-attempt',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
 };
 
 serve(async (req) => {
@@ -103,12 +105,22 @@ serve(async (req) => {
     // Check if rate limited
     if (attempts && attempts.length >= 3) {
       console.log(`Rate limiting ${email} after ${attempts.length} failed attempts`);
+      
+      // Make sure we specify the proper headers for the 429 response
       return new Response(
         JSON.stringify({ 
           rateLimit: true, 
-          message: 'Too many failed attempts. Please try again after 5 minutes.'
+          message: 'Too many failed attempts. Please try again after 5 minutes.',
+          attemptsCount: attempts.length,
         }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { 
+          status: 429, 
+          headers: { 
+            ...corsHeaders, 
+            'Content-Type': 'application/json',
+            'Retry-After': '300' // 5 minutes in seconds
+          } 
+        }
       );
     }
     

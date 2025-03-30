@@ -4,20 +4,40 @@ import { supabase } from '../lib/supabase';
 export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string }> => {
   try {
     console.log(`Checking rate limit for ${email} (${action})`);
-    const { data, error } = await supabase.functions.invoke('auth-rate-limit', {
+    const response = await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
     });
 
-    if (error) {
-      console.error('Rate limit check error:', error);
+    console.log('Raw rate limit response:', response);
+
+    // Check for 429 status (too many requests)
+    if (response.error?.status === 429) {
+      console.log('Rate limited by status code 429');
+      // If we get a 429, we are rate limited regardless of body content
+      return { 
+        rateLimit: true, 
+        message: response.error?.message || 'Too many failed attempts. Please try again after 5 minutes.' 
+      };
+    }
+
+    if (response.error) {
+      console.error('Rate limit check error:', response.error);
       // Don't block the user if there's an error with rate limiting
       return { rateLimit: false };
     }
 
-    console.log('Rate limit check response:', data);
-    return data as { rateLimit: boolean; message?: string };
+    console.log('Rate limit check response data:', response.data);
+    // Check the data payload as well
+    if (response.data?.rateLimit === true) {
+      return { 
+        rateLimit: true, 
+        message: response.data.message || 'Too many failed attempts. Please try again after 5 minutes.'
+      };
+    }
+
+    return { rateLimit: false };
   } catch (error) {
-    console.error('Rate limit check error:', error);
+    console.error('Rate limit check error (exception):', error);
     // Don't block the user if there's an error with rate limiting
     return { rateLimit: false };
   }
@@ -28,7 +48,7 @@ export const recordFailedAttempt = async (email: string, action: string): Promis
   try {
     console.log(`Recording failed attempt for ${email} (${action})`);
     // We'll use the same endpoint but include recordFailedAttempt in the URL
-    const { data, error } = await supabase.functions.invoke('auth-rate-limit', {
+    const response = await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
       method: 'POST',
       headers: {
@@ -36,13 +56,13 @@ export const recordFailedAttempt = async (email: string, action: string): Promis
       }
     });
     
-    console.log('Record failed attempt response:', { data, error });
+    console.log('Record failed attempt response:', response);
     
-    if (error) {
-      console.error('Failed to record attempt:', error);
+    if (response.error) {
+      console.error('Failed to record attempt:', response.error);
     }
   } catch (error) {
-    console.error('Record failed attempt error:', error);
+    console.error('Record failed attempt error (exception):', error);
     // Just log the error, don't fail the application
   }
 }; 
