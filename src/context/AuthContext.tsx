@@ -55,14 +55,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // First check for rate limiting BEFORE attempting authentication
     try {
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      if (rateLimit) {
-        throw new Error(message || 'Too many failed attempts. Please try again later.');
-      }
-      
-      // If not rate limited, proceed with login attempt
+      // Attempt to sign in
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -75,11 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.user.email || ''
       });
     } catch (err) {
-      // Check if this is not a rate limit error
-      if (!err.message?.includes('Too many failed attempts')) {
-        // Record the failed attempt before re-throwing
-        await recordFailedAttempt(email, 'login');
-      }
       throw err;
     }
   };

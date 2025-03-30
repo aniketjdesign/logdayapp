@@ -98,8 +98,9 @@ export const Login: React.FC = () => {
             }
           }
           
-          // Double-check with the server
-          checkEmailRateLimit(savedEmail);
+          // Only check with server if no valid localStorage data exists
+          // Remove this check to prevent unnecessary API calls on mount
+          // checkEmailRateLimit(savedEmail);
         }
       } catch (err) {
         console.error('Error loading rate limit data:', err);
@@ -155,27 +156,6 @@ export const Login: React.FC = () => {
     }
   };
   
-  // Handle email changes - check for rate limits
-  useEffect(() => {
-    if (email) {
-      // Check if this email is already known to be rate limited
-      const rateLimitData = localStorage.getItem(RATE_LIMIT_KEY);
-      if (rateLimitData) {
-        const { limited, email: limitedEmail, until } = JSON.parse(rateLimitData);
-        
-        if (limited && limitedEmail === email && until > Date.now()) {
-          // This email is already known to be rate limited
-          setIsRateLimitActive(true);
-          startRateLimitCountdown(until);
-          return;
-        }
-      }
-      
-      // Otherwise check with the server
-      checkEmailRateLimit(email);
-    }
-  }, [email]);
-
   // Track failed login attempts
   const [failedAttempts, setFailedAttempts] = useState(0);
 
@@ -195,7 +175,7 @@ export const Login: React.FC = () => {
       setLoading(true);
       setError('');
 
-      // Final check for rate limiting before attempting login
+      // Only check rate limiting once at login time
       const isLimited = await checkEmailRateLimit(email);
       if (isLimited) {
         setLoading(false);

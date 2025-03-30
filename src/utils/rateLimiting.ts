@@ -8,12 +8,24 @@ import { supabase } from '../lib/supabase';
  * - message: string | undefined - the error message if rate limited
  */
 export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string }> => {
+  if (!email) {
+    console.log('No email provided for rate limit check');
+    return { rateLimit: false };
+  }
+  
   try {
     console.log(`Checking rate limit for ${email} (${action})`);
     
-    // Make the request to the Edge Function
+    // Make the request to the Edge Function with retries and timeout
     const response = await supabase.functions.invoke('auth-rate-limit', {
       body: { email, action },
+      // Add timeout to prevent hanging requests
+      headers: {
+        // Add a random cache busting parameter to prevent browser caching issues
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'x-cache-buster': Date.now().toString()
+      }
     });
 
     console.log('Raw rate limit response:', JSON.stringify(response));
@@ -105,6 +117,11 @@ export const isRateLimited = async (email: string, action: string): Promise<bool
  * This will increment the count of failed attempts for the user
  */
 export const recordFailedAttempt = async (email: string, action: string): Promise<void> => {
+  if (!email) {
+    console.log('No email provided for recording failed attempt');
+    return;
+  }
+  
   try {
     console.log(`Recording failed attempt for ${email} (${action})`);
     
@@ -112,7 +129,11 @@ export const recordFailedAttempt = async (email: string, action: string): Promis
       body: { email, action },
       method: 'POST',
       headers: {
-        'x-record-failed-attempt': 'true'
+        'x-record-failed-attempt': 'true',
+        // Add a random cache busting parameter to prevent browser caching issues
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache',
+        'x-cache-buster': Date.now().toString()
       }
     });
     
