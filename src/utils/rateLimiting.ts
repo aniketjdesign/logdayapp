@@ -1,7 +1,7 @@
 import { supabase } from '../config/supabase';
 
 // Check if the user is rate limited
-export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string; reason?: string }> => {
+export const checkRateLimit = async (email: string, action: string): Promise<{ rateLimit: boolean; message?: string; reason?: string; timeRemaining?: number }> => {
   try {
     console.log(`Checking rate limit for ${email} (${action})`);
     
@@ -25,8 +25,9 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
       
       return { 
         rateLimit: true, 
-        message: formattedMessage || data.message || 'Too many attempts. Please try again after 5 minutes.',
-        reason: data.reason
+        message: formattedMessage || data.message || 'Too many attempts. Please try again later.',
+        reason: data.reason,
+        timeRemaining
       };
     }
     
@@ -39,8 +40,9 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
         
         return {
           rateLimit: true,
-          message: formattedMessage || data.message || 'Too many attempts. Please try again after 5 minutes.',
-          reason: data.reason
+          message: formattedMessage || data.message || 'Too many attempts. Please try again later.',
+          reason: data.reason,
+          timeRemaining
         };
       }
       return { rateLimit: false };
@@ -87,7 +89,7 @@ export const isRateLimited = async (email: string, action: string): Promise<bool
 };
 
 // Check for IP-based rate limiting only (for preemptive checks)
-export const checkIpRateLimit = async (action: string): Promise<{ rateLimit: boolean; message?: string; reason?: string }> => {
+export const checkIpRateLimit = async (action: string): Promise<{ rateLimit: boolean; message?: string; reason?: string; timeRemaining?: number }> => {
   try {
     console.log(`Checking IP-based rate limit for ${action}`);
     
@@ -106,10 +108,12 @@ export const checkIpRateLimit = async (action: string): Promise<{ rateLimit: boo
     // If status is 429, IP is rate limited
     if (response.status === 429) {
       const data = await response.json().catch(() => ({}));
+      const timeRemaining = data.timeRemaining || 300; // Default to 5 minutes (300 seconds)
       return { 
         rateLimit: true, 
-        message: data.message || 'Too many attempts from your IP address. Please try again after 5 minutes.',
-        reason: data.reason
+        message: data.message || 'Too many attempts from your IP address. Please try again later.',
+        reason: data.reason,
+        timeRemaining
       };
     }
     
@@ -117,10 +121,12 @@ export const checkIpRateLimit = async (action: string): Promise<{ rateLimit: boo
     if (response.ok) {
       const data = await response.json();
       if (data.rateLimit === true) {
+        const timeRemaining = data.timeRemaining || 300; // Default to 5 minutes (300 seconds)
         return {
           rateLimit: true,
-          message: data.message || 'Too many attempts from your IP address. Please try again after 5 minutes.',
-          reason: data.reason
+          message: data.message || 'Too many attempts from your IP address. Please try again later.',
+          reason: data.reason,
+          timeRemaining
         };
       }
       return { rateLimit: false };

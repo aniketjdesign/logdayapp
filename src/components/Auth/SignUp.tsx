@@ -21,45 +21,69 @@ export const SignUp: React.FC = () => {
 
   // Check for IP-based rate limits when the component mounts
   useEffect(() => {
-    const checkIpRateLimits = async () => {
+    const checkRateLimitsOnPageLoad = async () => {
       try {
-        console.log('Checking IP-based rate limits on page load');
-        const { rateLimit, message } = await checkIpRateLimit('signup');
+        // First check if we have cached rate limit info in sessionStorage
+        const cachedLimit = sessionStorage.getItem('signup_rate_limit');
+        if (cachedLimit) {
+          const limitData = JSON.parse(cachedLimit);
+          
+          // Check if cached rate limit is still valid
+          if (limitData.expiry > Date.now()) {
+            console.log('Using cached rate limit info, expires in:', 
+              Math.round((limitData.expiry - Date.now())/1000), 'seconds');
+            setIsRateLimitActive(true);
+            setError(limitData.message || 'Maximum signup attempts reached. Please try again later.');
+            return;
+          } else {
+            // Clear expired rate limit info
+            console.log('Cached rate limit has expired, clearing');
+            sessionStorage.removeItem('signup_rate_limit');
+          }
+        }
+        
+        console.log('Checking IP-based rate limits on signup page load');
+        const { rateLimit, message, timeRemaining } = await checkIpRateLimit('signup');
         
         if (rateLimit) {
-          console.log('IP is rate limited on page load');
+          console.log('IP is rate limited on signup page load');
           setIsRateLimitActive(true);
-          setError(message || 'Maximum signup attempts reached. Please try again after 5 minutes.');
+          
+          // Calculate expiry time (use timeRemaining if available, otherwise default to 5 minutes)
+          const expiry = Date.now() + (timeRemaining ? timeRemaining * 1000 : 300000);
+          
+          // Store rate limit info in sessionStorage for persistence across navigation/refreshes
+          sessionStorage.setItem('signup_rate_limit', JSON.stringify({
+            active: true,
+            message: message || 'Maximum signup attempts reached. Please try again later.',
+            expiry: expiry
+          }));
+          
+          setError(message || 'Maximum signup attempts reached. Please try again later.');
         }
       } catch (err) {
-        console.error('Error checking IP rate limit on page load:', err);
+        console.error('Error checking IP rate limit on signup page load:', err);
       }
     };
     
-    checkIpRateLimits();
-  }, []);
-
-  // Check for rate limits when email changes
-  useEffect(() => {
-    if (email) {
-      const checkCurrentEmailRateLimit = async () => {
-        try {
-          const isLimited = await isRateLimited(email, 'signup');
-          setIsRateLimitActive(isLimited);
-          
-          if (isLimited && !error) {
-            setError('Too many failed attempts. Please try again after 5 minutes.');
-          } else if (!isLimited && error === 'Too many failed attempts. Please try again after 5 minutes.') {
-            setError('');
-          }
-        } catch (err) {
-          console.error('Error checking rate limit on email change:', err);
+    checkRateLimitsOnPageLoad();
+    
+    // Set up interval to check if rate limit has expired
+    const interval = setInterval(() => {
+      const cachedLimit = sessionStorage.getItem('signup_rate_limit');
+      if (cachedLimit) {
+        const limitData = JSON.parse(cachedLimit);
+        if (limitData.expiry <= Date.now()) {
+          console.log('Rate limit expired during session, clearing');
+          sessionStorage.removeItem('signup_rate_limit');
+          setIsRateLimitActive(false);
+          setError('');
         }
-      };
-      
-      checkCurrentEmailRateLimit();
-    }
-  }, [email]);
+      }
+    }, 10000); // Check every 10 seconds
+    
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,16 +107,27 @@ export const SignUp: React.FC = () => {
       setError('');
       setLoading(true);
 
-      // Check if user is rate limited
-      console.log('Checking rate limit before signup attempt for:', email);
-      const { rateLimit, message, reason } = await checkRateLimit(email, 'signup');
+      // Check if user is rate limited (one final check before attempting signup)
+      console.log('Final check before signup attempt for:', email);
+      const { rateLimit, message, reason, timeRemaining } = await checkRateLimit(email, 'signup');
       console.log('Rate limit check result:', { rateLimit, message, reason });
       
       if (rateLimit) {
         setIsRateLimitActive(true);
+        
+        // Calculate expiry time
+        const expiry = Date.now() + (timeRemaining ? timeRemaining * 1000 : 300000);
+        
+        // Cache the rate limit information
+        sessionStorage.setItem('signup_rate_limit', JSON.stringify({
+          active: true,
+          message: message || `Too many attempts from your ${reason || 'location'}. Please try again later.`,
+          expiry: expiry
+        }));
+        
         const displayMessage = reason 
-          ? `Too many attempts from your ${reason}. Please try again after 5 minutes.`
-          : message || 'Too many attempts. Please try again after 5 minutes.';
+          ? `Too many attempts from your ${reason}. Please try again later.`
+          : message || 'Too many attempts. Please try again later.';
         setError(displayMessage);
         setLoading(false);
         return;
@@ -110,19 +145,8 @@ export const SignUp: React.FC = () => {
         throw signUpError;
       }
 
-      console.log('Signup successful, checking if rate limited for future attempts');
-      // Check if we're now rate limited for future attempts
-      const postSignupCheck = await checkRateLimit(email, 'signup');
-      if (postSignupCheck.rateLimit) {
-        console.log('Rate limited after successful signup, displaying message');
-        setIsRateLimitActive(true);
-        const displayMessage = postSignupCheck.reason 
-          ? `Account created successfully. However, ${postSignupCheck.message}`
-          : `Account created successfully. However, ${postSignupCheck.message || 'Maximum signup attempts reached. Please try again after 5 minutes.'}`;
-        setError(displayMessage);
-        setLoading(false);
-        return;
-      }
+      // If signup was successful, clear any cached rate limit info
+      sessionStorage.removeItem('signup_rate_limit');
 
       console.log('Signup successful, navigating to login');
       // Navigate to login
@@ -138,14 +162,25 @@ export const SignUp: React.FC = () => {
       
       // Check if we are now rate limited after this failed attempt
       console.log('Checking if now rate limited after failed attempt');
-      const { rateLimit, message, reason } = await checkRateLimit(email, 'signup');
+      const { rateLimit, message, reason, timeRemaining } = await checkRateLimit(email, 'signup');
       console.log('Post-failure rate limit check:', { rateLimit, message, reason });
       
       if (rateLimit) {
         setIsRateLimitActive(true);
+        
+        // Calculate expiry time
+        const expiry = Date.now() + (timeRemaining ? timeRemaining * 1000 : 300000);
+        
+        // Cache the rate limit information
+        sessionStorage.setItem('signup_rate_limit', JSON.stringify({
+          active: true,
+          message: message || `Too many attempts from your ${reason || 'location'}. Please try again later.`,
+          expiry: expiry
+        }));
+        
         const displayMessage = reason 
-          ? `Too many attempts from your ${reason}. Please try again after 5 minutes.`
-          : message || 'Too many attempts. Please try again after 5 minutes.';
+          ? `Too many attempts from your ${reason}. Please try again later.`
+          : message || 'Too many attempts. Please try again later.';
         setError(displayMessage);
       } else {
         setError(err.message || 'Failed to create account');
