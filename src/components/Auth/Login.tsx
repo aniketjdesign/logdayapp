@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
-import { checkRateLimit, recordFailedAttempt, isRateLimited, checkIpRateLimit } from '../../utils/rateLimiting';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,128 +11,27 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [isRateLimitActive, setIsRateLimitActive] = useState(false);
   const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Check for IP-based rate limits when the component mounts
-  useEffect(() => {
-    const checkIpRateLimits = async () => {
-      try {
-        console.log('Checking IP-based rate limits on login page load');
-        const { rateLimit, message } = await checkIpRateLimit('login');
-        
-        if (rateLimit) {
-          console.log('IP is rate limited on login page load');
-          setIsRateLimitActive(true);
-          setError(message || 'Too many failed login attempts. Please try again after 5 minutes.');
-        }
-      } catch (err) {
-        console.error('Error checking IP rate limit on login page load:', err);
-      }
-    };
-    
-    checkIpRateLimits();
-  }, []);
-  
-  // Check for rate limits when email changes
-  useEffect(() => {
-    // First, check if we have a saved email from previous login attempts
-    const savedEmail = localStorage.getItem('lastLoginEmail') || '';
-    
-    if (savedEmail) {
-      // If we have a saved email and current email is empty, use the saved one
-      if (!email && savedEmail) {
-        setEmail(savedEmail);
-      }
-      
-      // Check for rate limits on the saved email
-      const checkSavedEmailRateLimit = async () => {
-        try {
-          const isLimited = await isRateLimited(savedEmail, 'login');
-          setIsRateLimitActive(isLimited);
-          
-          if (isLimited) {
-            setError('Too many failed attempts. Please try again after 5 minutes.');
-          }
-        } catch (err) {
-          console.error('Error checking initial rate limit:', err);
-        }
-      };
-      
-      checkSavedEmailRateLimit();
-    }
-  }, []);
-  
-  // Check for rate limits when the email changes
-  useEffect(() => {
-    if (email) {
-      const checkCurrentEmailRateLimit = async () => {
-        try {
-          const isLimited = await isRateLimited(email, 'login');
-          setIsRateLimitActive(isLimited);
-          
-          if (isLimited && !error) {
-            setError('Too many failed attempts. Please try again after 5 minutes.');
-          } else if (!isLimited && error === 'Too many failed attempts. Please try again after 5 minutes.') {
-            setError('');
-          }
-        } catch (err) {
-          console.error('Error checking rate limit on email change:', err);
-        }
-      };
-      
-      checkCurrentEmailRateLimit();
-    }
-  }, [email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Save email for rate limit checks
-    localStorage.setItem('lastLoginEmail', email);
-    
     try {
       setError('');
       setLoading(true);
-
-      // Check if user is rate limited
-      console.log('Checking rate limit before login attempt for:', email);
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      console.log('Rate limit check result:', { rateLimit, message });
-      
-      if (rateLimit) {
-        setIsRateLimitActive(true);
-        setError(message || 'Too many failed attempts. Please try again after 5 minutes.');
-        setLoading(false);
-        return;
-      }
 
       // Attempt to sign in
       console.log('Attempting to sign in with email:', email);
       await signIn(email, password);
       console.log('Sign in successful, navigating...');
       
-      // Check if we're now rate limited even after successful login
-      // This handles the edge case where correct credentials are provided after 3 failed attempts
-      const postLoginCheck = await checkRateLimit(email, 'login');
-      if (postLoginCheck.rateLimit) {
-        setIsRateLimitActive(true);
-        setError(postLoginCheck.message || 'Account is temporarily locked due to too many failed attempts. Please try again after 5 minutes.');
-        setLoading(false);
-        return;
-      }
-      
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
-      
-      // Record failed login attempt
-      console.log('Login failed, recording attempt for:', email);
-      await recordFailedAttempt(email, 'login');
       
       // Set appropriate error message based on error type
       if (err?.message?.includes('Invalid login credentials')) {
@@ -142,14 +40,6 @@ export const Login: React.FC = () => {
         setError('Invalid email or password. Please try again.');
       } else {
         setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
-      }
-      
-      // Check if we're now rate limited after this failed attempt
-      const isLimited = await isRateLimited(email, 'login');
-      setIsRateLimitActive(isLimited);
-      
-      if (isLimited) {
-        setError('Too many failed login attempts. Your account is temporarily locked for 5 minutes.');
       }
     } finally {
       setLoading(false);
@@ -208,25 +98,25 @@ export const Login: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Make sure nobody is looking"
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm pr-10"
+                  placeholder="•••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                 </button>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-end">
             <div className="text-sm">
-              <Link to="/reset-password" className="font-medium text-blue-600 hover:text-blue-500">
+              <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
                 Forgot your password?
               </Link>
             </div>
@@ -235,31 +125,27 @@ export const Login: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={loading || isRateLimitActive}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading || isRateLimitActive
-                  ? 'bg-blue-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }`}
+              disabled={loading}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${
+                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              {loading ? 'Signing in...' : (isRateLimitActive ? 'Too many attempts' : 'Sign in')}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
+          </div>
+
+          <div className="text-sm text-center">
+            <span className="text-gray-600">
+              Don't have an account?{" "}
+            </span>
+            <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign up
+            </Link>
           </div>
         </form>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+        <AuthFooter />
       </div>
-      <AuthFooter />
     </div>
   );
 };

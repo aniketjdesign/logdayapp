@@ -3,7 +3,6 @@ import { User, AuthResponse, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase';
 import zipy from 'zipyai';
 import { Analytics } from '../services/analytics';
-import { checkRateLimit, recordFailedAttempt } from '../utils/rateLimiting';
 
 interface AuthContextType {
   user: User | null;
@@ -56,20 +55,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    // First check for rate limiting BEFORE attempting authentication
     try {
       console.log("Starting sign-in process for email:", email);
       
-      // This needs to block if rate limited
-      const { rateLimit, message } = await checkRateLimit(email, 'login');
-      console.log("Rate limit check result:", { rateLimit, message });
-      
-      if (rateLimit) {
-        console.error("Rate limited during sign-in attempt:", message);
-        throw new Error(message || 'Too many failed attempts. Please try again later.');
-      }
-      
-      // If not rate limited, proceed with login attempt
       console.log("Attempting Supabase authentication...");
       const { error, data } = await supabase.auth.signInWithPassword({
         email,
@@ -89,13 +77,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
     } catch (err: any) {
       console.error("Sign-in error details:", err);
-      
-      // Check if this is not a rate limit error
-      if (!err.message?.includes('Too many failed attempts')) {
-        // Record the failed attempt before re-throwing
-        console.log("Recording failed authentication attempt");
-        await recordFailedAttempt(email, 'login');
-      }
       throw err;
     }
   };
@@ -104,16 +85,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Starting sign-up process for email:", email);
       
-      // Check for rate limiting before attempting signup
-      const { rateLimit, message } = await checkRateLimit(email, 'signup');
-      console.log("Rate limit check result:", { rateLimit, message });
-      
-      if (rateLimit) {
-        console.error("Rate limited during sign-up attempt:", message);
-        throw new Error(message || 'Too many failed attempts. Please try again later.');
-      }
-      
-      // If not rate limited, proceed with signup
       console.log("Attempting Supabase signup...");
       const response = await supabase.auth.signUp({
         email,
@@ -138,13 +109,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return response;
     } catch (err: any) {
       console.error("Sign-up error details:", err);
-      
-      // Check if this is not a rate limit error
-      if (!err.message?.includes('Too many failed attempts')) {
-        // Record the failed attempt before re-throwing
-        console.log("Recording failed signup attempt");
-        await recordFailedAttempt(email, 'signup');
-      }
       throw err;
     }
   };
@@ -173,8 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if there's an error, we want to force logout
       if (error) {
         console.error('Error during sign out:', error);
-        // Force clear Supabase session
-        await supabase.auth.clearSession();
       }
 
       // Force reload to clear all app state and redirect
@@ -198,37 +160,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       });
-      
-      if (error) throw error;
-      if (data.user) {
-        identifyUser(data.user);
+
+      if (error) {
+        throw error;
       }
-      return data;
     } catch (error) {
-      console.error('Google sign in error:', error);
+      console.error('Error signing in with Google:', error);
       throw error;
     }
   };
 
   const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
-    });
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
   };
 
-    const resetPassword = async (email: string) => {
+  const resetPassword = async (email: string) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password-confirm`,
+      redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) throw error;
   };
 
-  return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut, signInWithGoogle, updatePassword, resetPassword }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    user,
+    signIn,
+    signUp,
+    signOut,
+    signInWithGoogle,
+    updatePassword,
+    resetPassword,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
