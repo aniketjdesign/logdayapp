@@ -115,6 +115,16 @@ export const Login: React.FC = () => {
       await signIn(email, password);
       console.log('Sign in successful, navigating...');
       
+      // Check if we're now rate limited even after successful login
+      // This handles the edge case where correct credentials are provided after 3 failed attempts
+      const postLoginCheck = await checkRateLimit(email, 'login');
+      if (postLoginCheck.rateLimit) {
+        setIsRateLimitActive(true);
+        setError(postLoginCheck.message || 'Account is temporarily locked due to too many failed attempts. Please try again after 5 minutes.');
+        setLoading(false);
+        return;
+      }
+      
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
@@ -134,8 +144,13 @@ export const Login: React.FC = () => {
         setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
       }
       
-      // Update rate limit status for UI
-      setIsRateLimitActive(await isRateLimited(email, 'login'));
+      // Check if we're now rate limited after this failed attempt
+      const isLimited = await isRateLimited(email, 'login');
+      setIsRateLimitActive(isLimited);
+      
+      if (isLimited) {
+        setError('Too many failed login attempts. Your account is temporarily locked for 5 minutes.');
+      }
     } finally {
       setLoading(false);
     }

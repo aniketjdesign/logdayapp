@@ -9,8 +9,8 @@ const corsHeaders = {
 };
 
 // Rate limit thresholds
-const EMAIL_LOGIN_THRESHOLD = 5;  // 3 failed login attempts per email
-const EMAIL_SIGNUP_THRESHOLD = 3; // 3 failed signup attempts per email
+const EMAIL_LOGIN_THRESHOLD = 3;  // 3 failed login attempts per email
+const EMAIL_SIGNUP_THRESHOLD = 3; // 3 failed signup attempts per email (for existing emails)
 const IP_LOGIN_THRESHOLD = 10;    // 10 failed login attempts per IP
 const IP_SIGNUP_THRESHOLD = 2;    // 2 signup attempts (failed or successful) per IP every 5 minutes
 
@@ -95,6 +95,28 @@ serve(async (req) => {
     const fiveMinutesAgo = new Date();
     fiveMinutesAgo.setMinutes(fiveMinutesAgo.getMinutes() - 5);
     
+    // Calculate time remaining for rate limited users
+    const calculateTimeRemaining = (attempts) => {
+      if (!attempts || attempts.length === 0) return 300; // Default to 5 minutes
+      
+      // Find the most recent attempt
+      const mostRecent = attempts.reduce((latest, current) => {
+        const latestDate = new Date(latest.created_at);
+        const currentDate = new Date(current.created_at);
+        return currentDate > latestDate ? current : latest;
+      }, attempts[0]);
+      
+      const attemptTime = new Date(mostRecent.created_at);
+      const resetTime = new Date(attemptTime);
+      resetTime.setMinutes(resetTime.getMinutes() + 5);
+      
+      const now = new Date();
+      const remainingMs = resetTime.getTime() - now.getTime();
+      const remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+      
+      return remainingSeconds;
+    };
+    
     // If this is a request to check IP-only rate limiting, only check IP-based limits
     if (checkIpOnly) {
       console.log(`IP-only check requested for ${action}, checking IP ${clientIp} only`);
@@ -121,16 +143,18 @@ serve(async (req) => {
         
         if (isAtLimit) {
           console.log(`IP ${clientIp} is at the signup limit with ${ipAttempts.length} attempts`);
+          const timeRemaining = calculateTimeRemaining(ipAttempts);
           return new Response(
             JSON.stringify({ 
               rateLimit: true, 
               message: `Maximum of ${IP_SIGNUP_THRESHOLD} signup attempts per IP address allowed every 5 minutes.`,
               reason: `IP address (${ipAttempts.length} attempts)`,
               attemptsCount: ipAttempts.length,
+              timeRemaining
             }),
             { 
               status: 429, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '300' } 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': timeRemaining.toString() } 
             }
           );
         }
@@ -164,16 +188,18 @@ serve(async (req) => {
         
         if (isAtLimit) {
           console.log(`IP ${clientIp} is at the login limit with ${ipAttempts.length} attempts`);
+          const timeRemaining = calculateTimeRemaining(ipAttempts);
           return new Response(
             JSON.stringify({ 
               rateLimit: true, 
               message: `Maximum of ${IP_LOGIN_THRESHOLD} failed login attempts per IP address allowed every 5 minutes.`,
               reason: `IP address (${ipAttempts.length} attempts)`,
               attemptsCount: ipAttempts.length,
+              timeRemaining
             }),
             { 
               status: 429, 
-              headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': '300' } 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json', 'Retry-After': timeRemaining.toString() } 
             }
           );
         }
@@ -256,11 +282,18 @@ serve(async (req) => {
     // If either email or IP is rate limited, return 429
     if (isEmailRateLimited || isIpRateLimited) {
       let rateLimitReason = '';
+      let attemptsCount = 0;
+      let timeRemaining = 300;
+      
       if (isEmailRateLimited) {
         rateLimitReason = `email address (${emailAttempts.length} attempts)`;
+        attemptsCount = emailAttempts.length;
+        timeRemaining = calculateTimeRemaining(emailAttempts);
         console.log(`Rate limiting ${email} after ${emailAttempts.length} ${action === 'signup' ? '' : 'failed '}attempts`);
       } else {
         rateLimitReason = `IP address (${ipAttempts.length} attempts)`;
+        attemptsCount = ipAttempts.length;
+        timeRemaining = calculateTimeRemaining(ipAttempts);
         if (action === 'signup') {
           console.log(`Rate limiting IP ${clientIp} after ${ipAttempts.length} signup attempts (limit: ${IP_SIGNUP_THRESHOLD})`);
         } else {
@@ -280,14 +313,15 @@ serve(async (req) => {
               ? `Maximum of ${IP_LOGIN_THRESHOLD} failed login attempts per IP address allowed every 5 minutes.`
               : `Maximum of ${EMAIL_LOGIN_THRESHOLD} failed login attempts per email allowed every 5 minutes.`,
           reason: rateLimitReason,
-          attemptsCount: isEmailRateLimited ? emailAttempts.length : ipAttempts.length,
+          attemptsCount,
+          timeRemaining
         }),
         { 
           status: 429, 
           headers: { 
             ...corsHeaders, 
             'Content-Type': 'application/json',
-            'Retry-After': '300' // 5 minutes in seconds
+            'Retry-After': timeRemaining.toString()
           } 
         }
       );

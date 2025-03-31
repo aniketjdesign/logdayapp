@@ -20,9 +20,12 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
     // If status is 429, user is rate limited
     if (response.status === 429) {
       const data = await response.json().catch(() => ({}));
+      const timeRemaining = data.timeRemaining || 300; // Default to 5 minutes (300 seconds)
+      const formattedMessage = formatRateLimitMessage(action, data.reason, timeRemaining);
+      
       return { 
         rateLimit: true, 
-        message: data.message || 'Too many failed attempts. Please try again after 5 minutes.',
+        message: formattedMessage || data.message || 'Too many attempts. Please try again after 5 minutes.',
         reason: data.reason
       };
     }
@@ -31,9 +34,12 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
     if (response.ok) {
       const data = await response.json();
       if (data.rateLimit === true) {
+        const timeRemaining = data.timeRemaining || 300; // Default to 5 minutes (300 seconds)
+        const formattedMessage = formatRateLimitMessage(action, data.reason, timeRemaining);
+        
         return {
           rateLimit: true,
-          message: data.message || 'Too many failed attempts. Please try again after 5 minutes.',
+          message: formattedMessage || data.message || 'Too many attempts. Please try again after 5 minutes.',
           reason: data.reason
         };
       }
@@ -48,6 +54,23 @@ export const checkRateLimit = async (email: string, action: string): Promise<{ r
     // Don't block the user if there's an error with the check itself
     return { rateLimit: false };
   }
+};
+
+// Helper function to format user-friendly rate limit messages
+const formatRateLimitMessage = (action: string, reason?: string, timeRemaining: number = 300): string => {
+  const minutes = Math.ceil(timeRemaining / 60);
+  
+  if (action === 'login') {
+    return `Too many failed login attempts. Please try again after ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+  } else if (action === 'signup') {
+    if (reason?.includes('IP')) {
+      return `Maximum number of signup attempts reached from your IP address. Please try again after ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+    } else {
+      return `Maximum number of signup attempts with this email. Please try again after ${minutes} minute${minutes > 1 ? 's' : ''}.`;
+    }
+  }
+  
+  return `Too many attempts. Please try again after ${minutes} minute${minutes > 1 ? 's' : ''}.`;
 };
 
 // Function to directly check an email address for rate limiting

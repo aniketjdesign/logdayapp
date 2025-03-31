@@ -98,14 +98,17 @@ export const SignUp: React.FC = () => {
         return;
       }
 
-      // Record signup attempt (track all attempts, not just failures)
-      console.log('Recording signup attempt for:', email);
-      await recordFailedAttempt(email, 'signup');
-
       // Create user account
       console.log('Attempting to sign up with email:', email);
       const { error: signUpError } = await signUp(email, password);
-      if (signUpError) throw signUpError;
+      
+      // Record signup attempt (regardless of success or failure)
+      console.log('Recording signup attempt for:', email);
+      await recordFailedAttempt(email, 'signup');
+
+      if (signUpError) {
+        throw signUpError;
+      }
 
       console.log('Signup successful, checking if rate limited for future attempts');
       // Check if we're now rate limited for future attempts
@@ -126,6 +129,12 @@ export const SignUp: React.FC = () => {
       navigate('/login');
     } catch (err: any) {
       console.error('Signup error:', err);
+      
+      // Record signup attempt if it was an existing email error
+      if (err?.message?.includes('User already registered')) {
+        console.log('Recording failed signup attempt for existing email:', email);
+        await recordFailedAttempt(email, 'signup');
+      }
       
       // Check if we are now rate limited after this failed attempt
       console.log('Checking if now rate limited after failed attempt');
