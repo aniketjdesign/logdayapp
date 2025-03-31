@@ -123,11 +123,13 @@ serve(async (req) => {
       
       // For signup action, directly check IP-based limits
       if (action === 'signup') {
+        console.log(`Checking IP-based signup rate limits for IP: ${clientIp}`);
+        
         const { data: ipAttempts, error: ipFetchError } = await supabaseAdmin
           .from('auth_rate_limits')
           .select('*')
           .eq('ip_address', clientIp)
-          .eq('action', action)
+          .eq('action', 'signup')  // Explicitly check for signup action
           .gte('created_at', fiveMinutesAgo.toISOString())
           .order('created_at', { ascending: false });
         
@@ -139,10 +141,11 @@ serve(async (req) => {
           );
         }
         
+        console.log(`Found ${ipAttempts?.length || 0} signup attempts for IP ${clientIp} in the last 5 minutes`);
         const isAtLimit = ipAttempts && ipAttempts.length >= IP_SIGNUP_THRESHOLD;
         
         if (isAtLimit) {
-          console.log(`IP ${clientIp} is at the signup limit with ${ipAttempts.length} attempts`);
+          console.log(`IP ${clientIp} is at the signup limit with ${ipAttempts.length} attempts (threshold: ${IP_SIGNUP_THRESHOLD})`);
           const timeRemaining = calculateTimeRemaining(ipAttempts);
           return new Response(
             JSON.stringify({ 

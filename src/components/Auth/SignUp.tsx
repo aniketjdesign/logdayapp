@@ -82,11 +82,26 @@ export const SignUp: React.FC = () => {
       }
     }, 10000); // Check every 10 seconds
     
-    return () => clearInterval(interval);
+    // Clean up function - ensure we don't accidentally clear sessionStorage
+    // when navigating away after successful signup
+    return () => {
+      clearInterval(interval);
+      
+      // Preserve rate limit info if the component unmounts for any reason other than success
+      const currentLimitInfo = sessionStorage.getItem('signup_rate_limit');
+      if (currentLimitInfo) {
+        const limitData = JSON.parse(currentLimitInfo);
+        if (limitData.expiry > Date.now()) {
+          console.log('Component unmounting but rate limit still active, preserving limit info');
+          // We don't need to do anything, just make sure we don't clear it
+        }
+      }
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('==== SIGNUP ATTEMPT STARTED ====');
 
     if (!acceptedTerms) {
       setError('Please accept the Terms of Use and Privacy Policy');
@@ -108,11 +123,12 @@ export const SignUp: React.FC = () => {
       setLoading(true);
 
       // Check if user is rate limited (one final check before attempting signup)
-      console.log('Final check before signup attempt for:', email);
+      console.log(`Checking rate limits before signup for email: ${email}`);
       const { rateLimit, message, reason, timeRemaining } = await checkRateLimit(email, 'signup');
       console.log('Rate limit check result:', { rateLimit, message, reason });
       
       if (rateLimit) {
+        console.log('RATE LIMITED: Cannot proceed with signup');
         setIsRateLimitActive(true);
         
         // Calculate expiry time
@@ -132,23 +148,27 @@ export const SignUp: React.FC = () => {
         setLoading(false);
         return;
       }
+      
+      // IMPORTANT: Record signup attempt BEFORE creating the account
+      // This ensures IP-based rate limiting works correctly
+      console.log(`Recording signup attempt for email: ${email}`);
+      await recordFailedAttempt(email, 'signup');
+      console.log('Signup attempt recorded successfully');
 
       // Create user account
-      console.log('Attempting to sign up with email:', email);
+      console.log(`Creating user account for email: ${email}`);
       const { error: signUpError } = await signUp(email, password);
-      
-      // Record signup attempt (regardless of success or failure)
-      console.log('Recording signup attempt for:', email);
-      await recordFailedAttempt(email, 'signup');
 
       if (signUpError) {
+        console.log('Signup failed with error:', signUpError);
         throw signUpError;
       }
 
+      console.log('Signup successful, removing any cached rate limit info');
       // If signup was successful, clear any cached rate limit info
       sessionStorage.removeItem('signup_rate_limit');
 
-      console.log('Signup successful, navigating to login');
+      console.log('Navigating to login page');
       // Navigate to login
       navigate('/login');
     } catch (err: any) {
@@ -156,7 +176,7 @@ export const SignUp: React.FC = () => {
       
       // Record signup attempt if it was an existing email error
       if (err?.message?.includes('User already registered')) {
-        console.log('Recording failed signup attempt for existing email:', email);
+        console.log('Email already exists, recording as failed attempt');
         await recordFailedAttempt(email, 'signup');
       }
       
@@ -166,6 +186,7 @@ export const SignUp: React.FC = () => {
       console.log('Post-failure rate limit check:', { rateLimit, message, reason });
       
       if (rateLimit) {
+        console.log('Now rate limited due to failed attempt');
         setIsRateLimitActive(true);
         
         // Calculate expiry time
@@ -187,6 +208,7 @@ export const SignUp: React.FC = () => {
       }
     } finally {
       setLoading(false);
+      console.log('==== SIGNUP ATTEMPT COMPLETED ====');
     }
   };
 
