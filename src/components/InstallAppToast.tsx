@@ -8,7 +8,7 @@ export const InstallAppToast: React.FC = () => {
   if (!isInstallable || !showInstallPrompt) return null;
 
   return (
-    <div className="bg-blue-50 border-b border-blue-100 mb-4">
+    <div className="bg-blue-50 w-full border-b border-blue-100 mb-4">
       <div className="max-w-2xl mx-auto px-4 py-4">
         <div className="flex items-start justify-between">
           <div className="flex-1">
