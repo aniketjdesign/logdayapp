@@ -8,7 +8,11 @@ const redis = new Redis({
   token: Deno.env.get('UPSTASH_REDIS_REST_TOKEN') || '',
 });
 
-// Define rate limiters
+// Log Redis connection status
+console.log('Redis URL:', Deno.env.get('UPSTASH_REDIS_REST_URL') ? 'Set' : 'Not set');
+console.log('Redis token:', Deno.env.get('UPSTASH_REDIS_REST_TOKEN') ? 'Set' : 'Not set');
+
+// Define rate limiters - use sliding window for both for consistency
 const ipLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(2, '5 m'), // 2 signup attempts per IP every 5 minutes
@@ -18,7 +22,7 @@ const ipLimiter = new Ratelimit({
 
 const emailLimiter = new Ratelimit({
   redis,
-  limiter: Ratelimit.fixedWindow(3, '1 h'), // 3 failed attempts per email in 1 hour
+  limiter: Ratelimit.slidingWindow(3, '60 m'), // 3 failed attempts per email in 60 minutes
   analytics: true,
   prefix: '@logday/signup-email',
 });
@@ -46,17 +50,24 @@ serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { action, email } = body;
+    const { action, email, testIdentifier } = body;
     
     // Get client IP address (with Supabase handling)
     const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+    console.log('Client IP:', clientIP);
 
     // Check rate limit based on action
     if (action === 'check_signup_limits') {
+      // Use testIdentifier if provided (for testing), otherwise use client IP
+      const ipIdentifier = testIdentifier || clientIP;
+      console.log(`Checking IP limit for: ${ipIdentifier}`);
+      
       // Check IP-based rate limit first
-      const ipRateLimit = await ipLimiter.limit(clientIP);
+      const ipRateLimit = await ipLimiter.limit(ipIdentifier);
+      console.log('IP rate limit result:', JSON.stringify(ipRateLimit));
       
       if (!ipRateLimit.success) {
+        console.log(`IP rate limit exceeded for ${ipIdentifier}`);
         return new Response(
           JSON.stringify({ 
             allowed: false,
@@ -75,9 +86,12 @@ serve(async (req) => {
       // Email limits are only checked when an email is provided
       if (email) {
         const emailHash = await digestMessage(email.toLowerCase());
+        console.log(`Checking email limit for hash: ${emailHash}`);
         const emailRateLimit = await emailLimiter.limit(emailHash);
+        console.log('Email rate limit result:', JSON.stringify(emailRateLimit));
 
         if (!emailRateLimit.success) {
+          console.log(`Email rate limit exceeded for ${email} (${emailHash})`);
           return new Response(
             JSON.stringify({ 
               allowed: false,
@@ -115,15 +129,38 @@ serve(async (req) => {
 
       // Hash the email for privacy
       const emailHash = await digestMessage(email.toLowerCase());
+      console.log(`Recording failed signup for hash: ${emailHash}`);
 
       // Record a failed signup attempt for this email
-      await emailLimiter.limit(emailHash);
+      // Use consume() instead of limit() to ensure it counts against the limit without checking
+      const rateLimitResult = await emailLimiter.limit(emailHash);
+      console.log('Email record result:', JSON.stringify(rateLimitResult));
 
       return new Response(
-        JSON.stringify({ success: true }),
+        JSON.stringify({ 
+          success: true,
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitResult.limit
+        }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         }
+      );
+    }
+    else if (action === 'reset_limits') {
+      // Only for testing/debugging - allow resetting limits
+      if (email) {
+        const emailHash = await digestMessage(email.toLowerCase());
+        await redis.del(`@logday/signup-email:${emailHash}`);
+      }
+      if (testIdentifier) {
+        await redis.del(`@logday/signup-ip:${testIdentifier}`);
+      } else {
+        await redis.del(`@logday/signup-ip:${clientIP}`);
+      }
+      return new Response(
+        JSON.stringify({ success: true, message: 'Limits reset' }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     else {
@@ -139,7 +176,7 @@ serve(async (req) => {
     console.error('Rate limit error:', error);
     
     return new Response(
-      JSON.stringify({ error: 'Internal server error' }),
+      JSON.stringify({ error: 'Internal server error', details: String(error) }),
       { 
         status: 500, 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -20,6 +20,7 @@ export const SignUp: React.FC = () => {
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
     try {
+      console.log('Checking rate limits for signup...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
@@ -36,6 +37,7 @@ export const SignUp: React.FC = () => {
       );
 
       const data = await response.json();
+      console.log('Rate limit check response:', data);
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -73,7 +75,8 @@ export const SignUp: React.FC = () => {
   // Function to record failed signup attempt
   const recordFailedSignup = async (email: string) => {
     try {
-      await fetch(
+      console.log('Recording failed signup attempt...');
+      const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
           method: 'POST',
@@ -87,6 +90,13 @@ export const SignUp: React.FC = () => {
           }),
         }
       );
+      
+      const data = await response.json();
+      console.log('Record failed signup response:', data);
+      
+      if (!response.ok) {
+        console.error('Failed to record failed signup:', data.error);
+      }
     } catch (error) {
       console.error('Failed to record failed signup:', error);
     }
