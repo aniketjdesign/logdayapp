@@ -17,6 +17,81 @@ export const SignUp: React.FC = () => {
   const { signUp } = useAuth();
   const navigate = useNavigate();
 
+  // Function to check rate limits
+  const checkRateLimits = async (email: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'check_signup_limits',
+            email,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Handle rate limit error
+          if (data.reason === 'ip_limit') {
+            const minutes = Math.ceil((data.reset - Date.now()) / 60000);
+            return {
+              allowed: false,
+              message: `Too many signup attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+            };
+          } else if (data.reason === 'email_limit') {
+            return {
+              allowed: false,
+              message: 'Too many failed attempts for this email. Please try again later or use a different email.',
+            };
+          }
+        }
+        
+        return {
+          allowed: false,
+          message: data.error || 'Rate limit check failed. Please try again later.',
+        };
+      }
+
+      return { allowed: true };
+    } catch (error) {
+      console.error('Rate limit check error:', error);
+      return {
+        allowed: true, // Allow on error to prevent blocking legitimate users
+        message: 'Rate limit service unavailable. Proceeding with signup.',
+      };
+    }
+  };
+
+  // Function to record failed signup attempt
+  const recordFailedSignup = async (email: string) => {
+    try {
+      await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'record_failed_signup',
+            email,
+          }),
+        }
+      );
+    } catch (error) {
+      console.error('Failed to record failed signup:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log('==== SIGNUP ATTEMPT STARTED ====');
@@ -40,12 +115,24 @@ export const SignUp: React.FC = () => {
       setError('');
       setLoading(true);
 
+      // Check rate limits before attempting signup
+      const rateLimitCheck = await checkRateLimits(email);
+      
+      if (!rateLimitCheck.allowed) {
+        setError(rateLimitCheck.message || 'Rate limit exceeded. Please try again later.');
+        return;
+      }
+
       // Create user account
       console.log(`Creating user account for email: ${email}`);
       const { error: signUpError } = await signUp(email, password);
 
       if (signUpError) {
         console.log('Signup failed with error:', signUpError);
+        
+        // Record the failed signup attempt
+        await recordFailedSignup(email);
+        
         throw signUpError;
       }
 
