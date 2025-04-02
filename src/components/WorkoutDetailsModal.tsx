@@ -144,7 +144,7 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 pb-safe pb-20">
+        <div className="overflow-y-auto flex-1 pb-safe pb-40">
           {Object.entries(exercisesByMuscle).map(([muscleGroup, exercises]) => (
             <div key={muscleGroup} className="border-b last:border-b-0">
               <div className="px-4 py-2 bg-gray-50">
