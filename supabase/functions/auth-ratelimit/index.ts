@@ -3,29 +3,49 @@ import { Redis } from 'https://deno.land/x/upstash_redis@v1.20.6/mod.ts';
 import { Ratelimit } from '@upstash/ratelimit';
 
 // Initialize Redis client with Upstash
-const redis = new Redis({
-  url: Deno.env.get('UPSTASH_REDIS_REST_URL') || '',
-  token: Deno.env.get('UPSTASH_REDIS_REST_TOKEN') || '',
-});
-
-// Log Redis connection status
-console.log('Redis URL:', Deno.env.get('UPSTASH_REDIS_REST_URL') ? 'Set' : 'Not set');
-console.log('Redis token:', Deno.env.get('UPSTASH_REDIS_REST_TOKEN') ? 'Set' : 'Not set');
+let redis;
+try {
+  const redisUrl = Deno.env.get('UPSTASH_REDIS_REST_URL');
+  const redisToken = Deno.env.get('UPSTASH_REDIS_REST_TOKEN');
+  
+  console.log('Redis URL:', redisUrl ? 'Set (length: ' + redisUrl.length + ')' : 'Not set');
+  console.log('Redis token:', redisToken ? 'Set (length: ' + redisToken.length + ')' : 'Not set');
+  
+  if (!redisUrl || !redisToken) {
+    throw new Error('Redis credentials are missing. Please check the environment variables.');
+  }
+  
+  redis = new Redis({
+    url: redisUrl,
+    token: redisToken,
+  });
+  
+  // Test the connection
+  console.log('Testing Redis connection...');
+  redis.set('connection_test', 'ok').then(() => {
+    console.log('Redis connection successful!');
+  }).catch((error) => {
+    console.error('Redis connection test failed:', error);
+  });
+} catch (error) {
+  console.error('Redis initialization error:', error);
+  redis = null; // Set to null so we can check later if Redis is available
+}
 
 // Define rate limiters - use sliding window for both for consistency
-const ipLimiter = new Ratelimit({
+const ipLimiter = redis ? new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(2, '5 m'), // 2 signup attempts per IP every 5 minutes
   analytics: true,
   prefix: '@logday/signup-ip',
-});
+}) : null;
 
-const emailLimiter = new Ratelimit({
+const emailLimiter = redis ? new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(3, '60 m'), // 3 failed attempts per email in 60 minutes
   analytics: true,
   prefix: '@logday/signup-email',
-});
+}) : null;
 
 // CORS headers
 const corsHeaders = {
@@ -46,6 +66,19 @@ serve(async (req) => {
         status: 405,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Check if Redis is initialized
+    if (!redis || !ipLimiter || !emailLimiter) {
+      console.error('Redis is not properly initialized, bypassing rate limiting');
+      return new Response(
+        JSON.stringify({ 
+          allowed: true, 
+          message: 'Rate limiting service unavailable', 
+          error: 'Redis connection failed' 
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     // Parse request body
