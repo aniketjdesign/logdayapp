@@ -18,7 +18,7 @@ export const Login: React.FC = () => {
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
     try {
-      console.log('Checking rate limits for login...');
+      // Check rate limits before login
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
@@ -34,26 +34,27 @@ export const Login: React.FC = () => {
         }
       );
 
-      if (response.status === 429) {
-        const data = await response.json();
-        console.log('Rate limit exceeded:', data);
-        return { allowed: false, reason: data.reason };
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Handle rate limit error
+          return { allowed: false, reason: data.reason };
+        }
+        
+        return { allowed: false, reason: 'unknown' };
       }
 
-      const data = await response.json();
-      console.log('Rate limit check response:', data);
-      return data;
+      return { allowed: true };
     } catch (error) {
-      console.error('Error checking rate limits:', error);
-      // Gracefully degrade - if rate limiting fails, allow the login
-      return { allowed: true, error: 'Rate limiting service unavailable' };
+      // Allow on error to prevent blocking legitimate users
+      return { allowed: true };
     }
   };
 
-  // Function to record failed login attempts
+  // Function to record failed login attempt
   const recordFailedLogin = async (email: string) => {
     try {
-      console.log('Recording failed login attempt...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
@@ -69,12 +70,9 @@ export const Login: React.FC = () => {
         }
       );
 
-      const data = await response.json();
-      console.log('Record failed login response:', data);
-      return data;
+      await response.json();
     } catch (error) {
-      console.error('Error recording failed login:', error);
-      return { success: false, error: 'Failed to record login attempt' };
+      // Silent fail - we don't want to block login if recording fails
     }
   };
 
@@ -99,9 +97,7 @@ export const Login: React.FC = () => {
       }
 
       // Attempt to sign in
-      console.log('Attempting to sign in with email:', email);
       await signIn(email, password);
-      console.log('Sign in successful, navigating...');
       
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
@@ -204,9 +200,11 @@ export const Login: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || error.includes('Too many login attempts') || error.includes('Too many failed login attempts')}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${
-                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+                loading || error.includes('Too many login attempts') || error.includes('Too many failed login attempts') 
+                  ? "bg-blue-400 cursor-not-allowed" 
+                  : "bg-blue-600 hover:bg-blue-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
               {loading ? "Signing in..." : "Sign in"}

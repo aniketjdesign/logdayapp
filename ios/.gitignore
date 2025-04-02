@@ -14,3 +14,8 @@ App/App/capacitor.config.json
 App/App/config.xml
 App/Logday/capacitor.config.json
 App/Logday/config.xml
+
+# Local testing folder
+.testing
+.env
+.netlify

@@ -21,7 +21,6 @@ export const ResetPassword: React.FC = () => {
       setSuccess(true);
     } catch (err: any) {
       setError('Failed to send password reset email. Please check your email address and try again.');
-      console.error('Reset password error:', err);
     } finally {
       setLoading(false);
     }

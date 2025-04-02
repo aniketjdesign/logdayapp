@@ -20,7 +20,6 @@ export const SignUp: React.FC = () => {
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
     try {
-      console.log('Checking rate limits for signup...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
@@ -37,7 +36,6 @@ export const SignUp: React.FC = () => {
       );
 
       const data = await response.json();
-      console.log('Rate limit check response:', data);
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -64,7 +62,6 @@ export const SignUp: React.FC = () => {
 
       return { allowed: true };
     } catch (error) {
-      console.error('Rate limit check error:', error);
       return {
         allowed: true, // Allow on error to prevent blocking legitimate users
         message: 'Rate limit service unavailable. Proceeding with signup.',
@@ -75,7 +72,6 @@ export const SignUp: React.FC = () => {
   // Function to record failed signup attempt
   const recordFailedSignup = async (email: string) => {
     try {
-      console.log('Recording failed signup attempt...');
       const response = await fetch(
         `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
         {
@@ -90,21 +86,15 @@ export const SignUp: React.FC = () => {
           }),
         }
       );
-      
-      const data = await response.json();
-      console.log('Record failed signup response:', data);
-      
-      if (!response.ok) {
-        console.error('Failed to record failed signup:', data.error);
-      }
+
+      await response.json();
     } catch (error) {
-      console.error('Failed to record failed signup:', error);
+      // Silent fail - we don't want to block signup if recording fails
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('==== SIGNUP ATTEMPT STARTED ====');
 
     if (!acceptedTerms) {
       setError('Please accept the Terms of Use and Privacy Policy');
@@ -134,22 +124,21 @@ export const SignUp: React.FC = () => {
       }
 
       // Create user account
-      console.log(`Creating user account for email: ${email}`);
       const { error: signUpError } = await signUp(email, password);
 
       if (signUpError) {
-        console.log('Signup failed with error:', signUpError);
-        
         // Record the failed signup attempt
         await recordFailedSignup(email);
         
         throw signUpError;
       }
 
-      console.log('Signup successful');
-      console.log('Navigating to login page');
       // Navigate to login
-      navigate('/login');
+      navigate('/login', { 
+        state: { 
+          message: 'Account created successfully! Please check your email to verify your account before logging in.' 
+        } 
+      });
     } catch (err: any) {
       console.error('Signup error:', err);
       
@@ -279,9 +268,11 @@ export const SignUp: React.FC = () => {
           <div>
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || error.includes('Too many signup attempts') || error.includes('Too many failed attempts')}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${
-                loading ? "bg-blue-400" : "bg-blue-600 hover:bg-blue-700"
+                loading || error.includes('Too many signup attempts') || error.includes('Too many failed attempts') 
+                  ? "bg-blue-400 cursor-not-allowed" 
+                  : "bg-blue-600 hover:bg-blue-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
               {loading ? "Creating account..." : "Sign up"}
