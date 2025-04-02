@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Exercise, WorkoutLog, WorkoutExercise, Folder } from '../types/workout';
+import { Exercise, WorkoutLog, WorkoutExercise, Folder, Routine } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
 import { calculateWorkoutStats } from '../utils/workoutStats';
@@ -17,7 +17,7 @@ interface WorkoutContextType {
   currentView: View;
   customExercises: Exercise[];
   folders: Folder[];
-  routines: any[];
+  routines: Routine[];
   setSelectedExercises: (exercises: Exercise[]) => void;
   setCurrentWorkout: (workout: WorkoutLog | null) => void;
   startWorkout: (exercises: Exercise[], name?: string, existingExercises?: WorkoutExercise[]) => Promise<WorkoutLog>;
@@ -34,8 +34,8 @@ interface WorkoutContextType {
   addFolder: (folder: { name: string }) => Promise<void>;
   updateFolder: (id: string, updates: { name: string }) => Promise<void>;
   deleteFolder: (id: string) => Promise<void>;
-  addRoutine: (routine: any) => Promise<void>;
-  updateRoutine: (id: string, updates: any) => Promise<void>;
+  addRoutine: (routine: Routine) => Promise<void>;
+  updateRoutine: (id: string, updates: Partial<Routine>) => Promise<void>;
   deleteRoutine: (id: string) => Promise<void>;
   moveRoutine: (routineId: string, newFolderId: string | null) => Promise<void>;
 }
@@ -54,7 +54,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [currentView, setCurrentView] = useState<View>('exercises');
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [routines, setRoutines] = useState<any[]>([]);
+  const [routines, setRoutines] = useState<Routine[]>([]);
   const { user } = useAuth();
 
   // Load current workout from localStorage
@@ -420,13 +420,12 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const addRoutine = async (routine: any) => {
+  const addRoutine = async (routine: Routine) => {
     try {
-      const routineData = {
+      const routineData: Omit<Routine, 'id' | 'created_at' | 'updated_at'> = {
         name: routine.name,
         description: routine.description,
         exercises: routine.exercises,
-        user_id: user?.id,
         folder_id: routine.folder_id,
         total_exercises: routine.exercises.length,
         total_sets: routine.exercises.reduce((total: number, ex: any) => total + ex.sets.length, 0),
@@ -441,9 +440,9 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateRoutine = async (id: string, updates: any) => {
+  const updateRoutine = async (id: string, updates: Partial<Routine>) => {
     try {
-      const routineData = {
+      const routineData: Partial<Omit<Routine, 'id' | 'user_id' | 'created_at' | 'updated_at'>> = {
         name: updates.name,
         description: updates.description,
         exercises: updates.exercises,

@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import { WorkoutLog, WorkoutPreferences } from '../types/workout';
+import { WorkoutLog, WorkoutPreferences, Routine } from '../types/workout';
 import { WeightUnit } from '../db/database';
 import { isValidUUID } from '../utils/uuid';
 
@@ -22,7 +22,7 @@ export const supabaseService = {
 
       const { data, error } = await supabase
         .from('workout_logs')
-        .select('*')
+        .select('id, name, exercises, start_time, end_time, duration, created_at, user_id')
         .eq('user_id', session.user.id)
         .gte('start_time', historyDate.toISOString())
         .order('start_time', { ascending: false });
@@ -41,7 +41,6 @@ export const supabaseService = {
 
       return { data: transformedData, error: null };
     } catch (error) {
-      console.error('Error fetching workout logs:', error);
       return { data: [], error };
     }
   },
@@ -75,7 +74,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error saving workout log:', error);
       return { error };
     }
   },
@@ -100,7 +98,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error deleting workout log:', error);
       return { error };
     }
   },
@@ -118,7 +115,7 @@ export const supabaseService = {
 
       const queryBuilder = supabase
         .from('workout_logs')
-        .select('*')
+        .select('id, name, exercises, start_time, end_time, duration')
         .eq('user_id', session.user.id)
         .gte('start_time', historyDate.toISOString())
         .order('created_at', { ascending: false });
@@ -168,7 +165,6 @@ export const supabaseService = {
 
       return { data: transformedData, error: null };
     } catch (error) {
-      console.error('Error searching workout logs:', error);
       return { data: [], error };
     }
   },
@@ -193,7 +189,6 @@ export const supabaseService = {
         error: null 
       };
     } catch (error) {
-      console.error('Error fetching user settings:', error);
       return { 
         weightUnit: 'lbs' as WeightUnit, 
         disableRestTimer: false,
@@ -226,7 +221,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error saving user settings:', error);
       return { error };
     }
   },
@@ -243,13 +237,11 @@ export const supabaseService = {
         .single();
 
       if (error) {
-        console.error('Error fetching workout preferences:', error);
         return DEFAULT_HISTORY_PERIOD;
       }
 
       return data?.history_period_days || DEFAULT_HISTORY_PERIOD;
     } catch (error) {
-      console.error('Error in getUserHistoryPeriod:', error);
       return DEFAULT_HISTORY_PERIOD;
     }
   },
@@ -276,7 +268,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error updating history period:', error);
       return { error };
     }
   },
@@ -309,7 +300,7 @@ export const supabaseService = {
             );
           }
         } catch (e) {
-          console.error('Error parsing workout logs:', e);
+          // Silently handle parse errors
         }
       }
 
@@ -329,7 +320,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error migrating localStorage data:', error);
       return { error };
     }
   },
@@ -360,7 +350,6 @@ export const supabaseService = {
 
       return Array.from(recentExercises.values()).slice(0, limit);
     } catch (error) {
-      console.error('Error fetching recent exercises:', error);
       return [];
     }
   },
@@ -372,7 +361,7 @@ export const supabaseService = {
 
       const { data, error } = await supabase
         .from('workout_logs')
-        .select('*')
+        .select('id, name, exercises, start_time, end_time, duration, created_at, user_id')
         .eq('user_id', session.user.id)
         .contains('exercises', [{ exercise: { id: exerciseId } }])
         .order('start_time', { ascending: false })
@@ -397,7 +386,6 @@ export const supabaseService = {
 
       return { data: null, error: null };
     } catch (error) {
-      console.error('Error fetching last workout for exercise:', error);
       return { data: null, error };
     }
   },
@@ -405,7 +393,7 @@ export const supabaseService = {
   async getFolders() {
     return await supabase
       .from('folders')
-      .select('*')
+      .select('id, name, created_at, updated_at')
       .order('name');
   },
 
@@ -447,29 +435,76 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error deleting folder:', error);
       return { error };
     }
   },
 
   async getRoutines() {
-    return await supabase
-      .from('routines')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('routines')
+        .select('id, name, description, exercises, folder_id, total_exercises, total_sets, created_at, updated_at')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
   },
 
-  async addRoutine(routine: any) {
-    return await supabase
-      .from('routines')
-      .insert([routine]);
+  async addRoutine(routine: Omit<Routine, 'id' | 'created_at' | 'updated_at'>) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Ensure user_id is set to the authenticated user
+      const routineData = {
+        ...routine,
+        user_id: session.user.id,
+      };
+
+      const { data, error } = await supabase
+        .from('routines')
+        .insert([routineData]);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
-  async updateRoutine(id: string, updates: any) {
-    return await supabase
-      .from('routines')
-      .update(updates)
-      .eq('id', id);
+  async updateRoutine(id: string, updates: Partial<Omit<Routine, 'id' | 'user_id' | 'created_at' | 'updated_at'>>) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      // Validate folder_id if present
+      if (updates.folder_id && updates.folder_id !== null && !isValidUUID(updates.folder_id)) {
+        throw new Error('Invalid folder UUID format');
+      }
+
+      const { data, error } = await supabase
+        .from('routines')
+        .update(updates)
+        .eq('id', id)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
   },
 
   async deleteRoutine(id: string) {
@@ -492,7 +527,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error deleting routine:', error);
       return { error };
     }
   },
@@ -521,7 +555,6 @@ export const supabaseService = {
 
       return { error: null };
     } catch (error) {
-      console.error('Error moving routine:', error);
       return { error };
     }
   },

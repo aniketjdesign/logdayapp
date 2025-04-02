@@ -84,3 +84,37 @@ export interface WorkoutPreferences {
   created_at?: string;
   updated_at?: string;
 }
+
+export interface Folder {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at?: string;
+}
+
+export interface Routine {
+  id?: string;
+  name: string;
+  description?: string;
+  exercises: RoutineExercise[];
+  user_id?: string;
+  folder_id: string | null;
+  total_exercises?: number;
+  total_sets?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RoutineExercise {
+  exercise: Exercise;
+  sets: RoutineSet[];
+}
+
+export interface RoutineSet {
+  id: string;
+  setNumber: number;
+  targetReps: number;
+  weight: number;
+  isWarmup?: boolean;
+  isDropset?: boolean;
+}
