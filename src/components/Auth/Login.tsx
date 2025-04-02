@@ -15,12 +15,88 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Function to check rate limits
+  const checkRateLimits = async (email: string) => {
+    try {
+      console.log('Checking rate limits for login...');
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'check_login_limits',
+            email,
+          }),
+        }
+      );
+
+      if (response.status === 429) {
+        const data = await response.json();
+        console.log('Rate limit exceeded:', data);
+        return { allowed: false, reason: data.reason };
+      }
+
+      const data = await response.json();
+      console.log('Rate limit check response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error checking rate limits:', error);
+      // Gracefully degrade - if rate limiting fails, allow the login
+      return { allowed: true, error: 'Rate limiting service unavailable' };
+    }
+  };
+
+  // Function to record failed login attempts
+  const recordFailedLogin = async (email: string) => {
+    try {
+      console.log('Recording failed login attempt...');
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'record_failed_login',
+            email,
+          }),
+        }
+      );
+
+      const data = await response.json();
+      console.log('Record failed login response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error recording failed login:', error);
+      return { success: false, error: 'Failed to record login attempt' };
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       setError('');
       setLoading(true);
+
+      // Check rate limits before attempting login
+      const rateLimitCheck = await checkRateLimits(email);
+      if (!rateLimitCheck.allowed) {
+        if (rateLimitCheck.reason === 'ip_limit') {
+          setError('Too many login attempts. Please try again in a few minutes.');
+        } else if (rateLimitCheck.reason === 'email_limit') {
+          setError('Too many failed login attempts for this email. Please try again later or reset your password.');
+        } else {
+          setError('Login temporarily unavailable. Please try again later.');
+        }
+        return;
+      }
 
       // Attempt to sign in
       console.log('Attempting to sign in with email:', email);
@@ -32,6 +108,9 @@ export const Login: React.FC = () => {
       navigate(from, { replace: true });
     } catch (err: any) {
       console.error('Login error:', err);
+      
+      // Record failed login attempt
+      await recordFailedLogin(email);
       
       // Set appropriate error message based on error type
       if (err?.message?.includes('Invalid login credentials')) {

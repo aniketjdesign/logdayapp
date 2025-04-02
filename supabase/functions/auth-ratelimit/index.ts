@@ -47,6 +47,21 @@ const emailLimiter = redis ? new Ratelimit({
   prefix: '@logday/signup-email',
 }) : null;
 
+// Login rate limiters
+const loginIpLimiter = redis ? new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '5 m'), // 5 login attempts per IP every 5 minutes
+  analytics: true,
+  prefix: '@logday/login-ip',
+}) : null;
+
+const loginEmailLimiter = redis ? new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '30 m'), // 5 failed attempts per email in 30 minutes
+  analytics: true,
+  prefix: '@logday/login-email',
+}) : null;
+
 // CORS headers
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,7 +84,7 @@ serve(async (req) => {
     }
 
     // Check if Redis is initialized
-    if (!redis || !ipLimiter || !emailLimiter) {
+    if (!redis || !ipLimiter || !emailLimiter || !loginIpLimiter || !loginEmailLimiter) {
       console.error('Redis is not properly initialized, bypassing rate limiting');
       return new Response(
         JSON.stringify({ 
@@ -194,6 +209,96 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({ success: true, message: 'Limits reset' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    else if (action === 'check_login_limits') {
+      // Use testIdentifier if provided (for testing), otherwise use client IP
+      const ipIdentifier = testIdentifier || clientIP;
+      console.log(`Checking IP limit for: ${ipIdentifier}`);
+      
+      // Check IP-based rate limit first
+      const ipRateLimit = await loginIpLimiter.limit(ipIdentifier);
+      console.log('IP rate limit result:', JSON.stringify(ipRateLimit));
+      
+      if (!ipRateLimit.success) {
+        console.log(`IP rate limit exceeded for ${ipIdentifier}`);
+        return new Response(
+          JSON.stringify({ 
+            allowed: false,
+            reason: 'ip_limit',
+            remaining: ipRateLimit.remaining,
+            reset: ipRateLimit.reset,
+            limit: ipRateLimit.limit
+          }),
+          { 
+            status: 429, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Email limits are only checked when an email is provided
+      if (email) {
+        const emailHash = await digestMessage(email.toLowerCase());
+        console.log(`Checking email limit for hash: ${emailHash}`);
+        const emailRateLimit = await loginEmailLimiter.limit(emailHash);
+        console.log('Email rate limit result:', JSON.stringify(emailRateLimit));
+
+        if (!emailRateLimit.success) {
+          console.log(`Email rate limit exceeded for ${email} (${emailHash})`);
+          return new Response(
+            JSON.stringify({ 
+              allowed: false,
+              reason: 'email_limit',
+              remaining: emailRateLimit.remaining,
+              reset: emailRateLimit.reset,
+              limit: emailRateLimit.limit
+            }),
+            { 
+              status: 429, 
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          );
+        }
+      }
+
+      // If we get here, rate limit checks passed
+      return new Response(
+        JSON.stringify({ allowed: true }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      );
+    } 
+    else if (action === 'record_failed_login') {
+      if (!email) {
+        return new Response(
+          JSON.stringify({ error: 'Email is required' }),
+          { 
+            status: 400, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        );
+      }
+
+      // Hash the email for privacy
+      const emailHash = await digestMessage(email.toLowerCase());
+      console.log(`Recording failed login for hash: ${emailHash}`);
+
+      // Record a failed login attempt for this email
+      // Use consume() instead of limit() to ensure it counts against the limit without checking
+      const rateLimitResult = await loginEmailLimiter.limit(emailHash);
+      console.log('Email record result:', JSON.stringify(rateLimitResult));
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          remaining: rateLimitResult.remaining,
+          limit: rateLimitResult.limit
+        }),
+        { 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
       );
     }
     else {
