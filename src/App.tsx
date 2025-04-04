@@ -3,6 +3,7 @@ import { Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
+import { OnboardingProvider, useOnboarding } from './context/OnboardingContext';
 import { Navigation } from './components/Navigation';
 import { ExerciseList } from './components/ExerciseList';
 import { WorkoutSession } from './components/WorkoutSession';
@@ -20,11 +21,13 @@ import RoutinesPage from './pages/routines';
 import ProfilePage from './pages/ProfilePage';
 import { Capacitor } from '@capacitor/core';
 import { capacitorService } from './services/capacitor';
+import { WhatsNewModal } from './components/WhatsNewModal';
 
 const AppContent = () => {
   const { user } = useAuth();
   const { currentWorkout } = useWorkout();
   const { defaultHomePage } = useSettings();
+  const { showWhatsNew } = useOnboarding();
   const location = useLocation();
   const navigate = useNavigate();
   const [isInitialLoad, setIsInitialLoad] = useState(true);
@@ -109,6 +112,7 @@ const AppContent = () => {
 
   return (
     <div className="max-h-screen bg-gray-50">
+      {showWhatsNew && <WhatsNewModal />}
       <div className={`${showNavigation ? "" : ""}`}>
         <Routes>
           <Route path="/" element={
@@ -137,8 +141,10 @@ function App() {
     <AuthProvider>
       <SettingsProvider>
         <WorkoutProvider>
-          <UpdateNotification />
-          <AppContent />
+          <OnboardingProvider>
+            <UpdateNotification />
+            <AppContent />
+          </OnboardingProvider>
         </WorkoutProvider>
       </SettingsProvider>
     </AuthProvider>

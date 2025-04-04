@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, KeyboardEvent, ClipboardEvent } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
 import { AuthFooter } from './AuthFooter';
+import { validateInviteCode, markInviteCodeAsUsed } from '../../services/inviteService';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -11,11 +12,22 @@ export const SignUp: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [inviteCode, setInviteCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
+  
+  // Create refs for the invite code inputs
+  const inviteInputRefs = [
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+    useRef<HTMLInputElement>(null),
+  ];
 
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
@@ -93,6 +105,53 @@ export const SignUp: React.FC = () => {
     }
   };
 
+  // Function to handle invite code input changes
+  const handleInviteCodeChange = (index: number, value: string) => {
+    // Only allow alphanumeric characters
+    const sanitizedValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
+    
+    // Update the invite code state
+    const newInviteCode = [...inviteCode];
+    newInviteCode[index] = sanitizedValue.slice(0, 1); // Only take the first character
+    setInviteCode(newInviteCode);
+    
+    // If we have a value and it's not the last input, move to the next input
+    if (sanitizedValue && index < 5) {
+      inviteInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  // Function to handle backspace key
+  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
+    // If backspace is pressed and the current input is empty, move to the previous input
+    if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
+      inviteInputRefs[index - 1].current?.focus();
+    }
+  };
+
+  // Function to handle paste event
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
+    
+    if (pastedData) {
+      const newInviteCode = [...inviteCode];
+      for (let i = 0; i < pastedData.length; i++) {
+        if (i < 6) {
+          newInviteCode[i] = pastedData[i];
+        }
+      }
+      setInviteCode(newInviteCode);
+      
+      // Focus the appropriate input after paste
+      if (pastedData.length < 6) {
+        inviteInputRefs[pastedData.length].current?.focus();
+      } else {
+        inviteInputRefs[5].current?.blur();
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -111,9 +170,23 @@ export const SignUp: React.FC = () => {
       return;
     }
 
+    // Check if all invite code fields are filled
+    const combinedInviteCode = inviteCode.join('');
+    if (combinedInviteCode.length !== 6) {
+      setError('Please enter a valid 6-digit invite code');
+      return;
+    }
+
     try {
       setError('');
       setLoading(true);
+
+      // Validate invite code
+      const inviteCodeValidation = await validateInviteCode(combinedInviteCode);
+      if (!inviteCodeValidation.valid) {
+        setError(inviteCodeValidation.message);
+        return;
+      }
 
       // Check rate limits before attempting signup
       const rateLimitCheck = await checkRateLimits(email);
@@ -124,13 +197,22 @@ export const SignUp: React.FC = () => {
       }
 
       // Create user account
-      const { error: signUpError } = await signUp(email, password);
+      const response = await signUp(email, password);
 
-      if (signUpError) {
+      if (response.error) {
         // Record the failed signup attempt
         await recordFailedSignup(email);
         
-        throw signUpError;
+        throw response.error;
+      }
+
+      // Mark invite code as used if user was created
+      if (response.data.user?.id) {
+        const { success, message } = await markInviteCodeAsUsed(combinedInviteCode, response.data.user.id);
+        if (!success) {
+          console.error('Failed to mark invite code as used:', message);
+          // We don't want to block signup if this fails, so just log it
+        }
       }
 
       // Navigate to login
@@ -243,6 +325,28 @@ export const SignUp: React.FC = () => {
                 >
                   {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                 </button>
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="invite-code" className="block text-sm font-normal text-gray-500 mb-1">
+                Invite Code
+              </label>
+              <div className="flex space-x-2">
+                {inviteCode.map((digit, index) => (
+                  <input
+                    key={index}
+                    ref={inviteInputRefs[index]}
+                    type="text"
+                    maxLength={1}
+                    required
+                    className="appearance-none rounded-lg relative block w-full px-0 py-2 border border-gray-300 text-center text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                    value={digit}
+                    onChange={(e) => handleInviteCodeChange(index, e.target.value)}
+                    onKeyDown={(e) => handleKeyDown(index, e)}
+                    onPaste={index === 0 ? handlePaste : undefined}
+                  />
+                ))}
               </div>
             </div>
 
