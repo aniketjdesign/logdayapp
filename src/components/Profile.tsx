@@ -10,6 +10,7 @@ import { LogDayLogo } from './LogDayLogo';
 import { MuscleGroup, WorkoutLog } from '../types/workout';
 import { PageHeader } from './ui/PageHeader';
 import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { useOnboarding } from '../context/OnboardingContext';
 
 declare global {
   interface Window {
@@ -52,6 +53,7 @@ export const Profile: React.FC = () => {
   } = useWorkout();
   const { user, signOut } = useAuth();
   const { isInstallable, isIOS } = useInstallPrompt();
+  const { showWhatsNewManually } = useOnboarding();
   const cannyInitialized = useRef(false);
   const dateSelectorRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -308,6 +310,10 @@ export const Profile: React.FC = () => {
     navigate('/contact');
   };
 
+  const showWhatsNew = () => {
+    showWhatsNewManually();
+  };
+
   return (
     <>
       {isLoading && showSkeleton ? (
@@ -554,6 +560,13 @@ export const Profile: React.FC = () => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.2 }}>
+                      <button
+                        onClick={showWhatsNew}
+                        className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
+                      >
+                        <Bell size={18} strokeWidth={2} className="mr-3 text-gray-500" />
+                        What's New
+                      </button>
                       <button
                         onClick={navigateToSettings}
                         className="w-full px-4 py-3.5 text-left text-gray-700 hover:bg-gray-50 border-b border-gray-100 font-medium text-sm flex items-center"
