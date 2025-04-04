@@ -1,9 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronRight, ChevronDown, Folder, Plus, MoreVertical, FolderSymlink } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronRight, ChevronDown, Folder, Plus, MoreVertical } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
-import { RoutinePreview } from './RoutinePreview';
-import { FolderModal } from './FolderModal';
-import { FolderCreator } from './FolderCreator';
+import { RoutinePreviewCard } from './RoutinePreviewCard';
+import { FolderModal, FolderCreator } from './FolderOperations';
 import { MoveRoutineModal } from './MoveRoutineModal';
 
 interface FolderMenuProps {
@@ -34,7 +34,13 @@ const FolderMenu: React.FC<FolderMenuProps> = ({
   }, [onClose]);
 
   return (
-    <div className="folder-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 text-md">
+    <motion.div 
+      className="folder-menu absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 z-50 text-md"
+      initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.5 }}
+      transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+    >
       <button
         className="w-full px-4 py-1 text-left hover:bg-gray-50 flex items-center"
         onClick={() => {
@@ -56,7 +62,7 @@ const FolderMenu: React.FC<FolderMenuProps> = ({
       >
         Delete Folder
       </button>
-    </div>
+    </motion.div>
   );
 };
 
@@ -145,43 +151,20 @@ export const FolderView: React.FC<FolderViewProps> = ({
     setShowMoveRoutineModal(true);
   };
 
-  const renderRoutines = (routines: any[]) => {
-    return routines.map(routine => (
-      <div key={routine.id} className="py-2 px-2 bg-gray-100">
-        <RoutinePreview
-          routine={routine}
-          onEdit={() => onEditRoutine(routine)}
-          onDelete={async (routineId) => {
-            if (isWorkoutActive) {
-              alert(disabledMessage);
-              return;
-            }
-            try {
-              await deleteRoutine(routineId);
-            } catch (error) {
-              console.error('Error deleting routine:', error);
-              alert('Failed to delete routine');
-            }
-          }}
-          onMove={() => {
-            if (isWorkoutActive) {
-              alert(disabledMessage);
-              return;
-            }
-            handleMoveRoutine(routine.id, routine.folder_id);
-          }}
-        />
-      </div>
-    ));
-  };
+  // Routines are rendered directly in the renderFolderItem function
 
   const renderFolderItem = (folderId: string | null, name: string, routines: any[], showOptions = true) => {
     const isExpanded = expandedFolders[folderId || 'root'];
-    const isSelected = selectedFolderId === folderId;
     const hasRoutines = routines.length > 0;
     
     return (
-      <div key={folderId || 'root'} className="border rounded-xl bg-white mb-2">
+      <motion.div 
+        key={folderId || 'root'} 
+        className="border rounded-xl bg-white mb-2"
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="flex items-center group">
           <div
             onClick={() => toggleFolder(folderId)}
@@ -194,12 +177,12 @@ export const FolderView: React.FC<FolderViewProps> = ({
               <ChevronRight size={20} className="text-gray-500" />
             )}
             </div>
-              <Folder size={18} className="mr-2 text-gray-500" />
+            <Folder size={18} className="mr-2 text-gray-500" />
             <span className="flex text-left font-medium text-md">{name}</span>
             <span className="ml-2 px-1 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-500">
               {routines.length}
             </span>
-            </div>
+          </div>
           {showOptions && folderId && (
             <div className="relative">
               <button
@@ -211,8 +194,9 @@ export const FolderView: React.FC<FolderViewProps> = ({
               >
                 <MoreVertical size={16} className="text-gray-500" />
               </button>
-              {activeMenu === folderId && (
-                <FolderMenu
+              <AnimatePresence>
+                {activeMenu === folderId && (
+                  <FolderMenu
                   folderId={folderId}
                   folderName={name}
                   routineCount={routines.length}
@@ -222,7 +206,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                       isOpen: true,
                       folderId,
                       folderName: name,
-                      routineCount: routines.length
+                      routineCount: routines.length,
                     });
                     setActiveMenu(null);
                   }}
@@ -232,7 +216,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
                       isOpen: true,
                       folderId,
                       folderName: name,
-                      routineCount: routines.length
+                      routineCount: routines.length,
                     });
                     setActiveMenu(null);
                   }}
@@ -246,35 +230,87 @@ export const FolderView: React.FC<FolderViewProps> = ({
                     setActiveMenu(null);
                   }}
                 />
-              )}
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
-        {isExpanded && (
-          <div>
-            {hasRoutines ? (
-              renderRoutines(routines)
-            ) : (
-              <div className="py-8 text-center">
-                <p className="text-gray-500 mb-1 text-sm">No routines yet</p>
-                <button
-                  onClick={() => {
-                    if (isWorkoutActive) {
-                      alert(disabledMessage);
-                      return;
-                    }
-                    onCreateRoutine(folderId);
-                  }}
-                  className="text-blue-600 text-sm hover:text-blue-700 font-medium inline-flex items-center gap-1"
+        <AnimatePresence>
+          {isExpanded && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              style={{ overflow: 'hidden' }}
+            >
+              {hasRoutines ? (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
                 >
-                  <Plus size={16} />
-                  Create a routine
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+                  {routines.map((routine, index) => (
+                    <motion.div 
+                      key={routine.id} 
+                      className="py-2 px-2 bg-gray-100"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.1 + (index * 0.05), duration: 0.2 }}
+                    >
+                      <RoutinePreviewCard
+                        routine={routine}
+                        onEdit={() => onEditRoutine(routine)}
+                        onDelete={async (routineId) => {
+                          if (isWorkoutActive) {
+                            alert(disabledMessage);
+                            return;
+                          }
+                          try {
+                            await deleteRoutine(routineId);
+                          } catch (error) {
+                            console.error('Error deleting routine:', error);
+                            alert('Failed to delete routine');
+                          }
+                        }}
+                        onMove={() => {
+                          if (isWorkoutActive) {
+                            alert(disabledMessage);
+                            return;
+                          }
+                          handleMoveRoutine(routine.id, routine.folder_id);
+                        }}
+                      />
+                    </motion.div>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div 
+                  className="py-8 text-center"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.1, duration: 0.2 }}
+                >
+                  <p className="text-gray-500 mb-1 text-sm">No routines yet</p>
+                  <button
+                    onClick={() => {
+                      if (isWorkoutActive) {
+                        alert(disabledMessage);
+                        return;
+                      }
+                      onCreateRoutine?.(folderId || '');
+                    }}
+                    className="text-blue-600 text-sm hover:text-blue-700 font-medium inline-flex items-center gap-1"
+                  >
+                    <Plus size={16} />
+                    Create a routine
+                  </button>
+                </motion.div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     );
   };
 

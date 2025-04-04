@@ -1,15 +1,58 @@
 import React from 'react';
 
-export const WorkoutSkeleton: React.FC = () => {
+// Reusable skeleton element component
+const SkeletonElement: React.FC<{
+  height: string;
+  width: string;
+  className?: string;
+}> = ({ height, width, className = '' }) => (
+  <div
+    className={`bg-gray-200 rounded animate-pulse ${className}`}
+    style={{ height, width }}
+  ></div>
+);
+
+// Exercise card skeleton component
+const ExerciseCardSkeleton: React.FC<{ setsCount?: number }> = ({ setsCount = 3 }) => (
+  <div className="bg-white rounded-lg shadow-sm p-4">
+    {/* Exercise Header */}
+    <div className="flex justify-between items-center mb-4">
+      <div className="flex-1">
+        <SkeletonElement height="1.5rem" width="15rem" className="mb-2" />
+      </div>
+    </div>
+
+    {/* Sets */}
+    <div className="space-y-2">
+      {Array(setsCount).fill(0).map((_, index) => (
+        <div key={index} className="flex items-center gap-3">
+          <SkeletonElement height="2rem" width="20rem" />
+
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
+interface WorkoutSkeletonProps {
+  exerciseCount?: number;
+  setsPerExercise?: number;
+}
+
+export const WorkoutSkeleton: React.FC<WorkoutSkeletonProps> = ({
+  exerciseCount = 2,
+  setsPerExercise = 3
+}) => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="fixed top-0 left-0 right-0 bg-white border-b z-10">
         <div className="p-4">
-          <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+          <SkeletonElement height="2rem" width="15rem" className="mb-2" />
           <div className="flex space-x-4">
-            <div className="h-6 w-24 bg-gray-200 rounded"></div>
-            <div className="h-6 w-24 bg-gray-200 rounded"></div>
+            <SkeletonElement height="1.5rem" width="6rem" />
+            <SkeletonElement height="1.5rem" width="6rem" />
+            <SkeletonElement height="1.5rem" width="6rem" />
           </div>
         </div>
       </div>
@@ -17,44 +60,9 @@ export const WorkoutSkeleton: React.FC = () => {
       {/* Exercise Cards */}
       <div className="p-4 pt-28">
         <div className="space-y-4">
-          {[1, 2].map((i) => (
-            <div key={i} className="bg-white rounded-lg shadow-sm p-4">
-              {/* Exercise Header */}
-              <div className="flex justify-between items-center mb-4">
-                <div className="flex-1">
-                  <div className="h-6 w-40 bg-gray-200 rounded mb-2"></div>
-                  <div className="flex gap-2">
-                    <div className="h-5 w-20 bg-gray-200 rounded"></div>
-                    <div className="h-5 w-16 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-                <div className="h-8 w-8 bg-gray-200 rounded"></div>
-              </div>
-
-              {/* Sets */}
-              <div className="space-y-2">
-                {[1, 2, 3].map((j) => (
-                  <div key={j} className="flex items-center gap-3">
-                    <div className="h-8 w-8 bg-gray-200 rounded"></div>
-                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
-                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
-                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Add Set Button */}
-              <div className="mt-3 h-10 w-32 bg-gray-200 rounded"></div>
-            </div>
+          {Array(exerciseCount).fill(0).map((_, index) => (
+            <ExerciseCardSkeleton key={index} setsCount={setsPerExercise} />
           ))}
-        </div>
-      </div>
-
-      {/* Footer Actions */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
-        <div className="flex justify-between items-center">
-          <div className="h-10 w-32 bg-gray-200 rounded"></div>
-          <div className="h-10 w-32 bg-gray-200 rounded"></div>
         </div>
       </div>
     </div>

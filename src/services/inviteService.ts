@@ -12,14 +12,20 @@ export const validateInviteCode = async (code: string): Promise<{
   message: string;
 }> => {
   try {
+    if (!code) {
+      return { 
+        valid: false, 
+        message: 'Invite code is required' 
+      };
+    }
+
     const { data, error } = await supabase
       .from('invite_codes')
-      .select('*')
+      .select('code, remaining_uses, max_uses, created_at')
       .eq('code', code.toUpperCase())
       .maybeSingle();
 
     if (error) {
-      console.error('Error validating invite code:', error);
       throw new Error('Error validating invite code');
     }
 
@@ -42,7 +48,6 @@ export const validateInviteCode = async (code: string): Promise<{
       message: 'Valid invite code' 
     };
   } catch (error) {
-    console.error('Error validating invite code:', error);
     return { 
       valid: false, 
       message: 'Error validating invite code. Please try again.' 
@@ -55,10 +60,24 @@ export const markInviteCodeAsUsed = async (code: string, userId: string): Promis
   message: string;
 }> => {
   try {
+    if (!code) {
+      return {
+        success: false,
+        message: 'Invite code is required'
+      };
+    }
+
+    if (!userId) {
+      return {
+        success: false,
+        message: 'User ID is required'
+      };
+    }
+
     // First, get the current state of the invite code
     const { data: inviteCode, error: fetchError } = await supabase
       .from('invite_codes')
-      .select('remaining_uses')
+      .select('code, remaining_uses')
       .eq('code', code.toUpperCase())
       .maybeSingle();
 
@@ -87,7 +106,6 @@ export const markInviteCodeAsUsed = async (code: string, userId: string): Promis
       message: 'Invite code successfully used'
     };
   } catch (error) {
-    console.error('Error marking invite code as used:', error);
     return {
       success: false,
       message: 'Error processing invite code. Please try again.'

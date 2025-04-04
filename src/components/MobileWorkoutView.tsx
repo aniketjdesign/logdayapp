@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Link2, Trash2 } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Clock, Link2, Trash2, RefreshCw } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
 import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
@@ -61,6 +62,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [showFinishConfirmation, setShowFinishConfirmation] = useState(false);
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false);
   const [showExerciseModal, setShowExerciseModal] = useState(false);
+  const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
   const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
@@ -77,15 +79,18 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     return initialState;
   });
 
+  const { setCurrentWorkout } = useWorkout();
+  const { weightUnit, disableRestTimer } = useSettings();
+  const navigate = useNavigate();
+
   useEffect(() => {
     if (workout.workoutRestTimer !== undefined) {
       setWorkoutRestTimer(workout.workoutRestTimer);
+    } else {
+      // If not explicitly set in the workout, use the inverse of the global setting
+      setWorkoutRestTimer(!disableRestTimer);
     }
-  }, [workout.workoutRestTimer]);
-
-  const { setCurrentWorkout } = useWorkout();
-  const { weightUnit } = useSettings();
-  const navigate = useNavigate();
+  }, [workout.workoutRestTimer, disableRestTimer]);
 
   const getWorkoutStats = () => {
     const totalExercises = workout.exercises.length;
@@ -122,7 +127,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const handleSetComplete = (exerciseId: string) => {
-    if (workoutRestTimer && restTimerEnabled[exerciseId]) {
+    // Show rest timer if:
+    // 1. Global rest timer is not disabled OR workout-specific rest timer override is enabled
+    // 2. AND workout-level rest timer is enabled
+    // 3. AND exercise-specific rest timer is enabled
+    if (((!disableRestTimer) || workout.workoutRestTimerOverride) && workoutRestTimer && restTimerEnabled[exerciseId]) {
       setShowRestTimer(true);
     }
   };
@@ -206,7 +215,15 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   const renderExerciseMenu = (exerciseId: string) => (
-    <div className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10">
+    <AnimatePresence>
+      {activeExerciseMenu === exerciseId && (
+        <motion.div 
+          className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10"
+          initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+        >
       <button
         onClick={() => {
           toggleRestTimer(exerciseId);
@@ -237,6 +254,17 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
       </button>
       <button
         onClick={() => {
+          setReplaceExerciseId(exerciseId);
+          setShowExerciseModal(true);
+          setActiveExerciseMenu(null);
+        }}
+        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
+      >
+        <RefreshCw size={16} />
+        <span>Replace Exercise</span>
+      </button>
+      <button
+        onClick={() => {
           onDeleteExercise(exerciseId);
           setActiveExerciseMenu(null);
         }}
@@ -245,7 +273,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         <Trash2 size={16} className="mr-2" />
         <span>Remove Exercise</span>
       </button>
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 
   const stats = getWorkoutStats();
@@ -253,14 +283,21 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const toggleWorkoutRestTimer = () => {
     const newValue = !workoutRestTimer;
     setWorkoutRestTimer(newValue);
+    
+    // If we're enabling the rest timer while it's globally disabled,
+    // we need to set the override flag
+    const needsOverride = newValue && disableRestTimer;
+    
     setCurrentWorkout({
       ...workout,
-      workoutRestTimer: newValue
+      workoutRestTimer: newValue,
+      // Set the override flag if we're enabling rest timers while they're globally disabled
+      workoutRestTimerOverride: needsOverride ? true : workout.workoutRestTimerOverride
     });
   };
 
   return (
-    <div className="md:hidden app-layout bg-gray-50">
+    <div className="md:hidden app-layout bg-gray-50 safe-area-inset-left safe-area-inset-right">
       <MobileWorkoutHeader
         workoutName={workoutName}
         duration={duration}
@@ -272,20 +309,27 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onPauseResume={onPauseResume}
       />
 
-      <div className="px-4 space-y-6 pt-32 pb-40">
-        {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
-          if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
-            return null;
-          }
+      <div 
+        className="px-4 space-y-6 pb-40 overflow-y-auto" 
+        style={{
+          paddingTop: 'max(8rem, calc(6rem + env(safe-area-inset-top)))',
+          paddingBottom: 'max(10rem, calc(10rem + env(safe-area-inset-bottom)))'
+        }}
+      >
+        <AnimatePresence>
+          {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
+            if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
+              return null;
+            }
 
-          const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
+            const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
 
-          return (
-            <MobileExerciseCard
-              key={exercise.id}
-              exercise={exercise}
-              sets={sets}
-              supersetWith={supersetWith}
+            return (
+              <MobileExerciseCard
+                key={exercise.id}
+                exercise={exercise}
+                sets={sets}
+                supersetWith={supersetWith}
               exerciseHistory={exerciseHistory}
               weightUnit={weightUnit}
               onUpdateSet={onUpdateSet}
@@ -297,9 +341,11 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
               activeExerciseMenu={activeExerciseMenu}
               renderExerciseMenu={renderExerciseMenu}
               supersetPartner={supersetPartner}
+              animationDelay={index * 0.1}
             />
-          );
-        })}
+            );
+          })}
+        </AnimatePresence>
 
         <MobileWorkoutFooter
           onFinish={() => setShowFinishConfirmation(true)}
@@ -329,9 +375,45 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
 
       {showExerciseModal && (
         <ExerciseSelectionModal
-          onClose={() => setShowExerciseModal(false)}
+          isReplacing={replaceExerciseId !== null}
+          onClose={() => {
+            setShowExerciseModal(false);
+            setReplaceExerciseId(null);
+          }}
           onAdd={(selectedExercises) => {
-            onShowExerciseModal(selectedExercises);
+            if (replaceExerciseId) {
+              // Handle replacing an exercise
+              const exerciseToReplace = workout.exercises.find(e => e.exercise.id === replaceExerciseId);
+              if (exerciseToReplace && selectedExercises.length === 1) {
+                // Create a new exercise with the same number of sets but with empty values
+                const newExercise = {
+                  exercise: selectedExercises[0],
+                  sets: exerciseToReplace.sets.map(set => ({
+                    ...set,
+                    weight: 0,
+                    targetReps: 0,
+                    completedReps: 0,
+                    comments: ''
+                  })),
+                  supersetWith: null
+                };
+                
+                // Replace the exercise in the workout
+                const updatedExercises = workout.exercises.map(e => 
+                  e.exercise.id === replaceExerciseId ? newExercise : e
+                );
+                
+                // Update the workout with the new exercises array
+                setCurrentWorkout({
+                  ...workout,
+                  exercises: updatedExercises
+                });
+              }
+              setReplaceExerciseId(null);
+            } else {
+              // Normal add exercise flow
+              onShowExerciseModal(selectedExercises);
+            }
             setShowExerciseModal(false);
           }}
           currentExercises={workout.exercises.map(e => e.exercise)}
@@ -412,6 +494,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         position={menuPosition}
         isPaused={isPaused}
         workoutRestTimer={workoutRestTimer}
+        disableRestTimer={disableRestTimer}
         onClose={() => setShowMenu(false)}
         onFinishWorkout={() => setShowFinishConfirmation(true)}
         onPauseResume={onPauseResume}

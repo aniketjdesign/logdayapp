@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useCallback, memo } from 'react';
 import { Plus, Check, ChevronLeft, ChevronRight, SearchIcon } from 'lucide-react';
 import { Exercise } from '../types/exercise';
 
@@ -11,6 +11,7 @@ interface ExerciseSelectorProps {
   onAddCustomExercise?: () => void;
   currentWorkout?: boolean;
   onSelect?: (exercises: Exercise[]) => void;
+  stickyTopPosition?: string;
 }
 
 const muscleGroups = [
@@ -30,6 +31,30 @@ const muscleGroups = [
   'Olympic Lifts',
 ] as const;
 
+// Memoized muscle group button component to prevent unnecessary re-renders
+const MuscleGroupButton = memo(({ 
+  group, 
+  isSelected, 
+  onClick 
+}: { 
+  group: string; 
+  isSelected: boolean; 
+  onClick: () => void;
+}) => {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-3 py-1.5 rounded-full text-sm font-normal transition-colors duration-150 whitespace-nowrap
+        ${isSelected
+          ? 'bg-gray-700 text-white'
+          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+        }`}
+    >
+      {group}
+    </button>
+  );
+});
+
 export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   customExercises,
   recentExercises,
@@ -39,6 +64,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   onAddCustomExercise,
   currentWorkout,
   onSelect,
+  stickyTopPosition = 'top-[36px]',
 }) => {
   const [search, setSearch] = useState('');
   const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<string>('All');
@@ -63,6 +89,13 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
       });
     }
   };
+
+  // Memoized handler for muscle group selection
+  const handleMuscleGroupSelect = useCallback((group: string) => {
+    if (group !== selectedMuscleGroup) {
+      setSelectedMuscleGroup(group);
+    }
+  }, [selectedMuscleGroup]);
 
   const filteredCustomExercises = customExercises.filter(exercise => {
     const matchesSearch = !search || exercise.name.toLowerCase().includes(search.toLowerCase());
@@ -102,18 +135,20 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-full pt-4 ">
-      <div className="flex-1 overflow-y-auto pb-80 bg-white">
-        <div className="px-4">
-          <div className="relative mb-5 flex gap-x-2 pt-1">
+    <div className="flex flex-col min-h-full bg-gray-50 pb-24">
+      <div className="flex-1 bg-white">
+        <div className={`px-4 pt-3 pb-4 bg-gray-50 sticky ${stickyTopPosition}`}>
+          <div className="relative mb-5 flex gap-x-2">
             <input
               type="text"
               placeholder="Search exercises"
-              className="w-full pl-7 pr-10 py-2 border border-gray-200 rounded-lg text-sm"
+              className="w-full pl-7 pr-10 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={search}
               onChange={(e) => setSearch(e.target.value)}  
             />
-            <button className="absolute left-1 top-1/2 -translate-y-1/2 p-1">
+            <button 
+              className="absolute left-1 top-[1.15rem] -translate-y-1/2 p-1"
+            >
               <SearchIcon size={16} className="text-gray-400" />
             </button>
             {onAddCustomExercise && (
@@ -126,11 +161,11 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
             )}
           </div>
 
-          <div className="relative flex justify-evenly pb-2 mb-2 space-x-2">
+          <div className="relative flex justify-evenly space-x-2">
             {showLeftScroll && (
               <button 
                 onClick={() => scrollCategories('left')}
-                className="bg-gray-100 rounded-full p-1.5 hover:bg-gray-100 transition-colors"
+                className="bg-gray-100 rounded-full p-1.5 hover:bg-gray-100 transition-colors h-[32px]"
               >
                 <ChevronLeft size={16} className="text-gray-900" />
               </button>
@@ -141,23 +176,18 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
               className="flex gap-2 overflow-x-auto scrollbar-none pb-3"
             >
               {muscleGroups.map(group => (
-                <button
+                <MuscleGroupButton
                   key={group}
-                  onClick={() => setSelectedMuscleGroup(group)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-normal transition-all whitespace-nowrap
-                    ${selectedMuscleGroup === group
-                      ? 'bg-gray-700 text-white'
-                      : 'bg-gray-100 text-gray-900 hover:bg-gray-100'
-                    }`}
-                >
-                  {group}
-                </button>
+                  group={group}
+                  isSelected={selectedMuscleGroup === group}
+                  onClick={() => handleMuscleGroupSelect(group)}
+                />
               ))}
             </div>
             {showRightScroll && (
               <button 
                 onClick={() => scrollCategories('right')}
-                className="bg-gray-100 rounded-full p-1 hover:bg-gray-100 transition-colors"
+                className="bg-gray-100 rounded-full p-1 hover:bg-gray-100 transition-colors h-[32px]"
               >
                 <ChevronRight size={16} className="text-gray-900" />
               </button>
@@ -168,13 +198,15 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
         {/* Custom Exercises Section */}
         {filteredCustomExercises.length > 0 && (
           <div className="bg-white">
-            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">Your Exercises</h2>
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
+              Your Exercises
+            </h2>
             <div className="space-y-0">
               {filteredCustomExercises.map(exercise => (
                 <div
                   key={exercise.id}
                   onClick={() => !currentWorkout && onExerciseSelect(exercise)}
-                  className={`flex items-center justify-between  cursor-pointer border-b px-4 py-2.5 
+                  className={`flex items-center justify-between cursor-pointer border-b px-4 py-2.5 
                     ${selectedExercises.find(e => e.id === exercise.id)
                       ? 'bg-blue-50 border-blue-300'
                       : 'border-gray-100 hover:bg-gray-50'
@@ -200,7 +232,9 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
         {/* Recent Exercises Section */}
         {filteredRecentExercises.length > 0 && (
           <div className="bg-white">
-            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">Recent</h2>
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
+              Recent
+            </h2>
             <div className="space-y-0">
               {filteredRecentExercises.map(exercise => (
                 <div
@@ -230,9 +264,11 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
         )}
 
         {/* Default Exercises Section */}
-        {Object.entries(getFilteredExercises()).map(([letter, exercises]) => (
+        {Object.entries(getFilteredExercises()).map(([letter, exercises], index) => (
           <div key={letter} className="bg-white">
-            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">{letter}</h2>
+            <h2 className="text-xs font-medium px-4 py-2 bg-gray-100 text-gray-500">
+              {letter}
+            </h2>
             <div className="space-y-0">
               {exercises.map(exercise => (
                 <div

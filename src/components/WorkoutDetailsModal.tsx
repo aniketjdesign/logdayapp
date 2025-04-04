@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Medal, Link2, Target, MoreVertical, Play, Repeat1, Trash2, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutLog } from '../types/workout';
 import { ExerciseSetList } from './ExerciseSetList';
 import { useSettings } from '../context/SettingsContext';
@@ -18,6 +19,7 @@ interface WorkoutDetailsModalProps {
 export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, onClose, onDelete }) => {
   const { weightUnit } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [showRoutineSetup, setShowRoutineSetup] = useState(false);
   const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
@@ -78,18 +80,26 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
           <div className="flex items-center gap-2">
             <div className="relative">
               <button
+                ref={menuButtonRef}
                 onClick={() => setShowMenu(!showMenu)}
                 className="p-2 hover:bg-gray-100 rounded-full"
               >
                 <MoreVertical size={20} className="text-gray-600" />
               </button>
-              {showMenu && (
-                <>
-                  <div 
-                    className="fixed inset-0 z-20"
-                    onClick={() => setShowMenu(false)}
-                  />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-30 border">
+              <AnimatePresence>
+                {showMenu && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-20"
+                      onClick={() => setShowMenu(false)}
+                    />
+                    <motion.div 
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-30 border"
+                      initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+                    >
                     <div
                       onClick={() => {
                         handleRestartWorkout();
@@ -120,9 +130,10 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
                       <Trash2 size={16} className="mr-2" />
                       Delete Log
                     </div>
-                  </div>
-                </>
-              )}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
             </div>
             <button
               onClick={onClose}
@@ -133,7 +144,7 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
           </div>
         </div>
 
-        <div className="overflow-y-auto flex-1 pb-safe pb-8">
+        <div className="overflow-y-auto flex-1 pb-safe pb-40">
           {Object.entries(exercisesByMuscle).map(([muscleGroup, exercises]) => (
             <div key={muscleGroup} className="border-b last:border-b-0">
               <div className="px-4 py-2 bg-gray-50">

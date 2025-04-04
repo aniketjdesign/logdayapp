@@ -1,3 +1,7 @@
+Don't change any UI in existing features while generating new features.
+Don't change any existing features while generating new features.
+The app is called Logday and not LogDay. Maintain the case sensitivity in code and other files.
+
 For all designs I ask you to make, have them be beautiful, not cookie cutter. Make webpages that are fully featured and worthy for production.
 
 By default, this template supports JSX syntax with Tailwind CSS classes, React hooks, and Lucide React for icons. Do not install other packages for UI themes, icons, etc unless absolutely necessary or I request them.

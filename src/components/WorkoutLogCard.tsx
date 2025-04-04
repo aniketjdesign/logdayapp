@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
 import { ExerciseSetList } from './ExerciseSetList';
@@ -17,6 +18,7 @@ interface WorkoutLogCardProps {
 export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showRoutineSetup, setShowRoutineSetup] = useState(false);
   const { startWorkout, addRoutine } = useWorkout();
@@ -137,6 +139,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           </div>
           <div className="relative">
             <button
+              ref={menuButtonRef}
               onClick={(e) => {
                 setShowMenu(!showMenu);
               }}
@@ -144,15 +147,20 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
             >
               <MoreVertical size={16} strokeWidth={1.33} className="text-gray-700" />
             </button>
-            {showMenu && (
-              <>
-                <div 
-                  className="fixed inset-0 z-10"
-                  onClick={() => setShowMenu(false)}
-                />
-                <div 
-                  className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border z-20"
-                >
+            <AnimatePresence>
+              {showMenu && (
+                <>
+                  <div 
+                    className="fixed inset-0 z-10"
+                    onClick={() => setShowMenu(false)}
+                  />
+                  <motion.div 
+                    className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-lg border z-20"
+                    initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.5 }}
+                    transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+                  >
                   <div
                     onClick={() => {
                       handleRestartWorkout();
@@ -183,9 +191,10 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
                     <Trash2 size={16} className="mr-2" />
                     Delete Log
                   </div>
-                </div>
+                </motion.div>
               </>
-            )}
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

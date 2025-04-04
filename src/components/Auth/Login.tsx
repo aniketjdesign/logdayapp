@@ -15,39 +15,123 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Function to check rate limits
+  const checkRateLimits = async (email: string) => {
+    try {
+      // Check rate limits before login
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'check_login_limits',
+            email,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        if (response.status === 429) {
+          // Handle rate limit error
+          return { allowed: false, reason: data.reason };
+        }
+        
+        return { allowed: false, reason: 'unknown' };
+      }
+
+      return { allowed: true };
+    } catch (error) {
+      // Allow on error to prevent blocking legitimate users
+      return { allowed: true };
+    }
+  };
+
+  // Function to record failed login attempt
+  const recordFailedLogin = async (email: string) => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-ratelimit`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            action: 'record_failed_login',
+            email,
+          }),
+        }
+      );
+
+      await response.json();
+    } catch (error) {
+      // Silent fail - we don't want to block login if recording fails
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
     try {
       setError('');
       setLoading(true);
+
+      // Check rate limits before attempting login
+      const rateLimitCheck = await checkRateLimits(email);
+      if (!rateLimitCheck.allowed) {
+        if (rateLimitCheck.reason === 'ip_limit') {
+          setError('Too many login attempts. Please try again in a few minutes.');
+        } else if (rateLimitCheck.reason === 'email_limit') {
+          setError('Too many failed login attempts for this email. Please try again later or reset your password.');
+        } else {
+          setError('Login temporarily unavailable. Please try again later.');
+        }
+        return;
+      }
+
+      // Attempt to sign in
       await signIn(email, password);
       
       // Redirect to the originally requested URL or default to home
       const from = (location.state as any)?.from?.pathname || '/';
       navigate(from, { replace: true });
     } catch (err: any) {
-      if (err?.name === 'AuthApiError' && err?.status === 400) {
+      console.error('Login error:', err);
+      
+      // Record failed login attempt
+      await recordFailedLogin(email);
+      
+      // Set appropriate error message based on error type
+      if (err?.message?.includes('Invalid login credentials')) {
+        setError('Invalid email or password. Please try again.');
+      } else if (err?.name === 'AuthApiError' && err?.status === 400) {
         setError('Invalid email or password. Please try again.');
       } else {
-        setError('Failed to sign in. Please check your credentials and try again.');
+        setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
       }
-      console.error('Sign in error:', err);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom">
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <div className="flex justify-center">
             <LogDayLogo className="h-16 w-16" />
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
             Welcome to Logday
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
+          <p className="mt-1 text-sm text-gray-600">
             Never skip log day
           </p>
         </div>
@@ -89,50 +173,56 @@ export const Login: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Make sure nobody is looking"
+                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm pr-10"
+                  placeholder="•••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                 </button>
               </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end">
+            <div className="text-sm">
+              <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                Forgot your password?
+              </Link>
             </div>
           </div>
 
           <div>
             <button
               type="submit"
-              disabled={loading}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                loading 
-                  ? 'bg-blue-400 cursor-not-allowed' 
-                  : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
-              }`}
+              disabled={loading || error.includes('Too many login attempts') || error.includes('Too many failed login attempts')}
+              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${
+                loading || error.includes('Too many login attempts') || error.includes('Too many failed login attempts') 
+                  ? "bg-blue-400 cursor-not-allowed" 
+                  : "bg-blue-600 hover:bg-blue-700"
+              } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? "Signing in..." : "Sign in"}
             </button>
+          </div>
+
+          <div className="text-sm text-center">
+            <span className="text-gray-600">
+              Don't have an account?{" "}
+            </span>
+            <Link to="/signup" className="font-medium text-blue-600 hover:text-blue-500">
+              Sign up
+            </Link>
           </div>
         </form>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600">
-            Don't have an account?{' '}
-            <Link
-              to="/signup"
-              className="font-medium text-blue-600 hover:text-blue-500"
-            >
-              Sign up
-            </Link>
-          </p>
-        </div>
+        <AuthFooter />
       </div>
-      <AuthFooter />
     </div>
   );
 };

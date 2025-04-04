@@ -25,5 +25,16 @@ dist-ssr
 
 # Add to .gitignore
 .env
+.env.example
 .env.local
+.env.example
 .env.*.local
+
+# windsurf rules
+.windsurfrules
+
+# Local Netlify folder
+.netlify
+
+# Local testing folder
+.testing

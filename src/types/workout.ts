@@ -48,6 +48,7 @@ export interface WorkoutLog {
   duration: number;
   restTimerSettings?: { [key: string]: boolean };
   workoutRestTimer?: boolean;
+  workoutRestTimerOverride?: boolean;
 }
 
 export type MuscleGroup = 
@@ -78,6 +79,42 @@ export interface WorkoutPreferences {
   id: string;
   user_id: string;
   history_period_days: number;
+  disable_rest_timer?: boolean;
+  default_home_page?: 'routines' | 'exercises';
   created_at?: string;
   updated_at?: string;
+}
+
+export interface Folder {
+  id: string;
+  name: string;
+  user_id: string;
+  created_at?: string;
+}
+
+export interface Routine {
+  id?: string;
+  name: string;
+  description?: string;
+  exercises: RoutineExercise[];
+  user_id?: string;
+  folder_id: string | null;
+  total_exercises?: number;
+  total_sets?: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RoutineExercise {
+  exercise: Exercise;
+  sets: RoutineSet[];
+}
+
+export interface RoutineSet {
+  id: string;
+  setNumber: number;
+  targetReps: number;
+  weight: number;
+  isWarmup?: boolean;
+  isDropset?: boolean;
 }

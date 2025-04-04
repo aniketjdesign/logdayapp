@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import { Send, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,14 +55,30 @@ export const ContactForm: React.FC = () => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-6">
-      <div className="mb-8">
+    <motion.div 
+      className="max-w-2xl mx-auto px-4 py-6"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.4 }}
+    >
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.3 }}
+      >
         <h1 className="text-xl font-bold text-gray-900 mb-1">Contact Us</h1>
         <p className="text-gray-600 text-sm pr-6">I'd love to hear about your Logday experience. Drop a message/feedback and I'll respond as soon as possible.</p>
-      </div>
+      </motion.div>
       
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <motion.form 
+        onSubmit={handleSubmit} 
+        className="space-y-6"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.3 }}
+      >
         
         <div>
           <label htmlFor="subject" className="block text-sm font-medium text-gray-700 mb-1">
@@ -118,9 +135,14 @@ export const ContactForm: React.FC = () => {
           <Send size={18} />
           <span>{isSubmitting ? 'Sending...' : 'Send'}</span>
         </button>
-      </form>
+      </motion.form>
 
-      <div className="mt-8 flex justify-center space-x-6">
+      <motion.div 
+        className="mt-8 flex justify-center space-x-6"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.3, duration: 0.3 }}
+      >
         <a 
           href="https://www.reddit.com/r/logdayapp" 
           target="_blank" 
@@ -137,7 +159,7 @@ export const ContactForm: React.FC = () => {
           <Mail size={18} />
           <span>hello@logday.app</span>
         </a>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

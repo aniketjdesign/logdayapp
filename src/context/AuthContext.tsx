@@ -11,6 +11,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -54,32 +55,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error, data } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) throw error;
-    identifyUser(data.user);
-    Analytics.userSignedIn({
-      userId: data.user.id,
-      email: data.user.email || ''
-    });
+    try {
+      console.log("Starting sign-in process for email:", email);
+      
+      console.log("Attempting Supabase authentication...");
+      const { error, data } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) {
+        console.error("Supabase auth error:", error);
+        throw error;
+      }
+      
+      console.log("Authentication successful");
+      identifyUser(data.user);
+      Analytics.userSignedIn({
+        userId: data.user.id,
+        email: data.user.email || ''
+      });
+    } catch (err: any) {
+      console.error("Sign-in error details:", err);
+      throw err;
+    }
   };
 
   const signUp = async (email: string, password: string): Promise<AuthResponse> => {
-    const response = await supabase.auth.signUp({
-      email,
-      password,
-    });
-    if (response.data.user) {
-      identifyUser(response.data.user);
-      Analytics.userSignedUp({
-        userId: response.data.user.id,
-        email: response.data.user.email || '',
-        createdAt: response.data.user.created_at
+    try {
+      console.log("Starting sign-up process for email:", email);
+      
+      console.log("Attempting Supabase signup...");
+      const response = await supabase.auth.signUp({
+        email,
+        password,
       });
+      
+      if (response.error) {
+        console.error("Supabase signup error:", response.error);
+        throw response.error;
+      }
+      
+      if (response.data.user) {
+        console.log("Signup successful");
+        identifyUser(response.data.user);
+        Analytics.userSignedUp({
+          userId: response.data.user.id,
+          email: response.data.user.email || '',
+          createdAt: response.data.user.created_at
+        });
+      }
+      
+      return response;
+    } catch (err: any) {
+      console.error("Sign-up error details:", err);
+      throw err;
     }
-    return response;
   };
 
   const signOut = async () => {
@@ -106,8 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Even if there's an error, we want to force logout
       if (error) {
         console.error('Error during sign out:', error);
-        // Force clear Supabase session
-        await supabase.auth.clearSession();
       }
 
       // Force reload to clear all app state and redirect
@@ -131,30 +160,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
       });
-      
-      if (error) throw error;
-      if (data.user) {
-        identifyUser(data.user);
+
+      if (error) {
+        throw error;
       }
-      return data;
     } catch (error) {
-      console.error('Google sign in error:', error);
+      console.error('Error signing in with Google:', error);
       throw error;
     }
   };
 
   const updatePassword = async (newPassword: string) => {
-    const { error } = await supabase.auth.updateUser({
-      password: newPassword
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/update-password`,
     });
     if (error) throw error;
   };
 
-  return (
-    <AuthContext.Provider value={{ user, signIn, signUp, signOut, signInWithGoogle, updatePassword }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  const value: AuthContextType = {
+    user,
+    signIn,
+    signUp,
+    signOut,
+    signInWithGoogle,
+    updatePassword,
+    resetPassword,
+  };
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

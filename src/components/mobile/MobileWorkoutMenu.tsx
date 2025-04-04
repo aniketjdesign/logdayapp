@@ -1,4 +1,5 @@
 import React from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCheck, PlayCircle, PauseCircle, MoveVertical, Clock, History, Settings, RefreshCw } from 'lucide-react';
 
 interface MobileWorkoutMenuProps {
@@ -6,6 +7,7 @@ interface MobileWorkoutMenuProps {
   position: { top: number; right: number };
   isPaused: boolean;
   workoutRestTimer: boolean;
+  disableRestTimer?: boolean;
   onClose: () => void;
   onFinishWorkout: () => void;
   onPauseResume: () => void;
@@ -21,6 +23,7 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
   position,
   isPaused,
   workoutRestTimer,
+  disableRestTimer = false,
   onClose,
   onFinishWorkout,
   onPauseResume,
@@ -30,15 +33,15 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
   onNavigateToSettings,
   onRefresh,
 }) => {
-  if (!isOpen) return null;
-
   return (
-    <>
+    <AnimatePresence>
+      {isOpen && (
+        <>
       <div 
         className="fixed inset-0 z-50" 
         onClick={onClose}
       />
-      <div 
+      <motion.div 
         style={{
           position: 'fixed',
           top: `${position.top}px`,
@@ -47,6 +50,10 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
           overflowY: 'auto'
         }}
         className="bg-white rounded-lg shadow-lg z-50 min-w-[200px] py-1"
+        initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.5 }}
+        transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
       >
         <button
           onClick={() => {
@@ -95,9 +102,9 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
           }}
           className="w-full flex items-center px-4 py-3 hover:bg-gray-50"
         >
-          <Clock size={18} className={`mr-3 ${workoutRestTimer ? "text-gray-600" : "text-gray-600"}`} />
+          <Clock size={18} className="mr-3 text-gray-600" />
           <span className="text-sm font-medium">
-            {workoutRestTimer ? 'Disable Rest Timers' : 'Enable Rest Timers'}
+            {workoutRestTimer ? 'Disable Rest Timer' : 'Enable Rest Timer'}
           </span>
         </button>
         <button
@@ -131,7 +138,9 @@ export const MobileWorkoutMenu: React.FC<MobileWorkoutMenuProps> = ({
           <RefreshCw size={18} className="mr-3 text-gray-600" />
           <span className="text-sm font-medium">Refresh</span>
         </button>
-      </div>
+      </motion.div>
     </>
+      )}
+    </AnimatePresence>
   );
 };

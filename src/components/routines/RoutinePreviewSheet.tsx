@@ -4,7 +4,7 @@ import { RemoveScroll } from 'react-remove-scroll';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { generateUUID } from '../../utils/uuid';
-import { DeleteRoutineModal } from './DeleteRoutineModal';
+import { DeleteRoutineModal } from './routineview';
 
 interface RoutinePreviewSheetProps {
   routine: any;
@@ -153,7 +153,7 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
             </div>
 
             {/* Content */}
-            <div className="flex-1 overflow-y-auto p-4 bg-gray-100">
+            <div className="flex-1 overflow-y-auto p-4 pb-32 bg-gray-100">
               <div className="space-y-4">
                 {routine.exercises.map((config: any, index: number) => (
                   <div key={index} className="bg-white rounded-lg p-3 shadow-sm">
@@ -212,7 +212,7 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
       <DeleteRoutineModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
-        onConfirm={() => {
+        onConfirm={async () => {
           if (onDelete) {
             onDelete(routine.id);
             setShowDeleteModal(false);

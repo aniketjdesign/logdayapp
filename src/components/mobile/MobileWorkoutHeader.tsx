@@ -44,7 +44,9 @@ export const MobileWorkoutHeader: React.FC<MobileWorkoutHeaderProps> = ({
   };
 
   return (
-    <div className="fixed top-0 left-0 right-0 bg-white border-b z-40">
+    <div className="fixed top-0 left-0 right-0 bg-white border-b z-40" style={{
+      paddingTop: 'env(safe-area-inset-top)'
+    }}>
       <div className="flex items-center justify-between p-4 gap-4">
         <input
           type="text"

@@ -1,344 +1,161 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Menu, X, LogOut, Bell, User, Share, RefreshCw, Zap, Timer, History, Settings, MessageSquare, Clipboard } from 'lucide-react';
+import React from 'react';
+import { 
+  Timer, 
+  Notebook, 
+  Lightning, 
+  CalendarCheck, 
+  UserCircle
+} from 'phosphor-react';
 import { useWorkout } from '../context/WorkoutContext';
-import { useAuth } from '../context/AuthContext';
-import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LogoutConfirmationModal } from './LogoutConfirmationModal';
-import { LogDayLogo } from './LogDayLogo';
-import { InstallAppToast } from './InstallAppToast';
-
-declare global {
-  interface Window {
-    Canny: any;
-  }
-}
+import { motion } from 'framer-motion';
 
 export const Navigation: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { 
     setSelectedExercises,
     setCurrentView,
-    currentWorkout,
-    clearWorkoutState,
-    searchLogs 
+    currentWorkout
   } = useWorkout();
-  const { user, signOut } = useAuth();
-  const { isInstallable, isIOS } = useInstallPrompt();
-  const cannyInitialized = useRef(false);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && window.Canny && user?.email && !cannyInitialized.current) {
-      cannyInitialized.current = true;
-
-      window.Canny('identify', {
-        appID: '672e7aa3fb3f5695ec02ebee',
-        user: {
-          email: `${user.id}@logday.app`,
-          id: user.id,
-          name: `User_${user.id.slice(0, 8)}`,
-        },
-      });
-
-      window.Canny('initChangelog', {
-        appID: '672e7aa3fb3f5695ec02ebee',
-        position: 'bottom',
-        align: 'right',
-        theme: 'light'
-      });
-    }
-  }, [user]);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    // Force a hard refresh by reloading without cache
-    window.location.reload(true);
-  };
-
-  const handleLogoutClick = () => {
-    if (currentWorkout) {
-      setShowLogoutConfirmation(true);
-    } else {
-      handleLogout();
-    }
-    setIsMenuOpen(false);
-  };
-
-  const handleLogout = async () => {
-    if (isLoggingOut) return;
-    
-    try {
-      setIsLoggingOut(true);
-      clearWorkoutState();
-      await signOut();
-      
-      // Clear all localStorage data
-      Object.keys(localStorage).forEach(key => {
-        if (!key.startsWith('vite-')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Clear all sessionStorage data
-      sessionStorage.clear();
-
-      // Reset Canny
-      cannyInitialized.current = false;
-
-      // Force a hard reload and redirect
-      window.location.href = '/login';
-    } catch (error) {
-      console.error('Error during logout:', error);
-      // Even if there's an error, force logout
-      window.location.href = '/login';
-    }
-  };
-
-  const handleFinishWorkout = () => {
-    setShowLogoutConfirmation(false);
-    navigate('/workout');
-  };
-
-  const handleGoToWorkout = () => {
-    setShowLogoutConfirmation(false);
-    navigate('/workout');
-  };
 
   const navigateToHome = () => {
     setSelectedExercises([]);
     setCurrentView('exercises');
-    setIsMenuOpen(false);
-    navigate('/');
+    navigate('/quickstart');
   };
 
   const navigateToWorkout = () => {
     setCurrentView('workout');
-    setIsMenuOpen(false);
     navigate('/workout');
   };
 
   const navigateToLogs = () => {
     setCurrentView('logs');
-    setIsMenuOpen(false);
     navigate('/logs');
   };
 
-  const navigateToSettings = () => {
-    setIsMenuOpen(false);
-    navigate('/settings');
+  const navigateToRoutines = () => {
+    navigate('/routines');
   };
 
-  const navigationItems = [
-    {
-      icon: <Zap className="w-6 h-6" />,
-      label: 'Exercises',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/');
-      },
-      isActive: location.pathname === '/'
-    },
-    {
-      icon: <Timer className="w-6 h-6" />,
-      label: 'Workout',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/workout');
-      },
-      isActive: location.pathname === '/workout'
-    },
-    {
-      icon: <Clipboard className="w-6 h-6" />,
-      label: 'Routines',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/routines');
-      },
-      isActive: location.pathname === '/routines'
-    },
-    {
-      icon: <History className="w-6 h-6" />,
-      label: 'Workout History',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/logs');
-      },
-      isActive: location.pathname === '/logs'
-    },
-    {
-      icon: <Settings className="w-6 h-6" />,
-      label: 'Settings',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/settings');
-      },
-      isActive: location.pathname === '/settings'
-    },
-    {
-      icon: <MessageSquare className="w-6 h-6" />,
-      label: 'Contact',
-      onClick: () => {
-        setIsMenuOpen(false);
-        navigate('/contact');
-      },
-      isActive: location.pathname === '/contact'
-    },
-  ];
+  const navigateToProfile = () => {
+    navigate('/profile');
+  };
+
+  const isActive = (path: string | string[]): boolean => {
+    if (Array.isArray(path)) {
+      return path.some(p => location.pathname === p);
+    }
+    if (path === '/quickstart') {
+      return location.pathname === '/quickstart' || (location.pathname === '/' && location.key !== 'default');
+    }
+    return location.pathname === path;
+  };
 
   return (
     <>
-      <nav className="app-header bg-white shadow-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-14">
-            <div className="flex items-center">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg hover:bg-gray-100 bg-gray-50 text-gray-700 mr-2"
-              >
-                {isMenuOpen ? <X size={20} strokeWidth={2} /> : <Menu size={20} strokeWidth={2} />}
-              </button>
-              <LogDayLogo/>
-            </div>
-            <div className="flex items-center space-x-1.5">
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className={`p-2.5 rounded-lg text-gray-600 hover:bg-gray-100 ${
-                  isRefreshing ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
-              >
-                <RefreshCw size={16} strokeWidth={2} className={`${isRefreshing ? 'animate-spin' : ''}`} />
-              </button>
-              <button
-                data-canny-changelog
-                className="p-2.5 rounded-lg text-gray-600 hover:bg-gray-100"
-              >
-                <Bell size={16} strokeWidth={2} />
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      <div 
-        className={`fixed inset-0 bg-black/30 backdrop-blur-sm transition-opacity z-40 safe-top ${
-          isMenuOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        }`}
-        onClick={() => setIsMenuOpen(false)}
-      />
-      <div
-        className={`fixed top-0 left-0 h-full w-72 bg-white transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
-          isMenuOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100">
-          <div className="flex items-center">
-            <LogDayLogo/>
-          </div>
-          <button
-            onClick={() => setIsMenuOpen(false)}
-            className="p-2 hover:bg-gray-100 rounded-lg bg-gray-50 text-gray-700"
-          >
-            <X size={20} strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="flex-1 py-2">
-          <button
-            onClick={navigateToHome}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
-          >
-            <Zap size={18} strokeWidth={2} className="mr-3 text-gray-500" />
-            Quick Start
-          </button>
+      {/* Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
+        <div className="flex justify-around items-start pt-0 h-24">
           {currentWorkout && (
-            <button
+            <motion.button
               onClick={navigateToWorkout}
-              className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+              className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+                isActive('/workout') ? 'text-blue-600' : 'text-gray-600'
+              }`}
+              whileTap={{ scale: 0.9 }}
+              transition={{ type: "spring", stiffness: 400, damping: 17 }}
             >
-              <Timer size={18} strokeWidth={2} className="mr-3  text-gray-500" />
-              Active Workout
-            </button>
+              {isActive('/workout') ? (
+                <>
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                  <Timer size={24} weight="fill" />
+                </>
+              ) : (
+                <Timer size={24} weight="duotone" />
+              )}
+              <span className="text-xs mt-1">Active</span>
+            </motion.button>
           )}
-          <button
-            onClick={() => {
-              setIsMenuOpen(false);
-              navigate('/routines');
-            }}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+          
+          <motion.button
+            onClick={navigateToRoutines}
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/routines') ? 'text-blue-600' : 'text-gray-600'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Clipboard size={18} strokeWidth={2} className="mr-3  text-gray-500" />
-            Routines
-            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Beta</span>
-          </button>
-          <button
+            {isActive('/routines') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <Notebook size={24} weight="fill" />
+              </>
+            ) : (
+              <Notebook size={24} weight="duotone" />
+            )}
+            <span className="text-xs mt-1">Routines</span>
+          </motion.button>
+          
+          <motion.button
+            onClick={navigateToHome}
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/quickstart') ? 'text-blue-600' : 'text-gray-600'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            {isActive('/quickstart') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <Lightning size={24} weight="fill" />
+              </>
+            ) : (
+              <Lightning size={24} weight="duotone" />
+            )}
+            <span className="text-xs mt-1">Quick Start</span>
+          </motion.button>
+          
+          <motion.button
             onClick={navigateToLogs}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/logs') ? 'text-blue-600' : 'text-gray-600'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <History size={18} strokeWidth={2} className="mr-3  text-gray-500" />
-            Workout History
-          </button>
-          <button
-            onClick={navigateToSettings}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
+            {isActive('/logs') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <CalendarCheck size={24} weight="fill" />
+              </>
+            ) : (
+              <CalendarCheck size={24} weight="duotone" />
+            )}
+            <span className="text-xs mt-1">Logs</span>
+          </motion.button>
+          
+          <motion.button
+            onClick={navigateToProfile}
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive(['/profile', '/settings', '/contact']) ? 'text-blue-600' : 'text-gray-600'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
           >
-            <Settings size={18} strokeWidth={2} className="mr-3  text-gray-500" />
-            Settings
-          </button>
-          <button
-            onClick={() => {
-              setIsMenuOpen(false);
-              navigate('/contact');
-            }}
-            className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100 border-b-[1.5px] border-gray-100 font-medium text-md flex items-center"
-          >
-            <MessageSquare size={18} className="mr-3 text-gray-500" />
-            <span>Contact</span>
-          </button>
-        </div>
-
-        {isInstallable && (
-            <div className="p-3 bg-blue-50 rounded-lg m-4">
-              <div className="flex items-center text-blue-800 mb-1.5">
-                <Share size={16} strokeWidth={2} className="mr-2 flex-shrink-0" />
-                <span className="text-sm font-medium">Install Logday App</span>
-              </div>
-              <p className="text-xs text-blue-600 leading-relaxed">
-                {isIOS ? 
-                  "Tap the share button in your browser and select 'Add to Home Screen'" :
-                  "Click the install button in your browser's address bar"}
-              </p>
-            </div>
-          )}
-
-        <div className="border-t border-gray-100 py-4 px-4 space-y-4 mb-4">
-          <div className="flex flex-row items-center px-2 bg-gray-50 py-2 rounded-lg space-x-2 text-gray-600 px-1 w-full">
-            <User size={18} strokeWidth={2} />
-            <span className="text-sm font-medium truncate">{user?.email}</span>
-          </div>
-          <button
-            onClick={handleLogoutClick}
-            disabled={isLoggingOut}
-            className="w-full py-2.5  text-red-600 bg-red-50 hover:bg-red-100 font-medium rounded-lg flex items-center justify-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-          >
-            <LogOut size={16} strokeWidth={2} />
-            <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
-          </button>
+            {isActive(['/profile', '/settings', '/contact']) ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <UserCircle size={24} weight="fill" />
+              </>
+            ) : (
+              <UserCircle size={24} weight="duotone" />
+            )}
+            <span className="text-xs mt-1">Profile</span>
+          </motion.button>
         </div>
       </div>
-      
-      <LogoutConfirmationModal 
-        isOpen={showLogoutConfirmation}
-        onClose={() => setShowLogoutConfirmation(false)}
-        onLogout={handleLogout}
-        onFinishWorkout={handleFinishWorkout}
-        onGoToWorkout={handleGoToWorkout}
-      />
     </>
   );
 };
