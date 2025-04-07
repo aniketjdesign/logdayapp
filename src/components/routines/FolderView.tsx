@@ -172,14 +172,13 @@ export const FolderView: React.FC<FolderViewProps> = ({
           >
             <div className="mr-1">
             {isExpanded ? (
-              <ChevronDown size={20} className="text-gray-500" />
+              <ChevronDown size={16} className="text-gray-500" />
             ) : (
-              <ChevronRight size={20} className="text-gray-500" />
+              <ChevronRight size={16} className="text-gray-500" />
             )}
             </div>
-            <Folder size={18} className="mr-2 text-gray-500" />
-            <span className="flex text-left font-medium text-md">{name}</span>
-            <span className="ml-2 px-1 rounded-lg bg-blue-50 border border-blue-100 text-sm text-blue-500">
+            <span className="flex text-left font-medium text-sm">{name}</span>
+            <span className="ml-2 px-1 rounded-lg bg-gray-50 border border-gray-100 text-sm text-gray-500">
               {routines.length}
             </span>
           </div>

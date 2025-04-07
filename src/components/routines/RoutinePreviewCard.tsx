@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Edit2, PlayCircle, Eye, MoreHorizontal, Trash2, FolderSymlink, Copy } from 'lucide-react';
+import { Edit2, PlayCircle, Eye, MoreVertical, Trash2, FolderSymlink, Copy } from 'lucide-react';
 import { useWorkout } from '../../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
 import { RoutinePreviewSheet } from './RoutinePreviewSheet';
 import { DeleteRoutineModal } from './routineview';
-// LoadingButton is not used in this component
 import { generateUUID } from '../../utils/uuid';
 import { MoveRoutineModal } from './MoveRoutineModal';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -14,6 +13,7 @@ interface RoutinePreviewCardProps {
   onEdit: () => void;
   onDelete?: (routineId: string) => void;
   onMove?: () => void;
+  isLogdayRoutine?: boolean;
 }
 
 interface MuscleGroupSummary {
@@ -26,6 +26,7 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
   onEdit,
   onDelete,
   onMove,
+  isLogdayRoutine = false,
 }) => {
   const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
@@ -92,122 +93,121 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
 
   return (
     <>
-      <div className="bg-white rounded-lg shadow p-2.5">
-        <div className="flex items-start justify-between mb-1 border-b border-gray-100">
-          <div className="flex flex-col">
-            <h2 className="text-md font-semibold">{routine.name}</h2>
+      <div className="bg-white rounded-lg shadow px-1 py-2">
+        <div className="flex items-start justify-between mb-1 px-1">
+          <div className="flex-1 pr-2">
+            <h2 className="text-sm font-medium">{routine.name}</h2>
             {routine.description && (
-              <p className="text-gray-600 text-xs mb-2">{routine.description}</p>
+              <p className="text-gray-600 text-xs">{routine.description}</p>
             )}
           </div>
-          <div className="flex space-x-2">
-            <div className="relative" ref={menuRef}>
-              <button
-                onClick={() => setShowMenu(!showMenu)}
-                className="p-2 hover:bg-gray-100 rounded-lg"
-              >
-                <MoreHorizontal size={16} className="text-gray-500" />
-              </button>
-              
-              <AnimatePresence>
-                {showMenu && (
-                  <motion.div 
-                    className="absolute right-0 mt-1 w-48 bg-white rounded-lg shadow-lg z-20 border"
-                    initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.5 }}
-                    transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
-                  >
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setShowMenu(!showMenu)}
+              className="p-1 hover:bg-gray-100 rounded-md"
+            >
+              <MoreVertical size={14} className="text-gray-500" />
+            </button>
+            
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.1 }}
+                  className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg z-50 py-1 border border-gray-100"
+                >
+                  {!isLogdayRoutine && (
                     <div
                       onClick={() => {
                         onEdit();
                         setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
+                      className="w-full px-3 py-1.5 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer text-sm"
                     >
-                      <Edit2 size={16} className="mr-2" />
+                      <Edit2 size={14} className="mr-2" />
                       Edit
                     </div>
+                  )}
+                  <div
+                    onClick={async () => {
+                      try {
+                        setShowMenu(false);
+                        const routineCopy = {
+                          ...routine,
+                          name: `${routine.name} (Copy)`,
+                          id: undefined,
+                          created_at: undefined,
+                          updated_at: undefined
+                        };
+                        await addRoutine(routineCopy);
+                        setShowMenu(false);
+                      } catch (error) {
+                        console.error('Error duplicating routine:', error);
+                        alert('Failed to duplicate routine. Please try again.');
+                      }
+                    }}
+                    className="w-full px-3 py-1.5 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer text-sm"
+                  >
+                    <Copy size={14} className="mr-2" />
+                    Duplicate
+                  </div>
+                  {onMove && !isLogdayRoutine && (
                     <div
-                      onClick={async () => {
-                        try {
-                          const duplicatedRoutine = {
-                            ...routine,
-                            id: undefined,
-                            name: `${routine.name} (copy)`,
-                            folder_id: routine.folder_id
-                          };
-                          await addRoutine(duplicatedRoutine);
-                          setShowMenu(false);
-                        } catch (error) {
-                          console.error('Error duplicating routine:', error);
-                          alert('Failed to duplicate routine. Please try again.');
-                        }
+                      onClick={() => {
+                        setShowMoveModal(true);
+                        setShowMenu(false);
                       }}
-                      className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
+                      className="w-full px-3 py-1.5 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer text-sm"
                     >
-                      <Copy size={16} className="mr-2" />
-                      Duplicate
+                      <FolderSymlink size={14} className="mr-2" />
+                      Move
                     </div>
-                    {onMove && (
-                      <div
-                        onClick={() => {
-                          setShowMoveModal(true);
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-gray-900 hover:bg-gray-50 flex items-center cursor-pointer"
-                      >
-                        <FolderSymlink size={16} className="mr-2" />
-                        Move
-                      </div>
-                    )}
-                    {onDelete && (
-                      <div
-                        onClick={() => {
-                          setShowDeleteModal(true);
-                          setShowMenu(false);
-                        }}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 flex items-center cursor-pointer"
-                      >
-                        <Trash2 size={16} className="mr-2" />
-                        Delete
-                      </div>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  )}
+                  {onDelete && !isLogdayRoutine && (
+                    <div
+                      onClick={() => {
+                        setShowDeleteModal(true);
+                        setShowMenu(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-left text-red-600 hover:bg-red-50 flex items-center cursor-pointer text-sm"
+                    >
+                      <Trash2 size={14} className="mr-2" />
+                      Delete
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        <div className="space-y-2 mt-2">
+        <div className="flex flex-wrap gap-1 py-3 border-y border-gray-100">
           {getMuscleGroupSummary().map(([muscleGroup, summary]) => (
-            <div key={muscleGroup} className="flex items-center gap-x-2">
-              <span className="text-gray-600 font-semibold text-xs">
-                {muscleGroup}:
-              </span>
-              <span className="text-xs text-gray-600">
-                {summary.exerciseCount} {summary.exerciseCount === 1 ? 'exercise' : 'exercises'},
-                {' '}{summary.totalSets} {summary.totalSets === 1 ? 'set' : 'sets'}
+            <div key={muscleGroup} className="inline-flex items-center text-xs px-2 py-0.5 rounded bg-gray-50">
+              <span className="text-gray-500">{muscleGroup}:</span>
+              <span className="ml-1 text-gray-500">
+              {summary.totalSets} sets
               </span>
             </div>
           ))}
         </div>
 
-        <div className="mt-4 flex justify-end gap-x-2 text-sm border-t border-gray-100 pt-2">
+        <div className="mt-2 flex justify-end gap-x-2 text-sm px-1">
           <button
             onClick={() => setShowPreview(true)}
-            className="flex items-center text-gray-600 hover:text-gray-700 px-2 py-1.5 bg-gray-100 rounded-lg"
+            className="flex items-center text-gray-600 hover:text-gray-700 px-1.5 py-1 bg-gray-100 rounded-md"
           >
-            <Eye size={16} className="mr-1" />
+            <Eye size={14} className="mr-1" />
             Preview
           </button>
           <button
             onClick={handleStartWorkout}
-            className="flex items-center text-blue-600 hover:text-blue-700 px-2 py-1.5 bg-blue-50 rounded-lg"
+            className="flex items-center text-blue-600 hover:text-blue-700 px-1.5 py-1 bg-blue-50 rounded-md"
           >
-            <PlayCircle size={16} className="mr-1" />
-            Start Workout
+            <PlayCircle size={14} className="mr-1" />
+            Start
           </button>
         </div>
       </div>
@@ -217,8 +217,9 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
         onEdit={onEdit}
-        onDelete={onDelete}
-        onMove={onMove}
+        onDelete={isLogdayRoutine ? undefined : onDelete}
+        onMove={isLogdayRoutine ? undefined : onMove}
+        isLogdayRoutine={isLogdayRoutine}
       />
 
       <DeleteRoutineModal

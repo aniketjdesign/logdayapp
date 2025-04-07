@@ -129,8 +129,8 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               }
             }}
           >
-            <h3 className="text-base font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
-            <div className="mt-0.5 text-xs font-medium text-gray-600">
+            <h3 className="text-sm font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
+            <div className="mt-0.5 text-xs text-gray-500">
               <div className="flex items-center">
                 <Calendar size={12} className="mr-1" />
                 {formatDate(log.startTime)}

@@ -87,7 +87,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
       <div className="border-b px-3 py-2 border-gray-100">
         <div className="flex justify-between items-center">
           <div className="flex-1">
-            <h3 className="font-bold text-[15px] text-gray-900 pr-2">{exercise.name}</h3>
+            <h3 className="font-bold text-sm text-gray-900 pr-2">{exercise.name}</h3>
           </div>
           <div className="flex items-center gap-1">
             <MobileExerciseTabs activeTab={activeTab} onTabChange={setActiveTab} />
