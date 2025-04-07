@@ -112,7 +112,7 @@ export const LogdayRoutinesView: React.FC<LogdayRoutinesViewProps> = ({
               <ChevronRight size={16} className="text-gray-500" />
             )}
             </div>
-            <span className="flex text-left font-medium text-sm">{folder.name}</span>
+            <span className="flex text-left font-semibold text-sm">{folder.name}</span>
             <span className="ml-2 px-1 rounded-lg bg-gray-50 border border-gray-100 text-sm text-gray-500">
               {folderRoutines.length}
             </span>
@@ -241,7 +241,7 @@ export const LogdayRoutinesView: React.FC<LogdayRoutinesViewProps> = ({
       {/* Folders */}
       {folders.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-md font-medium mb-4">Categories</h2>
+          <h2 className="text-md font-medium mb-4">Featured Routines</h2>
           {folders.map(folder => renderFolderItem(folder))}
         </div>
       )}

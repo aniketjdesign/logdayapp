@@ -177,7 +177,7 @@ export const FolderView: React.FC<FolderViewProps> = ({
               <ChevronRight size={16} className="text-gray-500" />
             )}
             </div>
-            <span className="flex text-left font-medium text-sm">{name}</span>
+            <span className="flex text-left font-semibold text-sm">{name}</span>
             <span className="ml-2 px-1 rounded-lg bg-gray-50 border border-gray-100 text-sm text-gray-500">
               {routines.length}
             </span>

@@ -96,7 +96,7 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
       <div className="bg-white rounded-lg shadow px-1 py-2">
         <div className="flex items-start justify-between mb-1 px-1">
           <div className="flex-1 pr-2">
-            <h2 className="text-sm font-medium">{routine.name}</h2>
+            <h2 className="text-sm font-semibold">{routine.name}</h2>
             {routine.description && (
               <p className="text-gray-600 text-xs">{routine.description}</p>
             )}
