@@ -11,6 +11,7 @@ import { WorkoutLogs } from './components/WorkoutLogs';
 import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
+import { SplashScreen } from './components/SplashScreen';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage';
 import { LogDayLogo } from './components/LogDayLogo';
@@ -22,6 +23,8 @@ import ProfilePage from './pages/ProfilePage';
 import { Capacitor } from '@capacitor/core';
 import { capacitorService } from './services/capacitor';
 import { WhatsNewModal } from './components/WhatsNewModal';
+import Lottie from 'lottie-react';
+import loaderAnimation from './assets/animations/loader-app.json';
 
 const AppContent = () => {
   const { user } = useAuth();
@@ -35,6 +38,7 @@ const AppContent = () => {
   const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
   const isWorkoutRoute = location.pathname === '/workout';
   const isIOS = Capacitor.getPlatform() === 'ios';
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 768;
 
   // Handle initial route and loading
   useEffect(() => {
@@ -72,9 +76,13 @@ const AppContent = () => {
     }
     // Show regular loading state for all other routes
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col space-y-4 items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex flex-col space-y-16 items-center justify-center">
         <LogDayLogo />
-        <div className="animate-pulse text-gray-500 mr-1">Loading...</div>
+        <Lottie
+          animationData={loaderAnimation}
+          loop
+          style={{ width: 38, height: 38 }}
+        />
       </div>
     );
   }
@@ -86,6 +94,7 @@ const AppContent = () => {
   // If user is not authenticated or we're on the reset-password-confirm route (even if authenticated)
   if (!user || isResetPasswordConfirmRoute) {
     if (
+      location.pathname === '/splash' ||
       location.pathname === '/login' || 
       location.pathname === '/signup' || 
       location.pathname === '/reset-password' || 
@@ -93,15 +102,16 @@ const AppContent = () => {
     ) {
       return (
         <Routes>
+          <Route path="/splash" element={isDesktop ? <Navigate to="/login" replace /> : <SplashScreen />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<SignUp />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/reset-password-confirm" element={<ResetPasswordConfirmPage />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<Navigate to={isDesktop ? "/login" : "/splash"} replace />} />
         </Routes>
       );
     }
-    return <Navigate to="/login" replace />;
+    return <Navigate to={isDesktop ? "/login" : "/splash"} replace />;
   }
 
   // Hide navigation on mobile during workout

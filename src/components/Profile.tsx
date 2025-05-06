@@ -321,7 +321,7 @@ export const Profile: React.FC = () => {
         <div className="px-4 pt-8 pb-32">
           {/* Skeleton for heading */}
           <div className="heading-wrapper flex-col gap-y-2 pb-3">
-            <div className="h-7 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+            <div className="h-7 bg-gray-200 rounded w-1/3 animate-pulse mb-1"></div>
             <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
           </div>
           

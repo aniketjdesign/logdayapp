@@ -172,6 +172,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
                       setNumber: set.setNumber
                     })}
                     onSetComplete={() => onSetComplete(exercise.id)}
+                    exerciseHistory={exerciseHistory}
                   />
                 </motion.div>
               ))}
@@ -216,6 +217,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
                       setNumber: set.setNumber
                     })}
                     onSetComplete={() => onSetComplete(supersetPartner.exercise.id)}
+                    exerciseHistory={exerciseHistory}
                   />
                 ))}
                 <button

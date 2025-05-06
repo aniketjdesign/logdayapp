@@ -54,7 +54,7 @@ export const Settings: React.FC = () => {
             />
             
             <div className="pt-4 pb-32 px-4">
-              <div className={`${currentWorkout ? 'opacity-50 pointer-events-none' : ''}`}>
+              <div>
                 <div className="space-y-6">
                   <div className="bg-white rounded-lg shadow-sm p-4">
                     <div className="flex flex-col items-start gap-4">

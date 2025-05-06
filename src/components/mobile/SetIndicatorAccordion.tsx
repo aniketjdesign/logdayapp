@@ -1,7 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { History, Pin } from 'lucide-react';
+import { Check, Pin, History } from 'lucide-react';
 import { WorkoutSet } from '../../types/workout';
 import { useWorkout } from '../../context/WorkoutContext';
+
+// Special prefix to mark pinned notes in the backend
+const PIN_PREFIX = "📌 ";  // Using a pin emoji as a prefix for pinned notes
+
+// Helper function to check if a note is pinned (has the prefix)
+const isNotePinned = (noteText: string) => {
+  return noteText?.startsWith(PIN_PREFIX) || false;
+};
+
+// Helper function to get clean note text (without pin prefix)
+const getCleanNoteText = (noteText: string) => {
+  return isNotePinned(noteText) ? noteText.substring(PIN_PREFIX.length) : noteText;
+};
+
+// Helper function to add pin prefix to a note
+const addPinPrefix = (noteText: string) => {
+  return PIN_PREFIX + noteText;
+};
 
 interface SetIndicatorAccordionProps {
   set: WorkoutSet;
@@ -58,7 +76,8 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
         const indicators = [];
         if (set.isFailure && (set.isPR || set.isDropset)) indicators.push('failure');
         if (set.isPR && set.isDropset) indicators.push('pr');
-        if (set.comments) indicators.push('notes');
+        // Only show note indicator for pinned notes (ones with PIN_PREFIX)
+        if (set.comments && isNotePinned(set.comments)) indicators.push('notes');
         
         // If only one indicator, position it at the top right
         if (indicators.length === 1) {
@@ -133,7 +152,10 @@ SetIndicatorAccordion.Content = ({
   const { workoutLogs } = useWorkout();
   
   // Note state
-  const [note, setNote] = useState(set.comments || '');
+  const [note, setNote] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [localNotes, setLocalNotes] = useState<Array<{note: string, date: Date, isPinned: boolean}>>([]);
 
   // Get the most recent notes for this exercise and set number
   const recentNotes = exerciseId ? workoutLogs
@@ -142,34 +164,131 @@ SetIndicatorAccordion.Content = ({
         .filter(ex => ex.exercise.id === exerciseId)
         .flatMap(ex => 
           ex.sets
-            .filter((s, index) => index + 1 === set.setNumber && s.comments && s.comments.trim().length > 0)
+            .filter(s => 
+              s.setNumber === set.setNumber && 
+              s.comments && 
+              !isNotePinned(s.comments) // Only include saved notes, not pinned notes
+            )
             .map(s => ({
-              note: s.comments,
-              date: new Date(log.startTime)
+              note: s.comments || '',
+              date: new Date(log.startTime),
+              isPinned: false // Saved notes are not pinned
             }))
         )
     )
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 2) : []; // Get last 2 pinned notes
+    .slice(0, 3) : []; // Get last 3 notes from history
     
-  // No auto-pinning of previous notes
+  // Combine local notes with recent notes from history - only include non-pinned notes
+  const allNotes = [...localNotes.filter(n => !n.isPinned), ...recentNotes]
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 3); // Show only the 3 most recent saved notes
+
+  // Initialize with existing comment if available
   useEffect(() => {
-    // Initialize with existing comment if available
     if (set.comments) {
-      setNote(set.comments);
+      // Check if the note is pinned by looking for the PIN_PREFIX
+      const hasPinPrefix = isNotePinned(set.comments);
+      
+      // Set isPinned state based on whether the note has the PIN_PREFIX
+      setIsPinned(hasPinPrefix);
+      
+      // Always set the clean note text (without pin prefix)
+      const cleanNote = getCleanNoteText(set.comments);
+      setNote(cleanNote);
+      
+      // If it has comments, it's considered saved
+      setIsSaved(true);
+      
+      console.log('[SetIndicatorAccordion] useEffect: Found existing note:', {
+        original: set.comments,
+        isPinned: hasPinPrefix,
+        cleanNote
+      });
+    } else {
+      // Reset state if there's no comment
+      setNote('');
+      setIsPinned(false);
+      setIsSaved(false);
     }
   }, [set.comments]);
 
+  // Save note function - saves to the backend without pinning
+  const saveNote = () => {
+    if (note.trim() && onUpdateNote) {
+      const noteToSave = note.trim();
+      console.log('[SetIndicatorAccordion] saveNote: Calling onUpdateNote with:', noteToSave);
+      
+      // Save the note to the backend (without pin prefix)
+      onUpdateNote(noteToSave);
+      setIsSaved(true);
+      setIsPinned(false);
+      
+      // Add to local notes
+      const newNote = {
+        note: noteToSave,
+        date: new Date(),
+        isPinned: false
+      };
+      
+      // Add to local notes if not already there
+      if (!localNotes.some(n => n.note === noteToSave)) {
+        setLocalNotes(prev => [newNote, ...prev].slice(0, 3));
+      }
+    }
+  };
+
+  // Pin note function - saves with pin prefix
+  const pinNote = () => {
+    if (note.trim() && onUpdateNote) {
+      const noteToSave = note.trim();
+      const pinnedNote = addPinPrefix(noteToSave);
+      console.log('[SetIndicatorAccordion] pinNote: Calling onUpdateNote with:', pinnedNote);
+      
+      // Save the note to the backend with pin prefix
+      onUpdateNote(pinnedNote);
+      setIsPinned(true);
+      setIsSaved(true);
+      
+      // Do NOT add to local notes - pinned notes don't show in Past notes
+      // Remove any existing note with the same text from local notes
+      setLocalNotes(prev => prev.filter(n => n.note !== noteToSave));
+    }
+  };
+
+  // Unpin note function - converts a pinned note to a saved note
+  const unpinNote = () => {
+    if (onUpdateNote && note.trim()) {
+      const noteToSave = note.trim();
+      console.log('[SetIndicatorAccordion] unpinNote: Calling onUpdateNote with:', noteToSave);
+      
+      // Convert the pinned note to a regular saved note
+      onUpdateNote(noteToSave);
+      setIsPinned(false);
+      setIsSaved(true);
+      
+      // Add to local notes since it's now a saved note
+      const newNote = {
+        note: noteToSave,
+        date: new Date(),
+        isPinned: false
+      };
+      
+      // Add to local notes if not already there
+      if (!localNotes.some(n => n.note === noteToSave)) {
+        setLocalNotes(prev => [newNote, ...prev].slice(0, 3));
+      }
+    }
+  };
+  
+
+
   // Toggle pin/unpin note
   const togglePinNote = () => {
-    if (set.comments) {
-      // If note is already pinned, unpin it
-      if (onUpdateNote) {
-        onUpdateNote(null);
-      }
-    } else if (note.trim() && onUpdateNote) {
-      // If note is not pinned, pin it
-      onUpdateNote(note);
+    if (isPinned) {
+      unpinNote();
+    } else {
+      pinNote();
     }
   };
 
@@ -279,55 +398,83 @@ SetIndicatorAccordion.Content = ({
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder={set.comments ? "Unpin to edit note" : "Add a note..."}
-              className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                set.comments ? 'bg-gray-100 cursor-not-allowed' : ''
-              }`}
+              placeholder="Add a note..."
+              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={!!set.comments}
-              readOnly={!!set.comments}
+              onChange={(e) => {
+                setNote(e.target.value);
+                setIsSaved(false);
+              }}
             />
             
             <div className="flex gap-1">
+              {/* Save Button (Checkmark) */}
+              <button
+                onClick={saveNote}
+                disabled={!note.trim()}
+                className={`p-1.5 rounded-md flex items-center justify-center ${
+                  !note.trim() 
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : isSaved && !isPinned
+                      ? 'bg-green-500 hover:bg-green-600'
+                      : 'bg-green-600 hover:bg-green-700'
+                }`}
+                title="Save note"
+              >
+                <Check 
+                  size={16} 
+                  className="text-white" 
+                />
+              </button>
+              
+              {/* Pin Button */}
               <button
                 onClick={togglePinNote}
-                disabled={!note.trim() && !set.comments}
+                disabled={!note.trim()}
                 className={`p-1.5 rounded-md flex items-center justify-center ${
-                  set.comments
-                    ? 'bg-amber-500 hover:bg-amber-600' 
-                    : note.trim()
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : 'bg-gray-300 cursor-not-allowed'
+                  !note.trim()
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : isPinned
+                      ? 'bg-amber-500 hover:bg-amber-600' 
+                      : 'bg-blue-600 hover:bg-blue-700'
                 }`}
-                title={set.comments ? "Unpin note" : "Pin note"}
+                title={isPinned ? "Unpin note" : "Pin note"}
               >
                 <Pin 
                   size={16} 
                   className="text-white" 
-                  style={set.comments ? { transform: 'rotate(45deg)' } : undefined} 
+                  style={isPinned ? { transform: 'rotate(45deg)' } : undefined} 
                 />
               </button>
+
+
             </div>
           </div>
 
-          {/* Past Notes Section - showing last 2 pinned notes with date stamp */}
-          {recentNotes.length > 0 && (
+          {/* Past Notes Section - showing last 3 notes with date stamp */}
+          {allNotes.length > 0 && (
             <div className="space-y-1 px-1">
               <div className="flex items-center text-xs text-gray-600">
                 <History size={12} className="text-gray-400 mr-0.5 flex-shrink-0" />
                 <span className="text-xs font-medium text-gray-400">Past Notes</span>
               </div>
               
-              {recentNotes.map((pastNote, index) => (
+              {allNotes.map((pastNote, index) => (
                 <div key={index} className="flex items-center text-xs text-gray-600 bg-gray-50 p-1 border-b border-gray-200">
                   <div className="flex flex-row justify-between w-full">
                     <div 
-                      className="cursor-pointer hover:text-gray-800 line-clamp-2"
-                      onClick={() => setNote(pastNote.note)}
+                      className="cursor-pointer hover:text-gray-800 line-clamp-2 flex items-center"
+                      onClick={() => {
+                        setNote(pastNote.note);
+                        setIsSaved(false);
+                        setIsPinned(false);
+                      }}
                       title={pastNote.note}
                     >
-                      {pastNote.note}
+                      {pastNote.isPinned && (
+                        <Pin size={10} className="text-amber-500 mr-1 flex-shrink-0" />
+                      )}
+                      <span>{pastNote.note}</span>
                     </div>
                     <div className="text-gray-400">
                       {formatDate(pastNote.date)}

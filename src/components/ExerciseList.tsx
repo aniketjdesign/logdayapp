@@ -13,6 +13,7 @@ import { supabaseService } from '../services/supabaseService';
 import { exercises } from '../data/exercises';
 import { ExerciseSelector } from './ExerciseSelector';
 import { PageHeader } from './ui/PageHeader';
+import { ConfirmationPopup } from './ui/Popup';
 
 // This key will be used to store in localStorage if we've shown the loading animation
 const LOADING_KEY = 'logday_quickstart_loaded';
@@ -24,6 +25,7 @@ export const ExerciseList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const navigate = useNavigate();
   const { selectedExercises, setSelectedExercises, currentWorkout, startWorkout, setCurrentView } = useWorkout();
@@ -104,27 +106,34 @@ export const ExerciseList: React.FC = () => {
   };
 
   const handleStartWorkout = async () => {
-    if (selectedExercises.length > 0 && !currentWorkout) {
+    if (selectedExercises.length > 0) {
+      if (currentWorkout) {
+        // Show confirmation dialog if there's an ongoing workout
+        setShowConfirmation(true);
+        return;
+      }
+      
       try {
         console.log('Starting workout with exercises:', selectedExercises);
         const workoutName = generateWorkoutName(selectedExercises);
-        
-        // Navigate first to prevent UI flicker
+        await startWorkout(selectedExercises, workoutName);
         navigate('/workout');
-        
-        // Then create the workout
-        const workout = await startWorkout(selectedExercises, workoutName);
-        console.log('Workout created:', workout);
       } catch (error) {
         console.error('Error starting workout:', error);
-        // If there's an error, navigate back
-        navigate('/');
       }
-    } else {
-      console.log('Cannot start workout:', { 
-        selectedExercises: selectedExercises.length, 
-        hasCurrentWorkout: !!currentWorkout 
-      });
+    }
+  };
+
+  const handleConfirmNewWorkout = async () => {
+    try {
+      console.log('Starting new workout with exercises:', selectedExercises);
+      const workoutName = generateWorkoutName(selectedExercises);
+      await startWorkout(selectedExercises, workoutName);
+      navigate('/workout');
+    } catch (error) {
+      console.error('Error starting workout:', error);
+    } finally {
+      setShowConfirmation(false);
     }
   };
 
@@ -152,7 +161,7 @@ export const ExerciseList: React.FC = () => {
         
         <div className="px-4">
           <div className="heading-wrapper flex-col gap-y-2 pt-8 pb-3">
-            <div className="h-7 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+            <div className="h-7 bg-gray-200 rounded w-1/3 animate-pulse mb-1"></div>
             <div className="h-4 bg-gray-200 rounded w-1/2 animate-pulse"></div>
           </div>
         </div>
@@ -197,7 +206,7 @@ export const ExerciseList: React.FC = () => {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.3 }}
         ref={scrollContainerRef}
-        className={`flex-1 flex flex-col overflow-y-auto ${currentWorkout ? 'pointer-events-none opacity-50' : ''}`}>
+        className={`flex-1 flex flex-col overflow-y-auto`}>
         
         <PageHeader 
           title="Quick Start"
@@ -234,9 +243,9 @@ export const ExerciseList: React.FC = () => {
             whileTap={{ scale: 0.98 }}
             transition={{ duration: 0.3 }}
             onClick={handleStartWorkout}
-            disabled={currentWorkout || selectedExercises.length === 0}
+            disabled={selectedExercises.length === 0}
             className={` py-3 px-4 rounded-xl text-white font-medium 
-              ${selectedExercises.length === 0 || currentWorkout
+              ${selectedExercises.length === 0
                 ? 'bg-gray-300 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700 active:bg-blue-800'
               }`}
@@ -257,6 +266,16 @@ export const ExerciseList: React.FC = () => {
             />
           )}
         </AnimatePresence>
+
+        <ConfirmationPopup
+          isOpen={showConfirmation}
+          onClose={() => setShowConfirmation(false)}
+          onConfirm={handleConfirmNewWorkout}
+          title="Start New Workout?"
+          message="You have an ongoing workout. Starting a new workout will discard your current progress. Are you sure you want to continue?"
+          confirmText="Yes, Continue"
+          confirmButtonClass="bg-blue-600 hover:bg-blue-700"
+        />
       </motion.div>
     </div>
   );

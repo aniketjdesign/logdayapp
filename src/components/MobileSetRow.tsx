@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreVertical, X, Check } from 'lucide-react';
-import { WorkoutSet, Exercise } from '../types/workout';
+import { X, Check } from 'lucide-react';
+import { WorkoutSet, Exercise, WorkoutLog } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 import { SetIndicatorAccordion } from './mobile/SetIndicatorAccordion';
+import { useWorkout } from '../context/WorkoutContext';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -13,6 +14,7 @@ interface MobileSetRowProps {
   onDelete: () => void;
   onOpenNoteModal: () => void;
   onSetComplete?: () => void;
+  exerciseHistory?: { [exerciseId: string]: WorkoutLog[] };
 }
 
 export const MobileSetRow: React.FC<MobileSetRowProps> = ({
@@ -23,7 +25,9 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onDelete,
   onOpenNoteModal,
   onSetComplete,
+  exerciseHistory,
 }) => {
+  const { currentWorkout } = useWorkout();
   const [showMenu, setShowMenu] = useState(false);
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const [isSetComplete, setIsSetComplete] = useState(false);
@@ -65,6 +69,231 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   // Check if any non-warmup type is selected
   const hasNonWarmupType = set.isPR || set.isDropset || set.isFailure;
 
+  // Function to check for PRs in exercise history using a two-phase approach
+  const checkForPRs = () => {
+    if (!exerciseHistory || !exerciseHistory[exercise.id] || !set.weight || !set.performedReps) {
+      return false;
+    }
+
+    // Skip PR check for warmup sets
+    if (set.isWarmup) {
+      return false;
+    }
+
+    // Skip for cardio or bodyweight exercises
+    if (isCardio || isBodyweight) {
+      return false;
+    }
+
+    const currentWeight = set.weight;
+    const currentReps = parseInt(set.performedReps);
+    
+    if (isNaN(currentReps) || currentWeight <= 0) {
+      return false;
+    }
+
+    // Calculate current set's volume (weight × reps)
+    const currentVolume = currentWeight * currentReps;
+    
+    // ===== PHASE 1: HISTORICAL COMPARISON =====
+    // Compare against historical workouts to determine if a PR is possible
+    // Compare against historical workouts to determine if a PR is possible
+    // Find the maximum weight ever lifted for this exercise
+    let maxHistoricalWeight = 0;
+    
+    // Track if this is a rep PR (more reps at same weight)
+    let isRepPR = true;
+    
+    // Track if this is a volume PR (more total weight moved at same weight)
+    let isVolumePR = true;
+    
+    // Track the maximum volume achieved with this weight historically
+    let maxVolumeAtThisWeight = 0;
+    
+    // Track if this weight has ever been used before
+    let weightUsedBefore = false;
+
+    // Check through history to see if a PR is possible
+    exerciseHistory[exercise.id].forEach(workout => {
+      workout.exercises
+        .filter(ex => ex.exercise.id === exercise.id)
+        .forEach(ex => {
+          ex.sets.forEach(historySet => {
+            if (historySet.isWarmup) return; // Skip warmup sets in history
+            
+            const historyWeight = historySet.weight || 0;
+            const historyReps = parseInt(historySet.performedReps || '0');
+            
+            if (!isNaN(historyReps) && historyWeight > 0) {
+              // Calculate the volume of this historical set
+              const historyVolume = historyWeight * historyReps;
+              
+              // Track the maximum weight ever lifted
+              if (historyWeight > maxHistoricalWeight) {
+                maxHistoricalWeight = historyWeight;
+              }
+              
+              // For the same weight, track max volume and check for rep PR
+              if (historyWeight === currentWeight) {
+                // Mark that this weight has been used before
+                weightUsedBefore = true;
+                
+                // Update max volume at this weight level
+                if (historyVolume > maxVolumeAtThisWeight) {
+                  maxVolumeAtThisWeight = historyVolume;
+                }
+                
+                // If we find a set with the same weight and same or more reps, this is not a rep PR
+                if (historyReps >= currentReps) {
+                  isRepPR = false;
+                }
+                
+                // If we find a set with the same weight and same or more volume, this is not a volume PR
+                if (historyVolume >= currentVolume) {
+                  isVolumePR = false;
+                }
+              }
+            }
+          });
+        });
+    });
+    
+    // Determine if a PR is possible based on historical data
+    const isPossibleWeightPR = !weightUsedBefore || currentWeight > maxHistoricalWeight;
+    const isHistoricalRepPR = isRepPR;
+    const isHistoricalVolumePR = isVolumePR;
+    
+    // If no PR is possible based on historical data, exit early
+    if (!isPossibleWeightPR && !isHistoricalRepPR && !isHistoricalVolumePR) {
+      return false;
+    }
+
+    // ===== PHASE 2: SESSION COMPARISON =====
+    // Compare against other sets in the current session to determine which set deserves the PR designation
+    // Variables to track the current workout comparison
+    let isHighestVolumeInSession = true;  // Is this the highest volume for this weight in the session?
+    let prAlreadyAchievedInSession = false; // Has a PR already been achieved for this weight?
+    let maxVolumeInSession = 0;  // Maximum volume achieved for this weight in the session
+    let setsWithSameWeight = 0;  // Count of sets with the same weight in this session
+    let allSetsInCurrentWorkout: WorkoutSet[] = [];  // All sets in the current workout for this exercise
+
+    // Find all sets for this exercise in the current workout
+    if (currentWorkout && currentWorkout.exercises) {
+      const currentExerciseInWorkout = currentWorkout.exercises.find(
+        ex => ex.exercise.id === exercise.id
+      );
+      
+      if (currentExerciseInWorkout && currentExerciseInWorkout.sets) {
+        // Store all sets for later processing
+        allSetsInCurrentWorkout = [...currentExerciseInWorkout.sets];
+        
+        // Look at all sets for this exercise except the current one
+        currentExerciseInWorkout.sets.forEach(workoutSet => {
+          // Skip the current set (comparing to itself)
+          if (workoutSet === set) {
+            return;
+          }
+          
+          // Also skip if this is the same set by values (needed for newly created sets)
+          if (workoutSet.setNumber === set.setNumber && 
+              workoutSet.weight === set.weight && 
+              workoutSet.performedReps === set.performedReps) {
+            return;
+          }
+          
+          // Skip warmup sets
+          if (workoutSet.isWarmup) {
+            return;
+          }
+          
+          // Skip sets without performed reps (incomplete sets)
+          const workoutSetReps = parseInt(workoutSet.performedReps || '0');
+          if (isNaN(workoutSetReps) || workoutSetReps === 0) {
+            return;
+          }
+          
+          // Skip if weight is undefined
+          if (workoutSet.weight === undefined) {
+            return;
+          }
+          
+          // Only compare sets with the same weight
+          if (workoutSet.weight === currentWeight) {
+            setsWithSameWeight++;
+            
+            // Calculate volume for comparison
+            const workoutSetVolume = workoutSet.weight * workoutSetReps;
+            
+            // Track the maximum volume achieved in the current workout at this weight
+            if (workoutSetVolume > maxVolumeInSession) {
+              maxVolumeInSession = workoutSetVolume;
+            }
+            
+            // If any set with the same weight has higher volume, this isn't the highest volume set
+            if (workoutSetVolume > currentVolume) {
+              isHighestVolumeInSession = false;
+            }
+            
+            // If another set with same weight is already marked as PR, check if this set has higher volume
+            if (workoutSet.isPR) {
+              // If the existing PR set has higher or equal volume, this set shouldn't be a PR
+              if (workoutSetVolume >= currentVolume) {
+                prAlreadyAchievedInSession = true;
+              } else {
+                // If this set has higher volume than the existing PR set, this set should be the PR
+                // We'll need to update the other set to remove its PR status
+              }
+            }
+          }
+        });
+      }
+    }
+    
+    // CRUCIAL ADDITIONAL CHECK: Determine if this is the highest volume set in the ENTIRE workout (including sets that haven't been processed yet)
+    let isHighestVolumeOverall = true;
+    
+    // Check ALL sets in the workout for this exercise to find the one with highest volume
+    if (allSetsInCurrentWorkout.length > 0) {
+      // Find the set with the highest volume
+      let highestVolumeSet: WorkoutSet | null = null;
+      let highestVolume = 0;
+      
+      allSetsInCurrentWorkout.forEach(workoutSet => {
+        // Skip warmup sets
+        if (workoutSet.isWarmup) return;
+        
+        const workoutSetReps = parseInt(workoutSet.performedReps || '0');
+        if (!isNaN(workoutSetReps) && workoutSetReps > 0 && workoutSet.weight !== undefined) {
+          const workoutSetVolume = workoutSet.weight * workoutSetReps;
+          
+          // Track the set with the highest volume
+          if (workoutSetVolume > highestVolume) {
+            highestVolume = workoutSetVolume;
+            highestVolumeSet = workoutSet;
+          }
+        }
+      });
+      
+      // If this set doesn't have the highest volume, it shouldn't be a PR
+      if (highestVolumeSet && highestVolumeSet !== set && highestVolume > currentVolume) {
+        isHighestVolumeOverall = false;
+      }
+    }
+    
+    // A set is a PR if it meets any of the PR criteria
+    // For the Logday app, we want to prioritize the highest volume set
+    // regardless of weight as the primary PR indicator
+    const isPR = isHighestVolumeOverall;
+    
+    // If this set is determined to be a PR, we should update the workout context
+    // to ensure other sets with the same weight are not marked as PRs
+    if (isPR && currentWorkout && setsWithSameWeight > 0) {
+      // Note: The actual updating of other sets would need to be implemented in the workout context
+    }
+    
+    return isPR;
+  };
+
   const handlePerformedRepsChange = (value: string) => {
     onUpdate('performedReps', value);
     // Reset error state for this field
@@ -76,6 +305,12 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     if (set.performedReps) {
       setIsSetComplete(true);
       setShowCompletionPulse(true);
+      
+      // Check for PRs
+      const isPR = checkForPRs();
+      if (isPR && !set.isPR) {
+        onUpdate('isPR', true);
+      }
       
       // Hide the pulse animation after 1 second
       setTimeout(() => setShowCompletionPulse(false), 1000);
@@ -147,6 +382,12 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     // All required fields are filled, mark set as complete
     setIsSetComplete(true);
     setShowCompletionPulse(true);
+    
+    // Check for PRs
+    const isPR = checkForPRs();
+    if (isPR && !set.isPR) {
+      onUpdate('isPR', true);
+    }
     
     // Hide the pulse animation after 1 second
     setTimeout(() => setShowCompletionPulse(false), 1000);
@@ -226,7 +467,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               <div className="flex items-center" ref={setNumberRef} onClick={() => setShowSetTypeMenu(!showSetTypeMenu)}>
                 <SetIndicatorAccordion 
                   set={set}
-                  showSetTypeMenu={showSetTypeMenu}
                 />
               </div>
 
@@ -385,6 +625,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                 hasNonWarmupType={hasNonWarmupType}
                 exerciseId={exercise.id}
                 onUpdateNote={(note: string | null) => {
+                  console.log('[MobileSetRow] onUpdateNote: Received note:', note);
                   onUpdate('comments', note);
                 }}
               />

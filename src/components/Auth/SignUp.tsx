@@ -1,10 +1,8 @@
-import React, { useState, useRef, KeyboardEvent, ClipboardEvent } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
-import { AuthFooter } from './AuthFooter';
-import { validateInviteCode, markInviteCodeAsUsed } from '../../services/inviteService';
 
 export const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -12,22 +10,17 @@ export const SignUp: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [inviteCode, setInviteCode] = useState(['', '', '', '', '', '']);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
   const { signUp } = useAuth();
   const navigate = useNavigate();
-  
-  // Create refs for the invite code inputs
-  const inviteInputRefs = [
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-    useRef<HTMLInputElement>(null),
-  ];
+
+  useEffect(() => {
+    // Add fade-in animation effect
+    setFadeIn(true);
+  }, []);
 
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
@@ -105,53 +98,6 @@ export const SignUp: React.FC = () => {
     }
   };
 
-  // Function to handle invite code input changes
-  const handleInviteCodeChange = (index: number, value: string) => {
-    // Only allow alphanumeric characters
-    const sanitizedValue = value.replace(/[^a-zA-Z0-9]/g, '').toUpperCase();
-    
-    // Update the invite code state
-    const newInviteCode = [...inviteCode];
-    newInviteCode[index] = sanitizedValue.slice(0, 1); // Only take the first character
-    setInviteCode(newInviteCode);
-    
-    // If we have a value and it's not the last input, move to the next input
-    if (sanitizedValue && index < 5) {
-      inviteInputRefs[index + 1].current?.focus();
-    }
-  };
-
-  // Function to handle backspace key
-  const handleKeyDown = (index: number, e: KeyboardEvent<HTMLInputElement>) => {
-    // If backspace is pressed and the current input is empty, move to the previous input
-    if (e.key === 'Backspace' && !inviteCode[index] && index > 0) {
-      inviteInputRefs[index - 1].current?.focus();
-    }
-  };
-
-  // Function to handle paste event
-  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, 6);
-    
-    if (pastedData) {
-      const newInviteCode = [...inviteCode];
-      for (let i = 0; i < pastedData.length; i++) {
-        if (i < 6) {
-          newInviteCode[i] = pastedData[i];
-        }
-      }
-      setInviteCode(newInviteCode);
-      
-      // Focus the appropriate input after paste
-      if (pastedData.length < 6) {
-        inviteInputRefs[pastedData.length].current?.focus();
-      } else {
-        inviteInputRefs[5].current?.blur();
-      }
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -170,23 +116,9 @@ export const SignUp: React.FC = () => {
       return;
     }
 
-    // Check if all invite code fields are filled
-    const combinedInviteCode = inviteCode.join('');
-    if (combinedInviteCode.length !== 6) {
-      setError('Please enter a valid 6-digit invite code');
-      return;
-    }
-
     try {
       setError('');
       setLoading(true);
-
-      // Validate invite code
-      const inviteCodeValidation = await validateInviteCode(combinedInviteCode);
-      if (!inviteCodeValidation.valid) {
-        setError(inviteCodeValidation.message);
-        return;
-      }
 
       // Check rate limits before attempting signup
       const rateLimitCheck = await checkRateLimits(email);
@@ -206,15 +138,6 @@ export const SignUp: React.FC = () => {
         throw response.error;
       }
 
-      // Mark invite code as used if user was created
-      if (response.data.user?.id) {
-        const { success, message } = await markInviteCodeAsUsed(combinedInviteCode, response.data.user.id);
-        if (!success) {
-          console.error('Failed to mark invite code as used:', message);
-          // We don't want to block signup if this fails, so just log it
-        }
-      }
-
       // Navigate to login
       navigate('/login', { 
         state: { 
@@ -228,7 +151,7 @@ export const SignUp: React.FC = () => {
       if (err?.message?.includes('User already registered')) {
         setError('This email is already registered. Please use another email or try to log in.');
       } else {
-        setError('Failed to sign up: ' + (err.message || 'Please try again.'));
+        setError('Failed to sign up: ' + (err.message || 'Please try again.')); 
       }
     } finally {
       setLoading(false);
@@ -236,31 +159,33 @@ export const SignUp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom">
-      <div className="max-w-md w-full space-y-8">
+    <div className="pb-20 h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom">
+      <div 
+        className={`max-w-md w-full space-y-8 bg-white px-4 py-6 md:p-8 rounded-2xl shadow-sm transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+      >
         <div className="text-center">
           <div className="flex justify-center">
-            <LogDayLogo className="h-16 w-16" />
+            <LogDayLogo className="h-16 w-16 text-blue-600" />
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
-            Create Your Account
+          <h2 className="mt-4 text-2xl font-semibold tracking-tighter text-gray-800">
+            Create your account
           </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Join Logday today
+          <p className="text-sm text-gray-500">
+            Commit to your fitness journey with Logday
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center" role="alert">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            <span className="block sm:inline">{error}</span>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl relative flex items-center animate-pulse-once" role="alert">
+            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <span className="block sm:inline text-sm">{error}</span>
           </div>
         )}
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
+              <label htmlFor="email-address" className="block pl-0.5 text-sm text-gray-600 mb-1">
                 Email address
               </label>
               <input
@@ -269,7 +194,7 @@ export const SignUp: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-xl relative block w-full px-3 py-2 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors duration-200"
                 placeholder="ronnie@coleman.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -277,7 +202,7 @@ export const SignUp: React.FC = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-normal text-gray-500 mb-1">
+              <label htmlFor="password" className="block pl-0.5 text-sm text-gray-600 mb-1">
                 Password
               </label>
               <div className="relative">
@@ -287,23 +212,24 @@ export const SignUp: React.FC = () => {
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm pr-10"
+                  className="appearance-none rounded-xl relative block w-full px-3 py-2 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors duration-200 pr-10"
                   placeholder="•••••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
 
             <div>
-              <label htmlFor="confirm-password" className="block text-sm font-normal text-gray-500 mb-1">
+              <label htmlFor="confirm-password" className="block pl-0.5 text-sm text-gray-600 mb-1">
                 Confirm Password
               </label>
               <div className="relative">
@@ -313,40 +239,19 @@ export const SignUp: React.FC = () => {
                   type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
                   required
-                  className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm pr-10"
+                  className="appearance-none rounded-xl relative block w-full px-3 py-2 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors duration-200 pr-10"
                   placeholder="•••••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                 />
                 <button
                   type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors duration-200"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="invite-code" className="block text-sm font-normal text-gray-500 mb-1">
-                Invite Code
-              </label>
-              <div className="flex space-x-2">
-                {inviteCode.map((digit, index) => (
-                  <input
-                    key={index}
-                    ref={inviteInputRefs[index]}
-                    type="text"
-                    maxLength={1}
-                    required
-                    className="appearance-none rounded-lg relative block w-full px-0 py-2 border border-gray-300 text-center text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                    value={digit}
-                    onChange={(e) => handleInviteCodeChange(index, e.target.value)}
-                    onKeyDown={(e) => handleKeyDown(index, e)}
-                    onPaste={index === 0 ? handlePaste : undefined}
-                  />
-                ))}
               </div>
             </div>
 
@@ -358,12 +263,12 @@ export const SignUp: React.FC = () => {
                   type="checkbox"
                   checked={acceptedTerms}
                   onChange={(e) => setAcceptedTerms(e.target.checked)}
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border !border-gray-300 rounded-xl transition-colors duration-200"
                 />
               </div>
-              <div className="ml-3 text-sm">
-                <label htmlFor="terms" className="text-gray-600">
-                  I accept the <a href="/terms" className="text-blue-600 hover:text-blue-500">Terms of Use</a> and <a href="/privacy" className="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+              <div className="ml-2 text-sm">
+                <label htmlFor="terms" className="text-gray-500">
+                  I accept the <a href="/terms" className="text-gray-600 font-medium hover:text-blue-500 transition-colors duration-200">Terms of Use</a> and <a href="/privacy" className="text-gray-600 font-medium hover:text-blue-500 transition-colors duration-200">Privacy Policy</a>
                 </label>
               </div>
             </div>
@@ -373,13 +278,26 @@ export const SignUp: React.FC = () => {
             <button
               type="submit"
               disabled={loading || error.includes('Too many signup attempts') || error.includes('Too many failed attempts')}
-              className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white ${
+              className={`group relative w-full flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-xl text-white transition-all duration-200 ${
                 loading || error.includes('Too many signup attempts') || error.includes('Too many failed attempts') 
                   ? "bg-blue-400 cursor-not-allowed" 
-                  : "bg-blue-600 hover:bg-blue-700"
+                  : "bg-blue-600 hover:bg-blue-700 hover:shadow-md"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
             >
-              {loading ? "Creating account..." : "Sign up"}
+              {loading ? (
+                <span className="flex items-center">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Creating account...
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  Sign up
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
+              )}
             </button>
           </div>
 
@@ -387,13 +305,11 @@ export const SignUp: React.FC = () => {
             <span className="text-gray-600">
               Already have an account?{" "}
             </span>
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
               Sign in
             </Link>
           </div>
         </form>
-
-        <AuthFooter />
       </div>
     </div>
   );

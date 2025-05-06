@@ -187,9 +187,18 @@ export const WorkoutSession: React.FC = () => {
           )
           .sort((a, b) => b.date - a.date)[0]?.note;
 
-        // If there's a last note and current set doesn't have comments, add them
+        // If there's a last note and the current set doesn't have comments, add the note
+        // But only carry forward pinned notes (ones with the pin prefix)
         if (lastNote && !set.comments) {
-          return { ...set, comments: ' ' }; // Space instead of empty string to ensure indicator shows
+          // Check if the note from previous session was pinned (has the pin prefix)
+          const isPinned = lastNote.startsWith('\ud83d\udccc ');
+          
+          if (isPinned) {
+            // If it was pinned, carry it forward to the new session
+            console.log('[WorkoutSession] Carrying forward pinned note:', lastNote);
+            return { ...set, comments: lastNote };
+          }
+          // Don't carry forward regular (non-pinned) notes
         }
         return set;
       });

@@ -1,11 +1,10 @@
-import React from 'react';
-
 export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
   category?: string;
   instruction?: string;
+  aliases?: string[]; // Array of alternative names for the exercise
   metrics?: ExerciseMetrics;
   restTimer?: {
     enabled: boolean;

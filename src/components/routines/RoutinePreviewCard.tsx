@@ -7,6 +7,7 @@ import { DeleteRoutineModal } from './routineview';
 import { generateUUID } from '../../utils/uuid';
 import { MoveRoutineModal } from './MoveRoutineModal';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ConfirmationPopup } from '../ui/Popup';
 
 interface RoutinePreviewCardProps {
   routine: any;
@@ -28,13 +29,14 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
   onMove,
   isLogdayRoutine = false,
 }) => {
-  const { startWorkout, addRoutine } = useWorkout();
+  const { startWorkout, addRoutine, currentWorkout } = useWorkout();
   const navigate = useNavigate();
   const [showPreview, setShowPreview] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -66,6 +68,12 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
   };
 
   const handleStartWorkout = async () => {
+    if (currentWorkout) {
+      // Show confirmation dialog if there's an ongoing workout
+      setShowConfirmation(true);
+      return;
+    }
+    
     try {
       const exercises = routine.exercises.map((config: any) => config.exercise);
       const workoutExercises = routine.exercises.map((config: any) => ({
@@ -88,6 +96,34 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
       navigate('/workout');
     } catch (error) {
       console.error('Error starting workout:', error);
+    }
+  };
+
+  const handleConfirmNewWorkout = async () => {
+    try {
+      const exercises = routine.exercises.map((config: any) => config.exercise);
+      const workoutExercises = routine.exercises.map((config: any) => ({
+        exercise: config.exercise,
+        sets: config.sets.map((set: any, index: number) => ({
+          id: generateUUID(),
+          setNumber: index + 1,
+          targetReps: set.goal || 0,
+          performedReps: '',
+          weight: set.weight || 0,
+          comments: set.comments || '',
+          isPR: set.isPR || false,
+          isWarmup: set.isWarmup || false,
+          isDropset: set.isDropset || false,
+          isFailure: set.isFailure || false
+        }))
+      }));
+      console.log('Starting new workout with routine name:', routine.name);
+      await startWorkout(exercises, routine.name, workoutExercises);
+      navigate('/workout');
+    } catch (error) {
+      console.error('Error starting workout:', error);
+    } finally {
+      setShowConfirmation(false);
     }
   };
 
@@ -165,7 +201,7 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
                       Move
                     </div>
                   )}
-                  {onDelete && !isLogdayRoutine && (
+                  {onDelete && (
                     <div
                       onClick={() => {
                         setShowDeleteModal(true);
@@ -217,8 +253,8 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
         isOpen={showPreview}
         onClose={() => setShowPreview(false)}
         onEdit={onEdit}
-        onDelete={isLogdayRoutine ? undefined : onDelete}
-        onMove={isLogdayRoutine ? undefined : onMove}
+        onDelete={onDelete}
+        onMove={onMove}
         isLogdayRoutine={isLogdayRoutine}
       />
 
@@ -249,6 +285,16 @@ export const RoutinePreviewCard: React.FC<RoutinePreviewCardProps> = ({
           currentFolderId={routine.folder_id}
         />
       )}
+
+      <ConfirmationPopup
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={handleConfirmNewWorkout}
+        title="Start New Workout?"
+        message="You have an ongoing workout. Starting a new workout will discard your current progress. Are you sure you want to continue?"
+        confirmText="Yes, Continue"
+        confirmButtonClass="bg-blue-600 hover:bg-blue-700"
+      />
     </>
   );
 };

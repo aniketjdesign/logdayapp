@@ -2,26 +2,61 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Minus, SkipForward } from 'lucide-react';
 import bellSound from '../assets/audio/bell-sound.mp3';
 
-let audioContext: AudioContext | null = null;
-let bellBuffer: AudioBuffer | null = null;
+// Instead of module-level variables, we'll use a static class to manage audio resources
+class AudioManager {
+  private static _instance: AudioManager;
+  private _audioContext: AudioContext | null = null;
+  private _bellBuffer: AudioBuffer | null = null;
+  private _initialized = false;
 
-async function initBellAudio() {
-  if (!audioContext) {
-    audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  }
-  if (!bellBuffer) {
-    const resp = await fetch(bellSound);
-    const arrayBuf = await resp.arrayBuffer();
-    bellBuffer = await audioContext.decodeAudioData(arrayBuf);
-  }
-}
+  private constructor() {}
 
-function playBell() {
-  if (!audioContext || !bellBuffer) return;
-  const src = audioContext.createBufferSource();
-  src.buffer = bellBuffer;
-  src.connect(audioContext.destination);
-  src.start(0);
+  public static getInstance(): AudioManager {
+    if (!AudioManager._instance) {
+      AudioManager._instance = new AudioManager();
+    }
+    return AudioManager._instance;
+  }
+
+  public async initialize() {
+    if (this._initialized) return;
+    
+    try {
+      this._audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const resp = await fetch(bellSound);
+      const arrayBuf = await resp.arrayBuffer();
+      this._bellBuffer = await this._audioContext.decodeAudioData(arrayBuf);
+      this._initialized = true;
+    } catch (error) {
+      console.error('Failed to initialize audio', error);
+    }
+  }
+
+  public resumeContext() {
+    if (this._audioContext && this._audioContext.state === 'suspended') {
+      this._audioContext.resume();
+    }
+  }
+
+  public playBell() {
+    if (!this._audioContext || !this._bellBuffer) return;
+    
+    try {
+      // Create a new buffer source each time
+      const src = this._audioContext.createBufferSource();
+      src.buffer = this._bellBuffer;
+      src.connect(this._audioContext.destination);
+      
+      // Start the source
+      src.start(0);
+    } catch (error) {
+      console.error('Failed to play bell sound', error);
+      
+      // If there's an error, try to reinitialize the audio system
+      this._initialized = false;
+      this.initialize();
+    }
+  }
 }
 
 interface RestTimerProps {
@@ -48,18 +83,17 @@ export const RestTimer: React.FC<RestTimerProps> = ({
   );
   const timerRef = useRef<number>();
   const initialDurationRef = useRef(defaultDuration);
+  const audioManager = useRef<AudioManager>(AudioManager.getInstance());
 
   // Initialize audio on component mount
   useEffect(() => {
     // Initialize audio and handle iOS/Safari audio restrictions
     const unlockAudio = () => {
-      if (audioContext && audioContext.state === 'suspended') {
-        audioContext.resume();
-      }
+      audioManager.current.resumeContext();
     };
     
     // Load bell sound
-    initBellAudio();
+    audioManager.current.initialize();
     
     // Add listeners to unlock audio on user interaction
     document.addEventListener('touchstart', unlockAudio);
@@ -103,7 +137,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
           window.clearInterval(timerRef.current);
         }
         // Play bell sound
-        playBell();
+        audioManager.current.playBell();
         onClose();
       }
     }, 200);

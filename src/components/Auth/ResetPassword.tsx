@@ -1,16 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import { LogDayLogo } from '../LogDayLogo';
-import { AuthFooter } from './AuthFooter';
 
 export const ResetPassword: React.FC = () => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [fadeIn, setFadeIn] = useState(false);
   const { resetPassword } = useAuth();
+
+  useEffect(() => {
+    // Add fade-in animation effect
+    setFadeIn(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,33 +32,35 @@ export const ResetPassword: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom">
-      <div className="max-w-md w-full space-y-8">
+    <div className="pb-20 h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8 safe-area-inset-top safe-area-inset-bottom">
+      <div 
+        className={`max-w-md w-full space-y-8 bg-white px-4 py-6 md:p-8 rounded-2xl shadow-sm transition-opacity duration-500 ease-in-out ${fadeIn ? 'opacity-100' : 'opacity-0'}`}
+      >
         <div className="text-center">
           <div className="flex justify-center">
-            <LogDayLogo className="h-16 w-16" />
+            <LogDayLogo className="h-16 w-16 text-blue-600" />
           </div>
-          <h2 className="mt-4 text-3xl font-extrabold text-gray-900 tracking-tight">
+          <h2 className="mt-4 text-2xl font-semibold text-gray-800 tracking-tighter">
             Reset your password
           </h2>
-          <p className="mt-1 text-sm text-gray-600">
-            Enter your email and we'll send you a link to reset your password
+          <p className="text-sm text-gray-500">
+            Enter your email and we'll send you a <br/> link to reset your password
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative flex items-center" role="alert">
-            <AlertCircle className="h-5 w-5 mr-2" />
-            <span className="block sm:inline">{error}</span>
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative flex items-center animate-pulse-once" role="alert">
+            <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <span className="block sm:inline text-sm">{error}</span>
           </div>
         )}
 
         {success ? (
           <div className="mt-8">
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative flex items-center mb-4" role="alert">
-              <CheckCircle className="h-5 w-5 mr-2" />
-              <span className="block sm:inline">
-                Password reset link sent! Check your email inbox.
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg relative flex items-center mb-4" role="alert">
+              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+              <span className="block sm:inline text-sm">
+                Password reset link sent to your email!.
               </span>
             </div>
             <p className="text-sm text-gray-600 mb-4">
@@ -65,16 +72,19 @@ export const ResetPassword: React.FC = () => {
             <div className="mt-6">
               <Link
                 to="/login"
-                className="w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                className="group relative w-full flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-xl text-white bg-blue-600 hover:bg-blue-700 hover:shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
-                Back to Sign in
+                <span className="flex items-center">
+                  Back to Sign in
+                  <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                </span>
               </Link>
             </div>
           </div>
         ) : (
           <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="email-address" className="block text-sm font-normal text-gray-500 mb-1">
+              <label htmlFor="email-address" className="block pl-0.5 text-sm font-medium text-gray-700 mb-1">
                 Email address
               </label>
               <input
@@ -83,7 +93,7 @@ export const ResetPassword: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-300 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-xl relative block w-full px-3 py-2 border border-gray-200 placeholder-gray-400 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm transition-colors duration-200"
                 placeholder="ronnie@coleman.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -94,10 +104,10 @@ export const ResetPassword: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
+                className={`group relative w-full flex justify-center items-center py-2 px-3 border border-transparent text-sm font-medium rounded-xl text-white transition-all duration-200 ${
                   loading 
                     ? 'bg-blue-400 cursor-not-allowed' 
-                    : 'bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
+                    : 'bg-blue-600 hover:bg-blue-700 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500'
                 }`}
               >
                 {loading ? (
@@ -108,7 +118,12 @@ export const ResetPassword: React.FC = () => {
                     </svg>
                     Sending email...
                   </span>
-                ) : 'Send reset link'}
+                ) : (
+                  <span className="flex items-center">
+                    Send reset link
+                    <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </span>
+                )}
               </button>
               {loading && (
                 <p className="text-xs text-gray-500 text-center mt-2">
@@ -122,7 +137,7 @@ export const ResetPassword: React.FC = () => {
                 Remember your password?{' '}
                 <Link
                   to="/login"
-                  className="font-medium text-blue-600 hover:text-blue-500"
+                  className="font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200"
                 >
                   Sign in
                 </Link>
@@ -131,7 +146,6 @@ export const ResetPassword: React.FC = () => {
           </form>
         )}
       </div>
-      <AuthFooter />
     </div>
   );
 };

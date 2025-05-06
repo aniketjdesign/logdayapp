@@ -7,6 +7,7 @@ export interface CustomExercise {
   muscle_group: MuscleGroup;
   instruction?: string;
   category?: string;
+  aliases?: string[]; // Array of alternative names for the exercise
   is_custom: boolean;
   created_at: string;
 }
