@@ -607,5 +607,249 @@ export const supabaseService = {
     } catch (error) {
       return { data: null, error };
     }
-  }
+  },
+
+  /**
+   * Get all workout logs for the current user without any date filtering
+   * Used for AI Coach to analyze complete workout history
+   */
+  async getAllWorkoutLogs() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('workout_logs')
+        .select('id, name, exercises, start_time, end_time, duration, created_at, user_id')
+        .eq('user_id', session.user.id)
+        .order('start_time', { ascending: false });
+
+      if (error) throw error;
+
+      // Transform and validate the data
+      const transformedData = data?.map(log => ({
+        id: log.id,
+        name: log.name,
+        exercises: log.exercises,
+        startTime: log.start_time,
+        endTime: log.end_time,
+        duration: log.duration
+      })) || [];
+
+      return { data: transformedData, error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
+  },
+
+  /**
+   * Get all exercises (both default and user-created)
+   * Used for AI Coach to provide comprehensive exercise recommendations
+   */
+  async getAllExercises() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // First get user's custom exercises
+      const { data: userExercises, error: userError } = await supabase
+        .from('exercises')
+        .select('*')
+        .eq('user_id', session.user.id);
+
+      if (userError) throw userError;
+
+      // Then get default exercises
+      const { data: defaultExercises, error: defaultError } = await supabase
+        .from('default_exercises')
+        .select('*');
+
+      if (defaultError) throw defaultError;
+
+      // Combine both sets of exercises
+      const allExercises = [
+        ...(userExercises || []),
+        ...(defaultExercises || [])
+      ];
+
+      return { data: allExercises, error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
+  },
+
+  /**
+   * Save AI Coach conversation to Supabase
+   * @param conversationData The conversation data to save
+   */
+  async saveAICoachConversation(conversationData: {
+    title: string;
+    messages: any[];
+    last_message_at: string;
+  }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      console.log('Saving conversation to Supabase:', {
+        title: conversationData.title,
+        messageCount: conversationData.messages.length
+      });
+
+      // Ensure messages are properly serialized for JSONB column
+      const messagesJson = JSON.parse(JSON.stringify(conversationData.messages));
+
+      const { data, error } = await supabase
+        .from('ai_coach_conversations')
+        .insert({
+          user_id: session.user.id,
+          title: conversationData.title,
+          messages: messagesJson,
+          last_message_at: conversationData.last_message_at,
+          created_at: new Date().toISOString()
+        })
+        .select('id');
+
+      if (error) {
+        console.error('Supabase error saving conversation:', error);
+        throw error;
+      }
+      
+      console.log('Conversation saved successfully:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in saveAICoachConversation:', error);
+      return { data: null, error };
+    }
+  },
+
+  /**
+   * Update an existing AI Coach conversation
+   * @param id The conversation ID
+   * @param updates The updates to apply
+   */
+  async updateAICoachConversation(id: string, updates: {
+    title?: string;
+    messages?: any[];
+    last_message_at?: string;
+  }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      // Process messages if present
+      const processedUpdates = { ...updates };
+      if (updates.messages) {
+        // Ensure messages are properly serialized for JSONB column
+        processedUpdates.messages = JSON.parse(JSON.stringify(updates.messages));
+      }
+
+      console.log('Updating conversation in Supabase:', {
+        id,
+        messageCount: updates.messages?.length
+      });
+
+      const { data, error } = await supabase
+        .from('ai_coach_conversations')
+        .update({
+          ...processedUpdates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id)
+        .eq('user_id', session.user.id)
+        .select('id');
+
+      if (error) {
+        console.error('Supabase error updating conversation:', error);
+        throw error;
+      }
+      
+      console.log('Conversation updated successfully:', data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error in updateAICoachConversation:', error);
+      return { data: null, error };
+    }
+  },
+
+  /**
+   * Get all AI Coach conversations for the current user
+   */
+  async getAICoachConversations() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('ai_coach_conversations')
+        .select('id, title, last_message_at, created_at')
+        .eq('user_id', session.user.id)
+        .order('last_message_at', { ascending: false });
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
+  },
+
+  /**
+   * Get a specific AI Coach conversation by ID
+   * @param id The conversation ID
+   */
+  async getAICoachConversationById(id: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      const { data, error } = await supabase
+        .from('ai_coach_conversations')
+        .select('id, title, messages, last_message_at, created_at')
+        .eq('id', id)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  },
+
+  /**
+   * Delete an AI Coach conversation
+   * @param id The conversation ID
+   */
+  async deleteAICoachConversation(id: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      const { error } = await supabase
+        .from('ai_coach_conversations')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  },
 };

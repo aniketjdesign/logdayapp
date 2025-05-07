@@ -20,6 +20,8 @@ import { UpdateNotification } from './components/UpdateNotification';
 import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
 import ProfilePage from './pages/ProfilePage';
+import AIChat from './pages/AIChat';
+import { AICoachHistory } from './pages/AICoachHistory';
 import { Capacitor } from '@capacitor/core';
 import { capacitorService } from './services/capacitor';
 import { WhatsNewModal } from './components/WhatsNewModal';
@@ -138,6 +140,9 @@ const AppContent = () => {
           <Route path="/contact" element={<ContactForm />} />
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/ai-coach/history" element={<AICoachHistory />} />
+          <Route path="/ai-coach/:conversationId" element={<AIChat />} />
+          <Route path="/ai-coach" element={<AIChat />} />
           <Route path="*" element={<Navigate to={defaultHomePath} replace />} />
         </Routes>
       </div>
