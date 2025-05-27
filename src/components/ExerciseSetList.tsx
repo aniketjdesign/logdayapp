@@ -31,8 +31,8 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
       case 'Weight':
         if (isBodyweight) return 'BW';
         const weight = set.weight || 0;
-        return weightUnit === 'lb' 
-          ? `${convertWeight(weight, 'kg', 'lb').toFixed(2)} ${weightUnit}`
+        return weightUnit === 'lbs' 
+          ? `${convertWeight(weight, 'kgs', 'lbs').toFixed(1)} ${weightUnit}`
           : `${weight} ${weightUnit}`;
       case 'Goal':
         return set.targetReps || '-';

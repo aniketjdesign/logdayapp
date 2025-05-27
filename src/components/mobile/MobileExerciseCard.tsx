@@ -5,6 +5,7 @@ import { Exercise, WorkoutLog } from '../../types/workout';
 import { MobileSetRow } from '../MobileSetRow';
 import { MobileExerciseTabs } from './MobileExerciseTabs';
 import { MobileExerciseHistory } from './MobileExerciseHistory';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MobileExerciseCardProps {
   exercise: Exercise;
@@ -51,6 +52,9 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
 
+  // Use the settings context for weight conversion
+  const { convertWeight } = useSettings();
+
   const getPreviousWorkoutSet = (setNumber: number) => {
     if (!exerciseHistory?.[exercise.id]?.length) return null;
     
@@ -60,6 +64,8 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
     
     if (!exerciseData?.sets?.length || setNumber > exerciseData.sets.length) return null;
     
+    // Return the set without modifying it - the conversion will happen in the MobileSetRow component
+    // where we have access to the convertWeight function
     return exerciseData.sets[setNumber - 1];
   };
 

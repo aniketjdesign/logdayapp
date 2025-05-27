@@ -59,7 +59,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ 
-                duration: 0.3,
+                duration: 0.15,
                 ease: "easeInOut"
               }}>
               <motion.p className="text-sm font-medium text-gray-800">
