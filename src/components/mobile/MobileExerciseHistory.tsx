@@ -2,6 +2,7 @@ import React from 'react';
 import { FileText, BarChart2 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Exercise, WorkoutLog } from '../../types/workout';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MobileExerciseHistoryProps {
   exercise: Exercise;
@@ -31,11 +32,15 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
     }).format(date);
   };
 
+  const { convertWeight } = useSettings();
+
   const formatSet = (set: any) => {
     if (exercise.metrics?.time) {
       return `${set.time}${set.distance ? ` | ${set.distance}km` : ''}`;
     }
-    return `${set.weight}${weightUnit} x ${set.performedReps}`;
+    // Convert weight from kgs to lbs or vice versa based on current weightUnit setting
+    const displayWeight = set.weight ? convertWeight(set.weight, 'kgs', weightUnit as 'kgs' | 'lbs').toFixed(1) : '0';
+    return `${displayWeight}${weightUnit} x ${set.performedReps}`;
   };
 
   const getExerciseProgressionData = () => {
@@ -55,13 +60,18 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         const movementNumber = workout.exercises.findIndex(e => e.exercise.id === exercise.id) + 1;
         const totalMovements = workout.exercises.length;
         
+        // Convert the weight based on current weight unit setting
+        const convertedWeight = maxWeightSet?.weight ? 
+          convertWeight(maxWeightSet.weight, 'kgs', weightUnit as 'kgs' | 'lbs') : 0;
+        
         return {
           date: new Date(workout.startTime),
           formattedDate: new Intl.DateTimeFormat('en-US', {
             month: 'short',
             day: 'numeric',
           }).format(new Date(workout.startTime)),
-          weight: maxWeightSet?.weight || 0,
+          weight: convertedWeight,
+          originalWeight: maxWeightSet?.weight || 0,
           reps: maxWeightSet?.performedReps || '0',
           movementInfo: `Exercise #${movementNumber} of ${totalMovements}`
         };
@@ -77,7 +87,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         <div className="bg-white p-3 shadow-lg rounded-lg border">
           <p className="text-sm font-medium text-gray-900">{label}</p>
           <p className="text-sm text-gray-600">
-            Weight: {data.weight}{weightUnit}
+            Weight: {data.weight.toFixed(1)}{weightUnit}
           </p>
           <p className="text-sm text-gray-600">
             Reps: {data.reps}
@@ -152,7 +162,8 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
                         .map((e, originalIndex) => ({
                           ...e,
                           originalIndex: originalIndex + 1,
-                          firstSetTime: e.sets[0]?.timestamp
+                          // Use the first set's time property if available, or fall back to the workout start time
+                          firstSetTime: e.sets[0]?.time || workout.startTime
                         }))
                         .sort((a, b) => {
                           if (a.firstSetTime && b.firstSetTime) {

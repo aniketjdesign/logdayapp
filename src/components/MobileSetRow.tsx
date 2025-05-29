@@ -5,6 +5,7 @@ import { WorkoutSet, Exercise, WorkoutLog } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 import { SetIndicatorAccordion } from './mobile/SetIndicatorAccordion';
 import { useWorkout } from '../context/WorkoutContext';
+import { useSettings } from '../context/SettingsContext';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -28,6 +29,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   exerciseHistory,
 }) => {
   const { currentWorkout } = useWorkout();
+  const { weightUnit, convertWeight } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const [isSetComplete, setIsSetComplete] = useState(false);
@@ -85,7 +87,9 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
       return false;
     }
 
-    const currentWeight = set.weight;
+    // Always work with weights in kgs for consistency in comparisons
+    // If the current weightUnit is 'lbs', convert it back to 'kgs' for internal calculations
+    const currentWeight = weightUnit === 'lbs' ? convertWeight(set.weight, 'lbs', 'kgs') : set.weight;
     const currentReps = parseInt(set.performedReps);
     
     if (isNaN(currentReps) || currentWeight <= 0) {
@@ -104,14 +108,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     // Track if this is a rep PR (more reps at same weight)
     let isRepPR = true;
     
-    // Track if this is a volume PR (more total weight moved at same weight)
-    let isVolumePR = true;
-    
     // Track the maximum volume achieved with this weight historically
     let maxVolumeAtThisWeight = 0;
-    
-    // Track if this weight has ever been used before
-    let weightUsedBefore = false;
 
     // Check through history to see if a PR is possible
     exerciseHistory[exercise.id].forEach(workout => {
@@ -121,6 +119,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
           ex.sets.forEach(historySet => {
             if (historySet.isWarmup) return; // Skip warmup sets in history
             
+            // Always compare weights in kgs for consistency
+            // Weights are stored in kgs in the database, so no conversion needed for history
             const historyWeight = historySet.weight || 0;
             const historyReps = parseInt(historySet.performedReps || '0');
             
@@ -135,9 +135,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               
               // For the same weight, track max volume and check for rep PR
               if (historyWeight === currentWeight) {
-                // Mark that this weight has been used before
-                weightUsedBefore = true;
-                
                 // Update max volume at this weight level
                 if (historyVolume > maxVolumeAtThisWeight) {
                   maxVolumeAtThisWeight = historyVolume;
@@ -148,9 +145,9 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                   isRepPR = false;
                 }
                 
-                // If we find a set with the same weight and same or more volume, this is not a volume PR
+                // Track max volume for this weight - used for comparison in session PR detection
                 if (historyVolume >= currentVolume) {
-                  isVolumePR = false;
+                  // Current set has lower or equal volume compared to history
                 }
               }
             }
@@ -159,12 +156,12 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     });
     
     // Determine if a PR is possible based on historical data
-    const isPossibleWeightPR = !weightUsedBefore || currentWeight > maxHistoricalWeight;
+    // Weight PR should only be for weights higher than any previously used weight
+    const isPossibleWeightPR = currentWeight > maxHistoricalWeight;
     const isHistoricalRepPR = isRepPR;
-    const isHistoricalVolumePR = isVolumePR;
     
     // If no PR is possible based on historical data, exit early
-    if (!isPossibleWeightPR && !isHistoricalRepPR && !isHistoricalVolumePR) {
+    if (!isPossibleWeightPR && !isHistoricalRepPR) {
       return false;
     }
 
@@ -281,9 +278,43 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     }
     
     // A set is a PR if it meets any of the PR criteria
-    // For the Logday app, we want to prioritize the highest volume set
-    // regardless of weight as the primary PR indicator
-    const isPR = isHighestVolumeOverall;
+    // We want to recognize three types of PRs:
+    // 1. Weight PR: Using a weight heavier than any weight you've used before
+    // 2. Rep PR: More reps at a given weight than you've done before (and it's the highest volume set at this weight in the session)
+    // 3. Volume PR: The highest total volume (weight × reps) in the workout
+    
+    // For rep PRs, we need to make sure we're not marking lighter weights as PRs
+    // Only consider rep PRs if the weight is at least equal to a significant percentage (e.g., 80%) of the max historical weight
+    const significantWeightThreshold = maxHistoricalWeight * 0.8; // 80% of max historical weight
+    const isSignificantWeight = currentWeight >= significantWeightThreshold;
+    
+    // Check if this is a volume PR compared to historical data
+    let isHistoricalVolumePR = true;
+    exerciseHistory[exercise.id].forEach(workout => {
+      workout.exercises
+        .filter(ex => ex.exercise.id === exercise.id)
+        .forEach(ex => {
+          ex.sets.forEach(historySet => {
+            if (historySet.isWarmup) return; // Skip warmup sets in history
+            
+            const historyReps = parseInt(historySet.performedReps || '0');
+            if (!isNaN(historyReps) && historySet.weight && historyReps > 0) {
+              const historyVolume = historySet.weight * historyReps;
+              if (historyVolume >= currentVolume) {
+                isHistoricalVolumePR = false;
+              }
+            }
+          });
+        });
+    });
+    
+    // A set is a PR if it's:
+    // 1. A weight PR (heavier than any weight you've used before), OR
+    // 2. A rep PR at a significant weight (more reps than you've done before at that weight), OR
+    // 3. A volume PR (more total weight moved than any previous set in history)
+    const isPR = isPossibleWeightPR || 
+                (isSignificantWeight && isHistoricalRepPR && isHighestVolumeInSession) || 
+                isHistoricalVolumePR;
     
     // If this set is determined to be a PR, we should update the workout context
     // to ensure other sets with the same weight are not marked as PRs
@@ -436,7 +467,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         <div className="relative overflow-hidden">
           {/* Delete action background (always present behind the row) */}
           <div className="absolute inset-0 flex justify-end">
-            <div className="bg-red-400 rounded-lg text-white font-medium flex items-center justify-end w-full pr-4">
+            <div className="bg-red-500 rounded-lg text-white font-medium flex items-center justify-end w-full pr-4">
               Delete
             </div>
           </div>
@@ -486,7 +517,12 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                   type="number"
                   step="0.25"
                   min="0"
-                  placeholder={previousSet?.weight?.toString() || '-'}
+                  placeholder={previousSet?.weight ? 
+                    // Convert previous set weight based on user's weight unit preference
+                    (weightUnit === 'lbs' ? 
+                      convertWeight(previousSet.weight, 'kgs', 'lbs').toFixed(1) : 
+                      previousSet.weight.toString()) : 
+                    '-'}
                   className={getColumnClass(true, 'weight')}
                   value={set.weight || ''}
                   onChange={(e) => handleWeightChange(e.target.value)}

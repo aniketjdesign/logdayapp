@@ -60,7 +60,8 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
             totalTime += minutes * 60 + seconds;
           }
         } else if (!isBodyweight && set.weight && set.performedReps) {
-          const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
+          // All weights are stored in kgs, so convert if user's preference is lbs
+        const weight = weightUnit === 'lbs' ? convertWeight(set.weight, 'kgs', 'lbs') : set.weight;
           const reps = parseInt(set.performedReps) || 0;
           
           // Multiply by 2 for dumbbell exercises (except exceptions)

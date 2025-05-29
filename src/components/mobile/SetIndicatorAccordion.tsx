@@ -170,10 +170,11 @@ SetIndicatorAccordion.Content = ({
               !isNotePinned(s.comments) // Only include saved notes, not pinned notes
             )
             .map(s => ({
-              note: s.comments || '',
+              note: getCleanNoteText(s.comments || ''),
               date: new Date(log.startTime),
               isPinned: false // Saved notes are not pinned
             }))
+            .filter(noteObj => noteObj.note.trim() !== '') // Filter out empty notes after cleaning
         )
     )
     .sort((a, b) => b.date.getTime() - a.date.getTime())
@@ -459,7 +460,9 @@ SetIndicatorAccordion.Content = ({
                 <span className="text-xs font-medium text-gray-400">Past Notes</span>
               </div>
               
-              {allNotes.map((pastNote, index) => (
+              {allNotes
+                .filter(pastNote => pastNote.note.trim() !== '') // Filter out empty notes
+                .map((pastNote, index) => (
                 <div key={index} className="flex items-center text-xs text-gray-600 bg-gray-50 p-1 border-b border-gray-200">
                   <div className="flex flex-row justify-between w-full">
                     <div 

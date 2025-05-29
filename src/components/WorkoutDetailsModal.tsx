@@ -17,7 +17,7 @@ interface WorkoutDetailsModalProps {
 }
 
 export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, onClose, onDelete }) => {
-  const { weightUnit } = useSettings();
+  const { weightUnit, convertWeight } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [showRoutineSetup, setShowRoutineSetup] = useState(false);
@@ -56,13 +56,20 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
     const exercises = log.exercises.map(({ exercise, sets, supersetWith }) => ({
       exercise,
       supersetWith,
-      sets: sets.map(set => ({
-        ...set,
-        id: generateUUID(),
-        performedReps: '',
-        comments: '',
-        isPR: false
-      }))
+      sets: sets.map(set => {
+        // Weights are already stored in kgs in the database, so no conversion needed
+        // We just need to use the original weight value
+        let weight = set.weight;
+        
+        return {
+          ...set,
+          weight,
+          id: generateUUID(),
+          performedReps: '',
+          comments: '',
+          isPR: false
+        };
+      })
     }));
 
     startWorkout(exercises.map(e => e.exercise), log.name, exercises);
@@ -296,7 +303,7 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
                                 <span>
                                   {mainExercise.exercise.name.includes('(Bodyweight)') 
                                     ? 'BW'
-                                    : `${set.weight || 0} ${weightUnit}`} × {set.performedReps || '-'}
+                                    : `${weightUnit === 'lbs' ? convertWeight(set.weight || 0, 'kgs', 'lbs').toFixed(1) : (set.weight || 0)} ${weightUnit}`} × {set.performedReps || '-'}
                                 </span>
                                 {set.targetReps && (
                                   <div className="flex items-center text-gray-500 text-xs">
@@ -360,10 +367,16 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
               name: log.name || 'Workout Routine',
               exercises: log.exercises.map(ex => ({
                 exercise: ex.exercise,
-                sets: ex.sets.map(set => ({
-                  weight: set.weight || '',
-                  goal: set.performedReps || '',
-                }))
+                sets: ex.sets.map(set => {
+                  // Weights are already stored in kgs in the database, so no conversion needed
+                  // We just need to use the original weight value
+                  let weight = set.weight;
+                  
+                  return {
+                    weight: weight || '',
+                    goal: set.performedReps || '',
+                  };
+                })
               }))
             }}
           />

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play, Save } from 'lucide-react';
+import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
@@ -57,8 +57,9 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
       const isBodyweight = exercise.name.includes('(Bodyweight)');
       sets.forEach(set => {
         if (!isBodyweight && set.weight && set.performedReps) {
-          const weight = weightUnit === 'lb' 
-            ? convertWeight(set.weight, 'kg', 'lb')
+          // All weights are stored in kgs, so convert if user's preference is lbs
+          const weight = weightUnit === 'lbs' 
+            ? convertWeight(set.weight, 'kgs', 'lbs')
             : set.weight;
           totalVolume += weight * parseInt(set.performedReps);
         }
@@ -98,9 +99,14 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
       exercise,
       supersetWith,
       sets: sets.map(set => {
+        // Weights are already stored in kgs in the database, so no conversion needed
+        // We just need to use the original weight value
+        let weight = set.weight;
+        
         // Preserve all set data except performed values
         const newSet = {
           ...set,
+          weight, // Use the properly converted weight
           id: generateUUID(),
           performedReps: '',  // Clear performed reps
           comments: '',       // Clear comments
@@ -140,7 +146,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           <div className="relative">
             <button
               ref={menuButtonRef}
-              onClick={(e) => {
+              onClick={() => {
                 setShowMenu(!showMenu);
               }}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50"
@@ -292,10 +298,16 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               name: log.name || 'Workout Routine',
               exercises: log.exercises.map(ex => ({
                 exercise: ex.exercise,
-                sets: ex.sets.map(set => ({
-                  weight: set.weight || '',
-                  goal: set.performedReps || '',
-                }))
+                sets: ex.sets.map(set => {
+                  // Weights are already stored in kgs in the database, so no conversion needed
+                  // We just need to use the original weight value
+                  let weight = set.weight;
+                  
+                  return {
+                    weight: weight || '',
+                    goal: set.performedReps || '',
+                  };
+                })
               }))
             }}
           />

@@ -1,6 +1,7 @@
 import React from 'react';
 import { RoutineSetup } from './RoutineSetup';
 import { useWorkout } from '../../context/WorkoutContext';
+import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
 
 interface RoutineCreatorProps {
   onClose: () => void;
@@ -13,7 +14,7 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
   routine,
   folderId,
 }) => {
-  const { addRoutine, updateRoutine } = useWorkout();
+  const { addRoutine, updateRoutine, currentWorkout } = useWorkout();
 
   const handleSave = async (data: any) => {
     try {
@@ -38,13 +39,16 @@ export const RoutineCreator: React.FC<RoutineCreatorProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-white z-50">
-      <RoutineSetup
-        onSave={handleSave}
-        onClose={onClose}
-        routine={routine}
-        folderId={routine?.folder_id || folderId || null}
-      />
+    <div className="fixed inset-0 bg-white z-50 flex flex-col">
+      {currentWorkout && <OngoingWorkoutMessage />}
+      <div className="flex-1 overflow-hidden">
+        <RoutineSetup
+          onSave={handleSave}
+          onClose={onClose}
+          routine={routine}
+          folderId={routine?.folder_id || folderId || null}
+        />
+      </div>
     </div>
   );
 };
