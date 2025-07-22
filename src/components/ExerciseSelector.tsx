@@ -200,7 +200,7 @@ export const ExerciseSelector: React.FC<ExerciseSelectorProps> = ({
   }, [search, allExercises, allExercisesFuse, selectedMuscleGroup]);
 
   return (
-    <div className="flex flex-col min-h-full bg-gray-50 pb-24">
+    <div className="flex flex-col min-h-full bg-gray-50 pb-40">
       <div className="flex-1 bg-white">
         <div className={`px-4 pt-3 pb-4 bg-gray-50 sticky ${stickyTopPosition}`}>
           <div className="relative mb-5 flex gap-x-2">

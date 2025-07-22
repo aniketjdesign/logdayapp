@@ -187,7 +187,7 @@ export const ExerciseList: React.FC = () => {
         </div>
         
         {/* Simplified skeleton for start workout button */}
-        <div className="sticky mx-auto bottom-0 left-0 right-0 flex justify-center px-4 pt-4 pb-24 bg-transparent">
+        <div className="sticky mx-auto bottom-0 left-0 right-0 flex justify-center px-4 pt-4 pb-40 bg-transparent">
           <div className="h-12 bg-gray-200 rounded-xl w-full max-w-xs animate-pulse"></div>
         </div>
       </div>
@@ -220,7 +220,7 @@ export const ExerciseList: React.FC = () => {
           initial={{ y: 30, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="pb-24">
+          className="pb-40">
           <ExerciseSelector
             customExercises={customExercises}
             recentExercises={recentExercises}
