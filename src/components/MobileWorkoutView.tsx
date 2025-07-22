@@ -296,7 +296,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   };
 
   return (
-    <div className="md:hidden app-layout bg-gray-50 safe-area-inset-left safe-area-inset-right">
+    <div className="app-layout bg-gray-50 safe-area-inset-left safe-area-inset-right">
       <MobileWorkoutHeader
         workoutName={workoutName}
         duration={duration}
