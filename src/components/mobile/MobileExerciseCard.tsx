@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreHorizontal, Plus, FileText, BarChart2 } from 'lucide-react';
+import { MoreHorizontal, Plus } from 'lucide-react';
 import { Exercise, WorkoutLog } from '../../types/workout';
 import { MobileSetRow } from '../MobileSetRow';
 import { MobileExerciseTabs } from './MobileExerciseTabs';
@@ -23,6 +23,7 @@ interface MobileExerciseCardProps {
   renderExerciseMenu: (exerciseId: string) => React.ReactNode;
   supersetPartner?: { exercise: Exercise; sets: any[] };
   animationDelay?: number;
+  isInSuperset?: boolean;
 }
 
 export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
@@ -41,6 +42,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
   renderExerciseMenu,
   supersetPartner,
   animationDelay = 0,
+  isInSuperset = false,
 }) => {
   const [activeTab, setActiveTab] = React.useState<'log' | 'previous'>('log');
   const [showChart, setShowChart] = React.useState(false);
@@ -75,7 +77,7 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
     if (logContentRef.current) {
       setLogContentHeight(logContentRef.current.offsetHeight);
     }
-  }, [sets, supersetPartner]);
+  }, [sets]);
   
   // Track when new sets are added
   useEffect(() => {
@@ -106,12 +108,12 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
           </div>
           
         </div>
-        {supersetPartner && (
-              <div className="mt-1 flex gap-2 items-start text-sm text-lime-600">
-                <div className="w-2.5 h-2.5 mt-1.5 rounded-full bg-lime-500" />
-                Superset w/ {supersetPartner.exercise.name}
-              </div>
-            )}
+        {supersetWith && !isInSuperset && (
+          <div className="mt-1 flex gap-2 items-start text-sm text-lime-600">
+            <div className="w-2.5 h-2.5 mt-1.5 rounded-full bg-lime-500" />
+            Supersetted exercise
+          </div>
+        )}
         {renderExerciseMenu(exercise.id)}
       </div>
 
@@ -184,57 +186,13 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
               ))}
             </AnimatePresence>
 
-            {!supersetPartner && (
-              <button
-                onClick={() => onAddSet(exercise.id)}
-                className="mt-3 flex items-center px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-              >
-                <Plus size={14} className="mr-1" />
-                Add Set
-              </button>
-            )}
-
-            {supersetPartner && (
-              <>
-                <button
-                  onClick={() => onAddSet(exercise.id)}
-                  className="mt-3 flex items-center px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                >
-                  <Plus size={14} className="mr-1" />
-                  Add Set
-                </button>
-
-                <div className="my-4 border-t border-lime-500" />
-                <div className="mb-2">
-                  <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
-                </div>
-                {supersetPartner.sets.map((set) => (
-                  <MobileSetRow
-                    key={set.id}
-                    set={set}
-                    exercise={supersetPartner.exercise}
-                    previousSet={getPreviousWorkoutSet(set.setNumber)}
-                    onUpdate={(field, value) => onUpdateSet(supersetPartner.exercise.id, set.id, field, value)}
-                    onDelete={() => onDeleteSet(supersetPartner.exercise.id, set.id)}
-                    onOpenNoteModal={() => onOpenNoteModal({
-                      exerciseId: supersetPartner.exercise.id,
-                      setId: set.id,
-                      exerciseName: supersetPartner.exercise.name,
-                      setNumber: set.setNumber
-                    })}
-                    onSetComplete={() => onSetComplete(supersetPartner.exercise.id)}
-                    exerciseHistory={exerciseHistory}
-                  />
-                ))}
-                <button
-                  onClick={() => onAddSet(supersetPartner.exercise.id)}
-                  className="mt-3 flex items-center px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
-                >
-                  <Plus size={16} className="mr-2" />
-                  Add Set
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => onAddSet(exercise.id)}
+              className="mt-3 flex items-center px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-lg transition-colors text-sm justify-center"
+            >
+              <Plus size={14} className="mr-1" />
+              Add Set
+            </button>
             </motion.div>
           ) : (
             <motion.div
@@ -257,23 +215,6 @@ export const MobileExerciseCard: React.FC<MobileExerciseCardProps> = ({
                 onToggleChart={() => setShowChart(!showChart)}
                 contentHeight={logContentHeight}
               />
-            
-              {supersetPartner && (
-                <>
-                  <div className="my-4 border-t border-lime-500" />
-                  <div className="mb-2">
-                    <h4 className="text-sm font-medium text-gray-700">{supersetPartner.exercise.name}</h4>
-                  </div>
-                  <MobileExerciseHistory
-                    exercise={supersetPartner.exercise}
-                    exerciseHistory={exerciseHistory}
-                    weightUnit={weightUnit}
-                    showChart={showChart}
-                    onToggleChart={() => setShowChart(!showChart)}
-                    contentHeight={logContentHeight}
-                  />
-                </>
-              )}
             </motion.div>
           )}
         </AnimatePresence>

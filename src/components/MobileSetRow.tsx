@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check } from 'lucide-react';
-import { WorkoutSet, Exercise, WorkoutLog } from '../types/workout';
+import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 import { SetIndicatorAccordion } from './mobile/SetIndicatorAccordion';
-import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 
 interface MobileSetRowProps {
@@ -15,7 +14,6 @@ interface MobileSetRowProps {
   onDelete: () => void;
   onOpenNoteModal: () => void;
   onSetComplete?: () => void;
-  exerciseHistory?: { [exerciseId: string]: WorkoutLog[] };
 }
 
 export const MobileSetRow: React.FC<MobileSetRowProps> = ({
@@ -26,9 +24,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onDelete,
   onOpenNoteModal,
   onSetComplete,
-  exerciseHistory,
 }) => {
-  const { currentWorkout } = useWorkout();
   const { weightUnit, convertWeight } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
@@ -41,235 +37,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
   const setNumberRef = useRef<HTMLDivElement>(null);
 
-  const checkForPRs = React.useCallback((): boolean => {
-    if (!exerciseHistory || !exerciseHistory[exercise.id] || !set.weight || !set.performedReps) {
-      return false;
-    }
-    if (set.isWarmup || isCardio || isBodyweight) {
-      return false;
-    }
 
-    const currentWeightNumber = Number(set.weight);
-    const currentRepsNumber = parseInt(String(set.performedReps ?? '0'), 10);
-
-    if (isNaN(currentWeightNumber) || currentWeightNumber <= 0 || isNaN(currentRepsNumber) || currentRepsNumber <= 0) {
-      return false;
-    }
-
-    const currentWeightKg = weightUnit === 'lbs' ? convertWeight(currentWeightNumber, 'lbs', 'kgs') : currentWeightNumber;
-    const currentVolume = currentWeightKg * currentRepsNumber;
-
-    // PHASE 1: HISTORICAL QUALIFICATION
-    let maxHistoricalWeightKg = 0;
-    let maxHistoricalRepsAtCurrentWeight = 0;
-    let maxHistoricalVolumeOverall = 0;
-    let currentWeightLiftedBefore = false;
-
-    if (exerciseHistory && exerciseHistory[exercise.id]) {
-      exerciseHistory[exercise.id].forEach(workoutLog => {
-        workoutLog.exercises
-          .filter(ex => ex.exercise.id === exercise.id)
-          .forEach(exInstance => {
-            exInstance.sets.forEach(historySet => {
-              if (historySet.isWarmup || !historySet.weight || !historySet.performedReps) return;
-              
-              const historyWeightNumber = Number(historySet.weight);
-              const historyRepsNumber = parseInt(String(historySet.performedReps ?? '0'), 10);
-
-              if (isNaN(historyWeightNumber) || historyWeightNumber <= 0 || isNaN(historyRepsNumber) || historyRepsNumber <= 0) return;
-              
-              // Assuming history weights are stored in KGS as per database design
-              const historyWeightKg = historyWeightNumber;
-              const historyVolume = historyWeightKg * historyRepsNumber;
-
-              if (historyWeightKg > maxHistoricalWeightKg) maxHistoricalWeightKg = historyWeightKg;
-              if (historyVolume > maxHistoricalVolumeOverall) maxHistoricalVolumeOverall = historyVolume;
-              
-              if (historyWeightKg === currentWeightKg) {
-                currentWeightLiftedBefore = true;
-                if (historyRepsNumber > maxHistoricalRepsAtCurrentWeight) {
-                  maxHistoricalRepsAtCurrentWeight = historyRepsNumber;
-                }
-              }
-            });
-          });
-      });
-    }
-
-    const isNewHeaviestWeight = currentWeightKg > maxHistoricalWeightKg;
-    const isNewRepRecordAtWeight = currentWeightLiftedBefore && currentRepsNumber > maxHistoricalRepsAtCurrentWeight;
-    const isFirstTimeAtThisWeightAndPositiveReps = !currentWeightLiftedBefore && currentRepsNumber > 0;
-    const isNewVolumeRecord = currentVolume > maxHistoricalVolumeOverall;
-
-    const historicallyQualified = isNewHeaviestWeight || isNewRepRecordAtWeight || isFirstTimeAtThisWeightAndPositiveReps || isNewVolumeRecord;
-
-    if (!historicallyQualified) {
-      return false;
-    }
-
-    // PHASE 2: SESSION SUPREMACY
-    if (!currentWorkout || !currentWorkout.exercises) {
-      // If no session context, but currentSet is historically qualified, it's a PR.
-      // However, this component operates within a session, so this path is unlikely.
-      // For safety, if historicallyQualified and no session to compare, let it be PR.
-      // This might need review based on broader app logic if checkForPRs is used elsewhere.
-      return historicallyQualified; // Or false if session context is strictly required.
-    }
-
-    const currentExerciseInstance = currentWorkout.exercises.find(ex => ex.exercise.id === exercise.id);
-    if (!currentExerciseInstance || !currentExerciseInstance.sets) {
-      return historicallyQualified; // No other sets in session to compare against.
-    }
-
-    const sessionSetsData = currentExerciseInstance.sets
-      .map(sessionSet => {
-        if (sessionSet.isWarmup || !sessionSet.weight || !sessionSet.performedReps) return null;
-
-        const weightNum = Number(sessionSet.weight);
-        const repsNum = parseInt(String(sessionSet.performedReps ?? '0'), 10);
-        if (isNaN(weightNum) || weightNum <= 0 || isNaN(repsNum) || repsNum <= 0) return null;
-
-        const weightKg = weightUnit === 'lbs' ? convertWeight(weightNum, 'lbs', 'kgs') : weightNum;
-        const volume = weightKg * repsNum;
-
-        // Determine historical qualification for this sessionSet
-        const s_isHistNewHeaviest = weightKg > maxHistoricalWeightKg;
-        const s_isHistNewVolume = volume > maxHistoricalVolumeOverall;
-        
-        let s_maxHistRepsAtWeight = 0;
-        let s_weightLiftedBefore = false;
-        if (exerciseHistory && exerciseHistory[exercise.id]) {
-          exerciseHistory[exercise.id].forEach(log => 
-            log.exercises.filter(e => e.exercise.id === exercise.id).forEach(ei => 
-              ei.sets.forEach(hs => {
-                if (hs.isWarmup || !hs.weight || !hs.performedReps) return;
-                const hsWeightKgVal = Number(hs.weight); // History weights are kgs
-                const hsRepsVal = parseInt(String(hs.performedReps ?? '0'), 10);
-                if (hsWeightKgVal === weightKg) { // Comparing sessionSet's weightKg with history
-                    s_weightLiftedBefore = true;
-                    if (hsRepsVal > s_maxHistRepsAtWeight) s_maxHistRepsAtWeight = hsRepsVal;
-                }
-              })
-            )
-          );
-        }
-        const s_isHistNewRepsAtWeight = s_weightLiftedBefore && repsNum > s_maxHistRepsAtWeight;
-        const s_isHistFirstTimeAtWeight = !s_weightLiftedBefore && repsNum > 0;
-
-        const sessionSetHistoricallyQualified = s_isHistNewHeaviest || s_isHistNewVolume || s_isHistNewRepsAtWeight || s_isHistFirstTimeAtWeight;
-
-        if (!sessionSetHistoricallyQualified) return null;
-
-        return {
-          id: sessionSet.id,
-          setNumber: sessionSet.setNumber,
-          weightKg: weightKg,
-          reps: repsNum,
-          volume: volume,
-          isHistNewHeaviest: s_isHistNewHeaviest,
-          isHistNewVolume: s_isHistNewVolume,
-        };
-      })
-      .filter(s => s !== null) as { id: string; setNumber: number; weightKg: number; reps: number; volume: number; isHistNewHeaviest: boolean; isHistNewVolume: boolean; }[];
-
-    if (sessionSetsData.length === 0) {
-      // This implies currentSet itself wasn't historically qualified by the inner check, which shouldn't happen if it passed Phase 1.
-      // Or no sets in session are historically PR-worthy.
-      // If currentSet passed Phase 1, it should be in sessionSetsData.
-      return false; 
-    }
-    
-    // If only one candidate and it's the current set, it's the PR.
-    if (sessionSetsData.length === 1 && sessionSetsData[0].id === set.id) {
-        return true;
-    }
-
-    // Tier 1: Determine best by New Heaviest Weight
-    let bestHeaviestWeightPR = null;
-    for (const sData of sessionSetsData) {
-      if (sData.isHistNewHeaviest) {
-        if (!bestHeaviestWeightPR || sData.weightKg > bestHeaviestWeightPR.weightKg) {
-          bestHeaviestWeightPR = sData;
-        } else if (sData.weightKg === bestHeaviestWeightPR.weightKg) {
-          if (sData.volume > bestHeaviestWeightPR.volume) {
-            bestHeaviestWeightPR = sData;
-          } else if (sData.volume === bestHeaviestWeightPR.volume && sData.setNumber < bestHeaviestWeightPR.setNumber) {
-            bestHeaviestWeightPR = sData;
-          }
-        }
-      }
-    }
-
-    if (bestHeaviestWeightPR) {
-      return set.id === bestHeaviestWeightPR.id;
-    }
-
-    // Tier 2: Determine best by New Overall Volume (if no Tier 1 winner)
-    let bestVolumePR = null;
-    for (const sData of sessionSetsData) {
-      if (sData.isHistNewVolume) {
-        if (!bestVolumePR || sData.volume > bestVolumePR.volume) {
-          bestVolumePR = sData;
-        } else if (sData.volume === bestVolumePR.volume) {
-          if (sData.setNumber < bestVolumePR.setNumber) {
-            bestVolumePR = sData;
-          }
-        }
-      }
-    }
-    
-    if (bestVolumePR) {
-      return set.id === bestVolumePR.id;
-    }
-
-    // Tier 3: Fallback - if no set achieved a *new historical* heaviest weight or *new historical* volume.
-    // Among all historically qualified sets in sessionSetsData, pick the one with the highest volume.
-    let fallbackPR = null;
-    for (const sData of sessionSetsData) {
-        if (!fallbackPR || sData.volume > fallbackPR.volume) {
-            fallbackPR = sData;
-        } else if (sData.volume === fallbackPR.volume && sData.setNumber < fallbackPR.setNumber) {
-            fallbackPR = sData;
-        }
-    }
-
-    if (fallbackPR) {
-        return set.id === fallbackPR.id;
-    }
-    
-    return false;
-  }, [
-    set.id, set.weight, set.performedReps, set.isWarmup, set.setNumber, // Specific fields from set
-    exercise.id, exerciseHistory, currentWorkout, 
-    weightUnit, convertWeight, isCardio, isBodyweight
-  ]);
-
-  useEffect(() => {
-    const isEligibleForPrCheck = 
-      isSetComplete &&
-      !set.isWarmup && 
-      !isCardio && 
-      !isBodyweight &&
-      set.weight && Number(set.weight) > 0 &&
-      set.performedReps && parseInt(String(set.performedReps ?? '0'), 10) > 0;
-
-    if (isEligibleForPrCheck) {
-      const newPrStatus = checkForPRs();
-      if (newPrStatus !== set.isPR) {
-        onUpdate('isPR', newPrStatus);
-      }
-    } else {
-      if (set.isPR) {
-        onUpdate('isPR', false);
-      }
-    }
-  }, [
-    isSetComplete, 
-    set.isWarmup, set.weight, set.performedReps, set.isPR, // Specific fields from set
-    isCardio, isBodyweight,
-    checkForPRs, 
-    onUpdate
-  ]);
 
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -314,12 +82,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     if (set.performedReps) {
       setIsSetComplete(true);
       setShowCompletionPulse(true);
-      
-      // Check for PRs
-      const isPR = checkForPRs();
-      if (isPR && !set.isPR) {
-        onUpdate('isPR', true);
-      }
       
       // Hide the pulse animation after 1 second
       setTimeout(() => setShowCompletionPulse(false), 1000);
@@ -391,12 +153,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
     // All required fields are filled, mark set as complete
     setIsSetComplete(true);
     setShowCompletionPulse(true);
-    
-    // Check for PRs
-    const isPR = checkForPRs();
-    if (isPR && !set.isPR) {
-      onUpdate('isPR', true);
-    }
     
     // Hide the pulse animation after 1 second
     setTimeout(() => setShowCompletionPulse(false), 1000);

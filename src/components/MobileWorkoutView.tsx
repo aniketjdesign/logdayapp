@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Clock, Link2, Trash2, RefreshCw } from 'lucide-react';
+import { Clock, Trash2, RefreshCw } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
-import { MobileSetRow } from './MobileSetRow';
 import { AddNoteModal } from './AddNoteModal';
 import { ConfirmationModal } from './ConfirmationModal';
 import { ExerciseSelectionModal } from './ExerciseSelectionModal';
@@ -65,7 +64,6 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   const [replaceExerciseId, setReplaceExerciseId] = useState<string | null>(null);
   const [showReorderModal, setShowReorderModal] = useState(false);
   const [showWorkoutReview, setShowWorkoutReview] = useState(false);
-  const [completedWorkout, setCompletedWorkout] = useState<WorkoutLog | null>(null);
   const [activeExerciseMenu, setActiveExerciseMenu] = useState<string | null>(null);
   const [showSupersetModal, setShowSupersetModal] = useState(false);
   const [selectedExerciseId, setSelectedExerciseId] = useState<string | null>(null);
@@ -174,6 +172,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     if (exercise?.supersetWith) {
       const updatedExercises = workout.exercises.map(ex => {
         if (ex.exercise.id === exerciseId || ex.exercise.id === exercise.supersetWith) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { supersetWith, ...rest } = ex;
           return rest;
         }
@@ -218,7 +217,7 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     <AnimatePresence>
       {activeExerciseMenu === exerciseId && (
         <motion.div 
-          className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10"
+          className="absolute right-4 mt-2 w-52 bg-white rounded-xl shadow-lg border z-10 text-sm"
           initial={{ opacity: 0, scale: 0.5, originX: 1, originY: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}
@@ -229,12 +228,12 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           toggleRestTimer(exerciseId);
           setActiveExerciseMenu(null);
         }}
-        className={`w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2 ${
+        className={`w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2 ${
           !workoutRestTimer ? 'opacity-50 cursor-not-allowed' : ''
         }`}
         disabled={!workoutRestTimer}
       >
-        <Clock size={16} className={restTimerEnabled[exerciseId] ? "text-gray-600" : "text-gray-600"} />
+        <Clock size={14} className={restTimerEnabled[exerciseId] ? "text-gray-600" : "text-gray-600"} />
         <span>
           {restTimerEnabled[exerciseId] ? 'Disable Rest Timer' : 'Enable Rest Timer'}
         </span>
@@ -243,9 +242,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         onClick={() => {
           handleSuperset(exerciseId);
         }}
-        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
+        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
       >
-        <div className="w-2.5 h-2.5 rounded-full bg-lime-500" />
+        <div className="w-[14px] h-[14px] flex items-center justify-center"><div className="w-2 h-2 rounded-full bg-lime-500" /></div>
         <span>
           {workout.exercises.find(ex => ex.exercise.id === exerciseId)?.supersetWith
             ? 'Remove Superset'
@@ -258,9 +257,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           setShowExerciseModal(true);
           setActiveExerciseMenu(null);
         }}
-        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center gap-2"
+        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center gap-2"
       >
-        <RefreshCw size={16} />
+        <RefreshCw size={14} />
         <span>Replace Exercise</span>
       </button>
       <button
@@ -268,9 +267,9 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
           onDeleteExercise(exerciseId);
           setActiveExerciseMenu(null);
         }}
-        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center text-red-600"
+        className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center text-red-600"
       >
-        <Trash2 size={16} className="mr-2" />
+        <Trash2 size={14} className="mr-2" />
         <span>Remove Exercise</span>
       </button>
         </motion.div>
@@ -317,34 +316,100 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
         }}
       >
         <AnimatePresence>
-          {workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
-            if (supersetWith && workout.exercises.findIndex(ex => ex.exercise.id === supersetWith) < index) {
-              return null;
-            }
+          {(() => {
+            const renderedExercises = new Set<string>();
+            return workout.exercises.map(({ exercise, sets, supersetWith }, index) => {
+              if (renderedExercises.has(exercise.id)) {
+                return null;
+              }
 
-            const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
-
-            return (
-              <MobileExerciseCard
-                key={exercise.id}
-                exercise={exercise}
-                sets={sets}
-                supersetWith={supersetWith}
-              exerciseHistory={exerciseHistory}
-              weightUnit={weightUnit}
-              onUpdateSet={onUpdateSet}
-              onDeleteSet={onDeleteSet}
-              onAddSet={onAddSet}
-              onOpenNoteModal={setActiveNoteModal}
-              onSetComplete={handleSetComplete}
-              onExerciseMenuToggle={handleExerciseMenuToggle}
-              activeExerciseMenu={activeExerciseMenu}
-              renderExerciseMenu={renderExerciseMenu}
-              supersetPartner={supersetPartner}
-              animationDelay={index * 0.1}
-            />
-            );
-          })}
+              const supersetPartner = workout.exercises.find(ex => ex.exercise.id === supersetWith);
+              
+              if (supersetWith && supersetPartner) {
+                // Mark both exercises as rendered
+                renderedExercises.add(exercise.id);
+                renderedExercises.add(supersetPartner.exercise.id);
+                
+                // Render superset container with both cards
+                return (
+                  <motion.div
+                    key={`superset-${exercise.id}-${supersetPartner.exercise.id}`}
+                    className="bg-lime-50 rounded-xl p-2 border-l-2 border-lime-400"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                  >
+                    <div className="flex items-center gap-2 mb-3 px-1">
+                      <div className="w-2 h-2 rounded-full bg-lime-500" />
+                      <span className="text-sm font-semibold text-lime-700">Superset</span>
+                    </div>
+                    <div className="space-y-3">
+                      <MobileExerciseCard
+                        key={exercise.id}
+                        exercise={exercise}
+                        sets={sets}
+                        supersetWith={supersetWith}
+                        exerciseHistory={exerciseHistory}
+                        weightUnit={weightUnit}
+                        onUpdateSet={onUpdateSet}
+                        onDeleteSet={onDeleteSet}
+                        onAddSet={onAddSet}
+                        onOpenNoteModal={setActiveNoteModal}
+                        onSetComplete={handleSetComplete}
+                        onExerciseMenuToggle={handleExerciseMenuToggle}
+                        activeExerciseMenu={activeExerciseMenu}
+                        renderExerciseMenu={renderExerciseMenu}
+                        animationDelay={0}
+                        isInSuperset={true}
+                      />
+                      <MobileExerciseCard
+                        key={supersetPartner.exercise.id}
+                        exercise={supersetPartner.exercise}
+                        sets={supersetPartner.sets}
+                        supersetWith={supersetPartner.supersetWith}
+                        exerciseHistory={exerciseHistory}
+                        weightUnit={weightUnit}
+                        onUpdateSet={onUpdateSet}
+                        onDeleteSet={onDeleteSet}
+                        onAddSet={onAddSet}
+                        onOpenNoteModal={setActiveNoteModal}
+                        onSetComplete={handleSetComplete}
+                        onExerciseMenuToggle={handleExerciseMenuToggle}
+                        activeExerciseMenu={activeExerciseMenu}
+                        renderExerciseMenu={renderExerciseMenu}
+                        animationDelay={0}
+                        isInSuperset={true}
+                      />
+                    </div>
+                  </motion.div>
+                );
+              } else {
+                // Render single exercise card
+                renderedExercises.add(exercise.id);
+                return (
+                  <MobileExerciseCard
+                    key={exercise.id}
+                    exercise={exercise}
+                    sets={sets}
+                    supersetWith={supersetWith}
+                    exerciseHistory={exerciseHistory}
+                    weightUnit={weightUnit}
+                    onUpdateSet={onUpdateSet}
+                    onDeleteSet={onDeleteSet}
+                    onAddSet={onAddSet}
+                    onOpenNoteModal={setActiveNoteModal}
+                    onSetComplete={handleSetComplete}
+                    onExerciseMenuToggle={handleExerciseMenuToggle}
+                    activeExerciseMenu={activeExerciseMenu}
+                    renderExerciseMenu={renderExerciseMenu}
+                    animationDelay={index * 0.1}
+                    isInSuperset={false}
+                  />
+                );
+              }
+            }).filter(Boolean);
+          })()
+          }
         </AnimatePresence>
 
         <MobileWorkoutFooter
@@ -395,13 +460,20 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
                     completedReps: 0,
                     comments: ''
                   })),
-                  supersetWith: null
+                  supersetWith: exerciseToReplace.supersetWith // Preserve superset relationship
                 };
                 
-                // Replace the exercise in the workout
-                const updatedExercises = workout.exercises.map(e => 
-                  e.exercise.id === replaceExerciseId ? newExercise : e
-                );
+                // Replace the exercise in the workout and update superset references
+                const updatedExercises = workout.exercises.map(e => {
+                  if (e.exercise.id === replaceExerciseId) {
+                    return newExercise;
+                  }
+                  // If this exercise was supersetted with the replaced exercise, update the reference
+                  if (e.supersetWith === replaceExerciseId) {
+                    return { ...e, supersetWith: selectedExercises[0].id };
+                  }
+                  return e;
+                });
                 
                 // Update the workout with the new exercises array
                 setCurrentWorkout({

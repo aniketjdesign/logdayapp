@@ -344,9 +344,26 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     setCurrentWorkout(prev => {
       if (!prev) return null;
+      
+      // Find the exercise to be deleted and its superset partner if any
+      const exerciseToDelete = prev.exercises.find(ex => ex.exercise.id === exerciseId);
+      const supersetPartnerId = exerciseToDelete?.supersetWith;
+      
+      // Remove the exercise and clean up superset relationships
+      const updatedExercises = prev.exercises
+        .filter(ex => ex.exercise.id !== exerciseId)
+        .map(ex => {
+          // If this exercise was supersetted with the deleted exercise, remove the superset reference
+          if (supersetPartnerId && ex.exercise.id === supersetPartnerId) {
+            const { supersetWith, ...rest } = ex;
+            return rest as WorkoutExercise;
+          }
+          return ex;
+        });
+      
       return {
         ...prev,
-        exercises: prev.exercises.filter(ex => ex.exercise.id !== exerciseId)
+        exercises: updatedExercises
       };
     });
   };
