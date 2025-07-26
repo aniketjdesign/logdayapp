@@ -389,8 +389,8 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
                 </div>
               )}
               {totalTime > 0 && (
-                <div className="bg-indigo-50 p-4 rounded-lg">
-                  <div className="text-indigo-600 font-semibold text-center">Time</div>
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <div className="text-blue-600 font-semibold text-center">Time</div>
                   <div className="text-xl font-semibold text-center">{formatTime(totalTime)}</div>
                 </div>
               )}

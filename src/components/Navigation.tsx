@@ -4,7 +4,8 @@ import {
   Notebook, 
   Lightning, 
   CalendarCheck, 
-  UserCircle
+  UserCircle,
+  Robot
 } from 'phosphor-react';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -41,6 +42,10 @@ export const Navigation: React.FC = () => {
 
   const navigateToProfile = () => {
     navigate('/profile');
+  };
+
+  const navigateToAICoach = () => {
+    navigate('/ai-coach');
   };
 
   const isActive = (path: string | string[]): boolean => {
@@ -134,6 +139,25 @@ export const Navigation: React.FC = () => {
               <CalendarCheck size={24} weight="duotone" />
             )}
             <span className="text-xs mt-1">Logs</span>
+          </motion.button>
+          
+          <motion.button
+            onClick={navigateToAICoach}
+            className={`flex flex-col items-center justify-center flex-1 py-4 relative ${
+              isActive('/ai-coach') ? 'text-blue-600' : 'text-gray-600'
+            }`}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+          >
+            {isActive('/ai-coach') ? (
+              <>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-10 h-1 bg-blue-600 rounded-b-md"></div>
+                <Robot size={24} weight="fill" />
+              </>
+            ) : (
+              <Robot size={24} weight="duotone" />
+            )}
+            <span className="text-xs mt-1">AI Coach</span>
           </motion.button>
           
           <motion.button

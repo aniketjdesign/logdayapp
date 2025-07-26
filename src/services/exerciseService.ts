@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { CustomExercise, NewCustomExercise } from '../types/exercise';
+import { MuscleGroup } from '../types/workout';
 import { isValidUUID } from '../utils/uuid';
 
 export const exerciseService = {
