@@ -58,8 +58,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
         const indicators = [];
         if (set.isFailure && (set.isPR || set.isDropset)) indicators.push('failure');
         if (set.isPR && set.isDropset) indicators.push('pr');
-        // Show note indicator for any notes
-        if (set.comments) indicators.push('notes');
         
         // If only one indicator, position it at the top right
         if (indicators.length === 1) {
@@ -70,9 +68,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
               )}
               {indicators[0] === 'pr' && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
-              )}
-              {indicators[0] === 'notes' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
               )}
             </>
           );
@@ -90,9 +85,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
                 <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
               )}
               
-              {set.comments && (
-                <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
-              )}
             </div>
           );
         }
@@ -109,9 +101,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
                 <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
               )}
               
-              {set.comments && (
-                <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
-              )}
             </div>
           );
         }
@@ -184,16 +173,8 @@ SetIndicatorAccordion.Content = ({
       onUpdateNote(noteToSave);
       setIsSaved(true);
       
-      // Add to local notes
-      const newNote = {
-        note: noteToSave,
-        date: new Date()
-      };
-      
-      // Add to local notes if not already there
-      if (!localNotes.some(n => n.note === noteToSave)) {
-        setLocalNotes(prev => [newNote, ...prev].slice(0, 3));
-      }
+      // Don't add to local notes immediately - keep it in the input field
+      // The note will appear in past notes in future workouts from workout logs
     }
   };
 
@@ -305,7 +286,9 @@ SetIndicatorAccordion.Content = ({
             <input
               type="text"
               placeholder="Add a note..."
-              className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                isSaved ? 'bg-green-100' : 'bg-white'
+              }`}
               value={note}
               onChange={(e) => {
                 setNote(e.target.value);
