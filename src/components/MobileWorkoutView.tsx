@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, Trash2, RefreshCw } from 'lucide-react';
 import { WorkoutLog, Exercise } from '../types/workout';
@@ -34,7 +34,7 @@ interface MobileWorkoutViewProps {
   onPauseResume: () => void;
 }
 
-export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
+const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
   workout,
   duration,
   workoutName,
@@ -579,3 +579,5 @@ export const MobileWorkoutView: React.FC<MobileWorkoutViewProps> = ({
     </div>
   );
 };
+
+export default memo(MobileWorkoutView);

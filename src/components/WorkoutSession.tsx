@@ -4,7 +4,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { WorkoutReview } from './WorkoutReview';
-import { MobileWorkoutView } from './MobileWorkoutView';
+import MobileWorkoutView from './MobileWorkoutView';
 import { Exercise, WorkoutLog } from '../types/workout';
 
 const STORAGE_PREFIX = 'logday_';

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Exercise, WorkoutLog, WorkoutExercise, Folder, Routine } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
@@ -505,36 +505,66 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const contextValue = useMemo(() => ({
+    selectedExercises,
+    currentWorkout,
+    workoutLogs,
+    currentView,
+    customExercises,
+    folders,
+    routines,
+    setSelectedExercises,
+    setCurrentWorkout,
+    startWorkout,
+    completeWorkout,
+    updateWorkoutExercise,
+    reorderWorkoutExercises,
+    addExercisesToWorkout,
+    addCustomExercise,
+    deleteExercise,
+    deleteLog,
+    setCurrentView,
+    searchLogs,
+    clearWorkoutState,
+    addFolder,
+    updateFolder,
+    deleteFolder,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
+    moveRoutine,
+  }), [
+    selectedExercises,
+    currentWorkout,
+    workoutLogs,
+    currentView,
+    customExercises,
+    folders,
+    routines,
+    setSelectedExercises,
+    setCurrentWorkout,
+    startWorkout,
+    completeWorkout,
+    updateWorkoutExercise,
+    reorderWorkoutExercises,
+    addExercisesToWorkout,
+    addCustomExercise,
+    deleteExercise,
+    deleteLog,
+    setCurrentView,
+    searchLogs,
+    clearWorkoutState,
+    addFolder,
+    updateFolder,
+    deleteFolder,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
+    moveRoutine,
+  ]);
+
   return (
-    <WorkoutContext.Provider value={{
-      selectedExercises,
-      currentWorkout,
-      workoutLogs,
-      currentView,
-      customExercises,
-      folders,
-      routines,
-      setSelectedExercises,
-      setCurrentWorkout,
-      startWorkout,
-      completeWorkout,
-      updateWorkoutExercise,
-      reorderWorkoutExercises,
-      addExercisesToWorkout,
-      addCustomExercise,
-      deleteExercise,
-      deleteLog,
-      setCurrentView,
-      searchLogs,
-      clearWorkoutState,
-      addFolder,
-      updateFolder,
-      deleteFolder,
-      addRoutine,
-      updateRoutine,
-      deleteRoutine,
-      moveRoutine,
-    }}>
+    <WorkoutContext.Provider value={contextValue}>
       {children}
     </WorkoutContext.Provider>
   );

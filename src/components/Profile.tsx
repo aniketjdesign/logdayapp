@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { X, LogOut, Bell, User, Share, RefreshCw, Settings, MessageSquare, Clock, BarChart, TrendingUp, Award, ChevronDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useWorkout } from '../context/WorkoutContext';
@@ -216,19 +216,18 @@ export const Profile: React.FC = () => {
     return muscleGroupSets;
   };
 
-  // Get all muscle groups that have been trained (sets > 0)
-  const getTrainedMuscleGroups = (): { name: MuscleGroup; sets: number }[] => {
+  // Get all muscle groups that have been trained (sets > 0) - memoized for performance
+  const trainedMuscleGroups = useMemo((): { name: MuscleGroup; sets: number }[] => {
     return Object.entries(insights.muscleGroupSets)
       .filter(([_, sets]) => sets > 0)
       .sort(([_, setsA], [__, setsB]) => setsB - setsA)
       .map(([name, sets]) => ({ name: name as MuscleGroup, sets }));
-  };
+  }, [insights.muscleGroupSets]);
 
-  // Get the maximum number of sets for any muscle group (for progress bar calculation)
-  const getMaxSets = (): number => {
-    const trainedGroups = getTrainedMuscleGroups();
-    return trainedGroups.length > 0 ? Math.max(...trainedGroups.map(m => m.sets)) : 0;
-  };
+  // Get the maximum number of sets for any muscle group (for progress bar calculation) - memoized
+  const maxSets = useMemo((): number => {
+    return trainedMuscleGroups.length > 0 ? Math.max(...trainedMuscleGroups.map(m => m.sets)) : 0;
+  }, [trainedMuscleGroups]);
 
   // Get display text for the selected date period
   const getDatePeriodText = (): string => {
@@ -525,9 +524,9 @@ export const Profile: React.FC = () => {
                           </div>
                         </div>
                         
-                        {getTrainedMuscleGroups().length > 0 ? (
+                        {trainedMuscleGroups.length > 0 ? (
                           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                            {getTrainedMuscleGroups().map((muscle, index) => (
+                            {trainedMuscleGroups.map((muscle, index) => (
                               <div key={muscle.name} className="space-y-1">
                                 <div className="flex justify-between items-center text-xs">
                                   <span className="font-medium text-gray-700">{muscle.name}</span>
@@ -540,7 +539,7 @@ export const Profile: React.FC = () => {
                                       index % 3 === 1 ? 'bg-indigo-500' : 'bg-purple-500'
                                     }`}
                                     style={{ 
-                                      width: `${Math.min(100, (muscle.sets / getMaxSets()) * 100)}%` 
+                                      width: `${Math.min(100, (muscle.sets / maxSets) * 100)}%` 
                                     }}
                                   ></div>
                                 </div>

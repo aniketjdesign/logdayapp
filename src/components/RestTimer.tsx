@@ -38,6 +38,15 @@ class AudioManager {
     }
   }
 
+  public cleanup() {
+    if (this._audioContext) {
+      this._audioContext.close();
+      this._audioContext = null;
+      this._bellBuffer = null;
+      this._initialized = false;
+    }
+  }
+
   public playBell() {
     if (!this._audioContext || !this._bellBuffer) return;
     
@@ -140,7 +149,7 @@ export const RestTimer: React.FC<RestTimerProps> = ({
         audioManager.current.playBell();
         onClose();
       }
-    }, 200);
+    }, 1000);
   };
 
   const adjustTime = (seconds: number) => {
