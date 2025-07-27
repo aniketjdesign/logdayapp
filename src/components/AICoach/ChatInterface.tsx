@@ -47,11 +47,12 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
     <div className="flex flex-col h-full bg-gray-50">
       {/* Messages Container */}
       <div 
-        className="flex-1 overflow-y-auto p-4 space-y-4" 
+        className="flex-1 overflow-y-auto p-4 space-y-4 pb-6" 
         style={{ 
           minHeight: 0,
           WebkitOverflowScrolling: 'touch',
-          overscrollBehavior: 'contain'
+          overscrollBehavior: 'contain',
+          paddingBottom: '320px'
         }}
       >
         <AnimatePresence>
@@ -148,10 +149,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Input Area */}
       <div 
-        className="border-t pb-[96px] border-gray-200 bg-white p-4 flex-shrink-0 "
-        style={{ 
-          paddingBottom: 'max(6.5rem, env(safe-area-inset-bottom))'
-        }}
+        className="border-t border-gray-200 bg-white p-4 flex-shrink-0 fixed z-50 w-full"
+        style={{ bottom: '96px' }}
       >
         <div className="flex items-center space-x-3">
           <div className="flex-1 relative">

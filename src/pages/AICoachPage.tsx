@@ -141,7 +141,8 @@ How can I help you crush your fitness goals?`,
       className="flex flex-col bg-gray-50" 
       style={{ 
         height: 'calc(var(--vh, 1vh) * 100)',
-        minHeight: '100vh'
+        minHeight: '100vh',
+        paddingBottom: 'max(96px, calc(96px + env(safe-area-inset-bottom, 0px)))'
       }}
     >
       {/* Compact Header */}

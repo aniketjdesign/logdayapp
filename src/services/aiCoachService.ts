@@ -44,6 +44,8 @@ Guidelines:
 - Focus on progressive overload, proper form, and consistency
 - Consider user's fatigue level and available time
 
+When creating workout routines, use the latest research on hypertrophy and muscle building to create workout routines that are effective and safe.
+
 When creating workout routines, format them clearly with specific formats that can be parsed:
 - Format: Exercise Name - Sets x Reps @ Weight
 - Or: Exercise Name: Sets x Reps  
@@ -357,21 +359,27 @@ Provide analysis in this format:
           const exerciseName = exercise.name;
           const muscleGroup = exercise.muscle_group;
           
-          // Track exercise frequency
-          exerciseFrequency[exerciseName] = (exerciseFrequency[exerciseName] || 0) + 1;
+          // Track exercise frequency (only if name exists)
+          if (exerciseName) {
+            exerciseFrequency[exerciseName] = (exerciseFrequency[exerciseName] || 0) + 1;
+          }
           
-          // Track muscle group frequency
-          muscleGroupFrequency[muscleGroup] = (muscleGroupFrequency[muscleGroup] || 0) + 1;
+          // Track muscle group frequency (only if muscle group exists)
+          if (muscleGroup) {
+            muscleGroupFrequency[muscleGroup] = (muscleGroupFrequency[muscleGroup] || 0) + 1;
+          }
           
-          // Track exercise progress
-          if (!exerciseProgress[exerciseName] || exercise.maxWeight > exerciseProgress[exerciseName].maxWeight) {
-            exerciseProgress[exerciseName] = {
-              maxWeight: exercise.maxWeight,
-              totalSets: (exerciseProgress[exerciseName]?.totalSets || 0) + exercise.sets,
-              lastPerformed: workout.date
-            };
-          } else {
-            exerciseProgress[exerciseName].totalSets += exercise.sets;
+          // Track exercise progress (only if exercise name exists)
+          if (exerciseName) {
+            if (!exerciseProgress[exerciseName] || exercise.maxWeight > exerciseProgress[exerciseName].maxWeight) {
+              exerciseProgress[exerciseName] = {
+                maxWeight: exercise.maxWeight,
+                totalSets: (exerciseProgress[exerciseName]?.totalSets || 0) + exercise.sets,
+                lastPerformed: workout.date
+              };
+            } else {
+              exerciseProgress[exerciseName].totalSets += exercise.sets;
+            }
           }
           
           totalVolume += exercise.totalVolume;
@@ -504,7 +512,9 @@ Provide analysis in this format:
       if (summary.topExercises?.length) {
         prompt += `\nTop Exercises by Frequency:\n`;
         summary.topExercises.slice(0, 8).forEach((ex: any, i: number) => {
-          prompt += `${i + 1}. ${ex.name} (${ex.count} workouts)\n`;
+          if (ex && ex.name) {
+            prompt += `${i + 1}. ${ex.name} (${ex.count} workouts)\n`;
+          }
         });
       }
 
@@ -512,7 +522,9 @@ Provide analysis in this format:
       if (summary.muscleGroupDistribution?.length) {
         prompt += `\nMuscle Group Focus:\n`;
         summary.muscleGroupDistribution.slice(0, 6).forEach((mg: any) => {
-          prompt += `- ${mg.group}: ${mg.count} exercises\n`;
+          if (mg && mg.group) {
+            prompt += `- ${mg.group}: ${mg.count} exercises\n`;
+          }
         });
       }
 
@@ -520,8 +532,10 @@ Provide analysis in this format:
       if (summary.exerciseProgress?.length) {
         prompt += `\nPersonal Records & Exercise Progress:\n`;
         summary.exerciseProgress.slice(0, 10).forEach((prog: any) => {
-          const lastDate = new Date(prog.lastPerformed).toLocaleDateString();
-          prompt += `- ${prog.name}: ${prog.maxWeight}lbs max, ${prog.totalSets} total sets, last: ${lastDate}\n`;
+          if (prog && prog.name) {
+            const lastDate = new Date(prog.lastPerformed).toLocaleDateString();
+            prompt += `- ${prog.name}: ${prog.maxWeight}lbs max, ${prog.totalSets} total sets, last: ${lastDate}\n`;
+          }
         });
       }
 
