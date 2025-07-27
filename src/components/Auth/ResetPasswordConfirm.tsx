@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, CheckCircle, ArrowRight } from 'lucide-react';
-import { LogDayLogo } from '../LogDayLogo';
+import { LogDayLogo } from '../others/LogDayLogo';
 import { supabase } from '../../config/supabase';
 
 export const ResetPasswordConfirm: React.FC = () => {

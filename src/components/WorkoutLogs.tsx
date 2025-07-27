@@ -5,7 +5,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from './ConfirmationModal';
-import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { WorkoutLogCard } from './WorkoutLogCard';
 import { EmptyState } from './EmptyState';
 import { PageHeader } from './ui/PageHeader';

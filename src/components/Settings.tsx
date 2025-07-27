@@ -3,7 +3,7 @@ import { useSettings } from '../context/SettingsContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { Scale, Lock, Clock, Home } from 'lucide-react';
-import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { PageHeader } from './ui/PageHeader';
 
 export const Settings: React.FC = () => {

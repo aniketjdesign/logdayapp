@@ -6,10 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
 import { useNavigate } from 'react-router-dom';
 import { LogoutConfirmationModal } from './LogoutConfirmationModal';
-import { LogDayLogo } from './LogDayLogo';
+import { LogDayLogo } from './others/LogDayLogo';
 import { MuscleGroup, WorkoutLog } from '../types/workout';
 import { PageHeader } from './ui/PageHeader';
-import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { useOnboarding } from '../context/OnboardingContext';
 
 declare global {

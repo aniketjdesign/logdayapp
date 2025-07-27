@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Send, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useWorkout } from '../context/WorkoutContext';
-import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 
 const RedditIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">

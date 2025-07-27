@@ -1,7 +1,7 @@
 import React from 'react';
 import { RoutineSetup } from './RoutineSetup';
 import { useWorkout } from '../../context/WorkoutContext';
-import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from '../others/OngoingWorkoutMessage';
 
 interface RoutineCreatorProps {
   onClose: () => void;

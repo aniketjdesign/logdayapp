@@ -5,7 +5,7 @@ import { RoutineCreator } from './RoutineCreator';
 import { FolderView } from './FolderView';
 import { LogdayRoutinesView } from './LogdayRoutinesView';
 import { Plus } from 'lucide-react';
-import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from '../others/OngoingWorkoutMessage';
 import { DeleteRoutinePopup } from '../ui/Popup';
 import { PageHeader } from '../ui/PageHeader';
 

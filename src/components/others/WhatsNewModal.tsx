@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { useOnboarding } from '../context/OnboardingContext';
+import { useOnboarding } from '../../context/OnboardingContext';
 import { 
   Calendar, 
   Key, 

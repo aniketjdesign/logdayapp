@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
-import { LogDayLogo } from '../LogDayLogo';
+import { LogDayLogo } from '../others/LogDayLogo';
 
 export const ResetPassword: React.FC = () => {
   const [email, setEmail] = useState('');

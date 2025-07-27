@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
-import { LogDayLogo } from '../LogDayLogo';
+import { LogDayLogo } from '../others/LogDayLogo';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');

@@ -1,5 +1,5 @@
 import React from 'react'
-import { useAppUpdate } from '../hooks/useAppUpdate'
+import { useAppUpdate } from '../../hooks/useAppUpdate'
 import { RefreshCw } from 'lucide-react'
 
 interface UpdateNotificationProps {
