@@ -534,10 +534,7 @@ export const Profile: React.FC = () => {
                                 </div>
                                 <div className="w-full bg-gray-100 rounded-full h-2">
                                   <div 
-                                    className={`h-2 rounded-full ${
-                                      index % 3 === 0 ? 'bg-blue-500' : 
-                                      index % 3 === 1 ? 'bg-indigo-500' : 'bg-purple-500'
-                                    }`}
+                                    className={`h-2 rounded-full bg-blue-500`}
                                     style={{ 
                                       width: `${Math.min(100, (muscle.sets / maxSets) * 100)}%` 
                                     }}

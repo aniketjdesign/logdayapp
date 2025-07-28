@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, BarChart2 } from 'lucide-react';
+import { FileText, BarChart2, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Exercise, WorkoutLog } from '../../types/workout';
 import { useSettings } from '../../context/SettingsContext';
@@ -24,6 +24,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -33,15 +34,6 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
   };
 
   const { convertWeight } = useSettings();
-
-  const formatSet = (set: any) => {
-    if (exercise.metrics?.time) {
-      return `${set.time}${set.distance ? ` | ${set.distance}km` : ''}`;
-    }
-    // Convert weight from kgs to lbs or vice versa based on current weightUnit setting
-    const displayWeight = set.weight ? convertWeight(set.weight, 'kgs', weightUnit as 'kgs' | 'lbs').toFixed(1) : '0';
-    return `${displayWeight}${weightUnit} x ${set.performedReps}`;
-  };
 
   const getExerciseProgressionData = () => {
     if (!exerciseHistory?.[exercise.id]) return [];
@@ -179,16 +171,50 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
                 </div>
               </div>
               <div className="space-y-1.5 bg-gray-50">
-                {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set) => (
-                  <div key={set.id} className="flex items-center gap-3 text-xs px-2.5">
-                    <span className="font-medium text-gray-700">
-                      {formatSet(set)}
-                    </span>
-                    {set.isPR && (
-                      <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-medium">
-                        PR
+                {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set, index) => (
+                  <div key={set.id} className="flex items-center justify-between text-xs px-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-gray-500 text-center">{index + 1}</span>
+                      <span className="font-medium text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {exercise.name.includes('(Bodyweight)') 
+                              ? 'BW'
+                              : `${set.weight ? convertWeight(set.weight, 'kgs', weightUnit as 'kgs' | 'lbs').toFixed(1) : '0'} ${weightUnit}`} × {set.performedReps || '-'}
+                          </span>
+                          {set.targetReps && (
+                            <div className="flex items-center text-gray-500 text-xs">
+                              <Target size={10} className="mr-0.5" />
+                              {set.targetReps}
+                            </div>
+                          )}
+                        </div>
                       </span>
-                    )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {set.isPR && (
+                        <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+                          PR
+                        </span>
+                      )}
+                      <div className="flex -space-x-1">
+                        {set.isWarmup && (
+                          <span className="text-xs font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                            W
+                          </span>
+                        )}
+                        {set.isDropset && (
+                          <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                            D
+                          </span>
+                        )}
+                        {set.isFailure && (
+                          <span className="text-xs font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                            F
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

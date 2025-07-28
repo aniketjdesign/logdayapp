@@ -3,6 +3,7 @@ import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Save } from 'luc
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
+import { calculateWorkoutStats } from '../utils/workoutStats';
 import { ExerciseSetList } from './ExerciseSetList';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
@@ -49,30 +50,12 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   };
 
   const getWorkoutStats = () => {
-    let totalVolume = 0;
-    let totalPRs = 0;
-    let totalSets = 0;
-
-    log.exercises.forEach(({ exercise, sets }) => {
-      const isBodyweight = exercise.name.includes('(Bodyweight)');
-      sets.forEach(set => {
-        if (!isBodyweight && set.weight && set.performedReps) {
-          // All weights are stored in kgs, so convert if user's preference is lbs
-          const weight = weightUnit === 'lbs' 
-            ? convertWeight(set.weight, 'kgs', 'lbs')
-            : set.weight;
-          totalVolume += weight * parseInt(set.performedReps);
-        }
-        if (set.isPR) totalPRs++;
-        totalSets++;
-      });
-    });
-
+    const stats = calculateWorkoutStats(log, weightUnit, convertWeight);
     return {
-      volume: Math.round(totalVolume),
-      prs: totalPRs,
+      volume: stats.totalVolume,
+      prs: stats.totalPRs,
       exercises: log.exercises.length,
-      sets: totalSets
+      sets: stats.totalSets
     };
   };
 
