@@ -53,7 +53,7 @@ export const RoutineView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeTab, setActiveTab] = useState<'logday' | 'user'>('user');
+  // const [activeTab, setActiveTab] = useState<'logday' | 'user'>('user');
 
   const handleCreateRoutine = (folderId?: string) => {
     setSelectedRoutine(null);
@@ -148,8 +148,8 @@ export const RoutineView = () => {
               scrollContainerRef={scrollContainerRef}
             />
             
-            {/* Tab Navigation */}
-            <div className="px-4 mb-4">
+            {/* Tab Navigation - Commented out for next update */}
+            {/* <div className="px-4 mb-4">
               <div className="flex border-b border-gray-200">
                 <button
                   onClick={() => setActiveTab('user')}
@@ -172,9 +172,9 @@ export const RoutineView = () => {
                   By Logday
                 </button>
               </div>
-            </div>
+            </div> */}
 
-            {activeTab === 'user' && (
+            {/* {activeTab === 'user' && ( */}
               <div>
                 <motion.div 
                   className="px-4 sticky top-[35px] z-15 bg-slate-50 py-3 rounded-lg mb-4"
@@ -207,9 +207,9 @@ export const RoutineView = () => {
                     />
                 </motion.div>
               </div>
-            )}
+            {/* )} */}
 
-            {activeTab === 'logday' && (
+            {/* {activeTab === 'logday' && (
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -222,7 +222,7 @@ export const RoutineView = () => {
                   }}
                 />
               </motion.div>
-            )}
+            )} */}
           </div>
         </div>
       </div>

@@ -134,7 +134,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   routine,
   folderId,
 }) => {
-  const { folders, addFolder, moveRoutine } = useWorkout();
+  const { folders, addFolder, moveRoutine, currentWorkout } = useWorkout();
   const { weightUnit } = useSettings();
   const [name, setName] = useState(routine?.name || '');
   const [description, setDescription] = useState(routine?.description || '');
@@ -347,10 +347,10 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   };
 
   return (
-    <div className="bg-gray-50 z-50">
+    <div className="fixed inset-0 bg-gray-50 z-50">
       <div className="flex flex-col h-full">
         <div className="border-b" style={{
-          paddingTop: 'env(safe-area-inset-top)'
+          paddingTop: currentWorkout ? 'calc(env(safe-area-inset-top) + 125px)' : 'env(safe-area-inset-top)'
         }}>
           <div className="flex items-center justify-between p-4">
             <h1 className="text-lg font-bold">

@@ -20,9 +20,48 @@ export const WorkoutLogs: React.FC = () => {
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [displayedLogs, setDisplayedLogs] = useState<any[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  const ITEMS_PER_PAGE = 10;
+
+  // Load more logs function
+  const loadMoreLogs = async (pageNum: number, searchTerm: string = '') => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      await searchLogs(searchTerm, pageNum, ITEMS_PER_PAGE);
+      
+      // Get the slice of logs for this page
+      const startIndex = pageNum * ITEMS_PER_PAGE;
+      const endIndex = startIndex + ITEMS_PER_PAGE;
+      const newLogs = workoutLogs.slice(startIndex, endIndex);
+      
+      if (newLogs.length < ITEMS_PER_PAGE) {
+        setHasMore(false);
+      }
+      
+      if (pageNum === 0) {
+        setDisplayedLogs(newLogs);
+      } else {
+        setDisplayedLogs(prev => [...prev, ...newLogs]);
+      }
+      
+      setPage(pageNum);
+    } catch (error) {
+      console.error('Error loading logs:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Initial load effect
   useEffect(() => {
     // Check if this is a page load/refresh or navigation
     const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
@@ -33,8 +72,11 @@ export const WorkoutLogs: React.FC = () => {
     const shouldShowLoading = isPageLoadOrRefresh && !localStorage.getItem(LOGS_LOADING_KEY);
     setShowSkeleton(shouldShowLoading);
     
-    const loadLogs = async () => {
-      await searchLogs(search);
+    const loadInitialLogs = async () => {
+      setPage(0);
+      setHasMore(true);
+      setDisplayedLogs([]);
+      await loadMoreLogs(0, search);
       setIsLoading(false);
       
       // Store that we've loaded the page
@@ -43,7 +85,7 @@ export const WorkoutLogs: React.FC = () => {
       }
     };
     
-    loadLogs();
+    loadInitialLogs();
     
     // Clear localStorage on page unload (refresh)
     const handleBeforeUnload = () => {
@@ -54,7 +96,34 @@ export const WorkoutLogs: React.FC = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [search, searchLogs]);
+  }, [search]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !isLoadingMore && hasMore && !isLoading) {
+          loadMoreLogs(page + 1, search);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px',
+      }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [page, search, isLoadingMore, hasMore, isLoading]);
 
   const handleDeleteClick = (logId: string) => {
     setSelectedLogId(logId);
@@ -101,7 +170,7 @@ export const WorkoutLogs: React.FC = () => {
     );
   }
 
-  if (workoutLogs.length === 0 && !search) {
+  if (displayedLogs.length === 0 && !search && !isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
           <motion.h1 
@@ -176,7 +245,7 @@ export const WorkoutLogs: React.FC = () => {
             </motion.div>
 
           <div className="px-4 sm:px-6">
-            {workoutLogs.length === 0 && search ? (
+            {displayedLogs.length === 0 && search && !isLoading ? (
               <motion.div 
                 className="text-center py-8"
                 initial={{ opacity: 0.5, y: 5 }}
@@ -207,7 +276,7 @@ export const WorkoutLogs: React.FC = () => {
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.25 }}>
-                {workoutLogs.map((log, index) => (
+                {displayedLogs.map((log, index) => (
                   <motion.div
                     key={log.id}
                     initial={{ opacity: 0.5, y: 10 }}
@@ -220,6 +289,33 @@ export const WorkoutLogs: React.FC = () => {
                     />
                   </motion.div>
                 ))}
+                
+                {/* Loading indicator for more items */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="flex justify-center py-4">
+                    {isLoadingMore && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center space-x-2 text-gray-500"
+                      >
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <span className="text-sm">Loading more workouts...</span>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+                
+                {/* End of list indicator */}
+                {!hasMore && displayedLogs.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-4 text-gray-500 text-sm"
+                  >
+                    No more workouts to load
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>
