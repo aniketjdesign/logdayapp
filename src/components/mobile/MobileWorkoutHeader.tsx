@@ -1,6 +1,6 @@
 import React from 'react';
 import { MoreVertical, Plus, Timer } from 'lucide-react';
-import { CircularProgress } from '../CircularProgress';
+import { CircularProgress } from './CircularProgress';
 
 interface MobileWorkoutHeaderProps {
   workoutName: string;
