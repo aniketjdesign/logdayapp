@@ -36,21 +36,39 @@ export const WorkoutLogs: React.FC = () => {
     
     setIsLoadingMore(true);
     try {
-      await searchLogs(searchTerm, pageNum, ITEMS_PER_PAGE);
-      
-      // Get the slice of logs for this page
-      const startIndex = pageNum * ITEMS_PER_PAGE;
-      const endIndex = startIndex + ITEMS_PER_PAGE;
-      const newLogs = workoutLogs.slice(startIndex, endIndex);
-      
-      if (newLogs.length < ITEMS_PER_PAGE) {
-        setHasMore(false);
-      }
-      
-      if (pageNum === 0) {
-        setDisplayedLogs(newLogs);
+      // For search queries, use the search functionality
+      if (searchTerm) {
+        await searchLogs(searchTerm, pageNum, ITEMS_PER_PAGE);
+        
+        // Get the slice of logs for this page
+        const startIndex = pageNum * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const newLogs = workoutLogs.slice(startIndex, endIndex);
+        
+        if (newLogs.length < ITEMS_PER_PAGE) {
+          setHasMore(false);
+        }
+        
+        if (pageNum === 0) {
+          setDisplayedLogs(newLogs);
+        } else {
+          setDisplayedLogs(prev => [...prev, ...newLogs]);
+        }
       } else {
-        setDisplayedLogs(prev => [...prev, ...newLogs]);
+        // For no search, paginate from existing workoutLogs
+        const startIndex = pageNum * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const newLogs = workoutLogs.slice(startIndex, endIndex);
+        
+        if (newLogs.length < ITEMS_PER_PAGE || endIndex >= workoutLogs.length) {
+          setHasMore(false);
+        }
+        
+        if (pageNum === 0) {
+          setDisplayedLogs(newLogs);
+        } else {
+          setDisplayedLogs(prev => [...prev, ...newLogs]);
+        }
       }
       
       setPage(pageNum);
@@ -75,13 +93,32 @@ export const WorkoutLogs: React.FC = () => {
     const loadInitialLogs = async () => {
       setPage(0);
       setHasMore(true);
-      setDisplayedLogs([]);
-      await loadMoreLogs(0, search);
-      setIsLoading(false);
       
-      // Store that we've loaded the page
-      if (shouldShowLoading) {
-        localStorage.setItem(LOGS_LOADING_KEY, 'true');
+      // For instant first load: Use existing workoutLogs from context if no search
+      if (!search && workoutLogs.length > 0) {
+        const firstPageLogs = workoutLogs.slice(0, ITEMS_PER_PAGE);
+        setDisplayedLogs(firstPageLogs);
+        setIsLoading(false);
+        
+        // Check if we have more logs to load
+        if (workoutLogs.length <= ITEMS_PER_PAGE) {
+          setHasMore(false);
+        }
+        
+        // Store that we've loaded the page
+        if (shouldShowLoading) {
+          localStorage.setItem(LOGS_LOADING_KEY, 'true');
+        }
+      } else {
+        // For search or empty state: Use the async loading
+        setDisplayedLogs([]);
+        await loadMoreLogs(0, search);
+        setIsLoading(false);
+        
+        // Store that we've loaded the page
+        if (shouldShowLoading) {
+          localStorage.setItem(LOGS_LOADING_KEY, 'true');
+        }
       }
     };
     
@@ -96,7 +133,7 @@ export const WorkoutLogs: React.FC = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [search]);
+  }, [search, workoutLogs]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {

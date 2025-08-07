@@ -29,7 +29,7 @@ interface WorkoutContextType {
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
-  searchLogs: (query: string) => Promise<void>;
+  searchLogs: (query: string, page?: number, limit?: number) => Promise<void>;
   clearWorkoutState: () => void;
   addFolder: (folder: { name: string }) => Promise<void>;
   updateFolder: (id: string, updates: { name: string }) => Promise<void>;
@@ -384,7 +384,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const searchLogs = async (query: string) => {
+  const searchLogs = async (query: string, page?: number, limit?: number) => {
     if (user) {
       const response = await supabaseService.searchWorkoutLogs(query);
       if (!response.error) {
