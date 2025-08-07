@@ -2,12 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import { useOnboarding } from '../../context/OnboardingContext';
 import { 
-  Calendar, 
-  Key, 
-  Brain, 
-  User, 
   Gear, 
-  Wrench, 
   Bug, 
   Lightning 
 } from 'phosphor-react';
@@ -16,7 +11,7 @@ interface UpdateItem {
   date: string;
   icon: React.ReactNode;
   title: string;
-  details: string[];
+  details: (string | React.ReactNode)[];
 }
 
 export const WhatsNewModal: React.FC = () => {
@@ -38,95 +33,39 @@ export const WhatsNewModal: React.FC = () => {
 
   const updates: UpdateItem[] = [
     {
-      date: "Mar 1–21, 2025",
-      icon: <Calendar size={16} weight="fill" color="#4285F4" />,
-      title: "iOS App is in the Wild",
-      details: [
-        "The app is now alive and breathing on iOS. Initial rollout complete.",
-        "(Yes, we're finally in your pocket)"
-      ]
-    },
-    {
-      date: "Mar 9, 2025",
-      icon: <Key size={16} weight="fill" color="#A142F4" />,
-      title: "Reset Password (Finally)",
-      details: [
-        "You can now reset your password. Yes, finally. It only took a mild existential crisis — but hey, it works now. 🙃"
-      ]
-    },
-    {
-      date: "Mar 9, 2025",
-      icon: <Brain size={16} weight="fill" color="#34A853" />,
-      title: "Logging Gets Smarter and Easier",
-      details: [
-        "Swipe left to delete a set.",
-        "Mid-workout exercise swap? Yep, append same sets, new gains.",
-        "Total volume now shows upon workout completion and looks nice.",
-        "Fixed total volume calculation for single-arm movements.",
-        "Click the Set number, and access set types (like warm-up, dropset, etc.)",
-        "Past notes? You can now pin and scroll back through the last 2 like a gym diary. 📓"
-      ]
-    },
-    {
-      date: "Mar 9, 2025",
-      icon: <Wrench size={16} weight="fill" color="#F29900" />,
-      title: "Routine Builder Upgrades",
-      details: [
-        "Mark set types while building routines? Go wild.",
-        "Reorder or replace exercises while building routines"
-      ]
-    },
-    {
-      date: "Mar 9, 2025",
-      icon: <Lightning size={16} weight="fill" color="#FBBC05" />,
-      title: "Navigation Refresh",
-      details: [
-        "We dumped the 2020s hamburger menu. Bottom nav is here and it slaps. 🚀"
-      ]
-    },
-    {
-      date: "Mar 9, 2025",
-      icon: <Lightning size={16} weight="fill" color="#EA4335" />,
-      title: "Global UI Improvements",
-      details: [
-        "Everything's smoother now. Less \"tap and pray,\" more tap and yay."
-      ]
-    },
-    {
-      date: "Mar 16, 2025",
-      icon: <User size={16} weight="fill" color="#5E35B1" />,
-      title: "Profile Page",
-      details: [
-        "Brand-new profile page is live (more updates soon)",
-        "Get your weekly, monthly, and yearly gains broken down.",
-        "Settings + Contact are now tucked in here too. Cozy."
-      ]
-    },
-    {
-      date: "Mar 18, 2025",
-      icon: <Gear size={16} weight="fill" color="#757575" />,
-      title: "Settings Upgrades",
-      details: [
-        "Pick your homepage: Quick Start or Routines. Your app, your vibe.",
-        "Disable rest timers globally if you're too alpha for clocks. Can still toggle it per session."
-      ]
-    },
-    {
-      date: "Mar 21, 2025",
-      icon: <Lightning size={16} weight="fill" color="#4285F4" />,
-      title: "Scroll Fixes + Padding Love",
-      details: [
-        "No more content cut-offs in exercise selection and routine view.",
-        "Workout review scrolls like butter now.",
-        "Fixed some annoying scroll jitters across the app."
-      ]
-    },
-    {
-      date: "Mar 22, 2025",
+      date: "Latest Update",
       icon: <Bug size={16} weight="fill" color="#EA4335" />,
-      title: "Bug Fix",
+      title: "Fixes",
       details: [
-        "Workout review popup no longer goes blank after a session. It shows a much nicer summary!"
+        <><strong>Rest timer audio fixes:</strong> You can globally enable/disable rest timer. When it's enabled it won't stop your ongoing music.</>,
+        <><strong>Superset experience:</strong> Removing an exercise from a superset pair won't affect/remove the other unexpectedly.</>,
+        <><strong>Volume accuracy:</strong> Fixed a mismatch between workout logs and review screens.</>,
+        <><strong>Notes are cleaner:</strong> Notes markers won't show up unnecessarily when you add notes.</>,
+        <><strong>Performance updates:</strong> Logday should feel noticeably faster.</>
+      ]
+    },
+    {
+      date: "Latest Update",
+      icon: <Lightning size={16} weight="fill" color="#4285F4" />,
+      title: "Updates",
+      details: [
+        <><strong>Open Sign up:</strong> Anyone can now sign up on Logday! no invite code needed.</>,
+        <><strong>Smarter search:</strong> Find exercises faster with improved search and alias support.</>,
+        <><strong>Uninterrupted access during workouts:</strong> You can now freely use Logday when a workout is active, previously the usage was blocked during an ongoing workout.</>,
+        <><strong>Better exercise adding:</strong> Reduced chances of accidentally adding the same exercise twice.</>,
+        <><strong>Performance tab:</strong> Now shows more details of your past sessions like set markers, day, and goals.</>
+      ]
+    },
+    {
+      date: "Latest Update",
+      icon: <Gear size={16} weight="fill" color="#757575" />,
+      title: "UI & UX",
+      details: [
+        <><strong>Routines experience:</strong> More cleaner and concise.</>,
+        <><strong>Font tuning:</strong> Clearer text across routines and set options.</>,
+        <><strong>Fresh look:</strong> New design for Login, Signup, and Reset Password screens.</>,
+        <><strong>iOS icons updated:</strong> Sharper visuals on iPhones.</>,
+        <><strong>Unified experience:</strong> Consistent interface across mobile and desktop.</>
       ]
     }
   ];
@@ -157,7 +96,6 @@ export const WhatsNewModal: React.FC = () => {
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">What's New in Logday</h1>
-              <p className="text-white/80 text-sm">Latest updates and improvements</p>
             </div>
             <button 
               onClick={handleDismiss}
