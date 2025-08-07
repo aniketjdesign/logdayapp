@@ -14,6 +14,7 @@ interface WorkoutContextType {
   selectedExercises: Exercise[];
   currentWorkout: WorkoutLog | null;
   workoutLogs: WorkoutLog[];
+  searchResults: WorkoutLog[];
   currentView: View;
   customExercises: Exercise[];
   folders: Folder[];
@@ -29,7 +30,8 @@ interface WorkoutContextType {
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
-  searchLogs: (query: string, page?: number, limit?: number) => Promise<void>;
+  searchLogs: (query: string, page?: number, limit?: number) => Promise<WorkoutLog[]>;
+  clearSearchResults: () => void;
   clearWorkoutState: () => void;
   addFolder: (folder: { name: string }) => Promise<void>;
   updateFolder: (id: string, updates: { name: string }) => Promise<void>;
@@ -51,6 +53,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutLog | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [searchResults, setSearchResults] = useState<WorkoutLog[]>([]);
   const [currentView, setCurrentView] = useState<View>('exercises');
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -384,13 +387,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const searchLogs = async (query: string, page?: number, limit?: number) => {
-    if (user) {
-      const response = await supabaseService.searchWorkoutLogs(query);
-      if (!response.error) {
-        setWorkoutLogs(response.data);
-      }
-    }
+  const searchLogs = async (query: string, page?: number, limit?: number): Promise<WorkoutLog[]> => {
+    if (!user) return [];
+    
+    const response = await supabaseService.searchWorkoutLogs(query);
+    if (response.error) return [];
+    
+    return response.data;
+  };
+
+  const clearSearchResults = () => {
+    setSearchResults([]);
   };
 
   const clearWorkoutState = () => {
@@ -509,6 +516,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     selectedExercises,
     currentWorkout,
     workoutLogs,
+    searchResults,
     currentView,
     customExercises,
     folders,
@@ -525,6 +533,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteLog,
     setCurrentView,
     searchLogs,
+    clearSearchResults,
     clearWorkoutState,
     addFolder,
     updateFolder,
@@ -537,6 +546,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     selectedExercises,
     currentWorkout,
     workoutLogs,
+    searchResults,
     currentView,
     customExercises,
     folders,
@@ -553,6 +563,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     deleteLog,
     setCurrentView,
     searchLogs,
+    clearSearchResults,
     clearWorkoutState,
     addFolder,
     updateFolder,

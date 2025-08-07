@@ -14,7 +14,7 @@ import { PageHeader } from './ui/PageHeader';
 const LOGS_LOADING_KEY = 'logday_logs_loaded';
 
 export const WorkoutLogs: React.FC = () => {
-  const { workoutLogs, searchLogs, deleteLog, currentWorkout } = useWorkout();
+  const { workoutLogs, searchResults, searchLogs, deleteLog, currentWorkout, clearSearchResults } = useWorkout();
   const [search, setSearch] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
@@ -24,6 +24,7 @@ export const WorkoutLogs: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const [displayedLogs, setDisplayedLogs] = useState<any[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<any[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -36,22 +37,28 @@ export const WorkoutLogs: React.FC = () => {
     
     setIsLoadingMore(true);
     try {
-      // For search queries, use the search functionality
       if (searchTerm) {
-        await searchLogs(searchTerm, pageNum, ITEMS_PER_PAGE);
-        
-        // Get the slice of logs for this page
-        const startIndex = pageNum * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const newLogs = workoutLogs.slice(startIndex, endIndex);
-        
-        if (newLogs.length < ITEMS_PER_PAGE) {
-          setHasMore(false);
-        }
-        
+        // For search queries, get all search results first time, then paginate
         if (pageNum === 0) {
-          setDisplayedLogs(newLogs);
+          const searchResults = await searchLogs(searchTerm);
+          setAllSearchResults(searchResults);
+          
+          const firstPage = searchResults.slice(0, ITEMS_PER_PAGE);
+          setDisplayedLogs(firstPage);
+          
+          if (searchResults.length <= ITEMS_PER_PAGE) {
+            setHasMore(false);
+          }
         } else {
+          // For subsequent pages, paginate from allSearchResults
+          const startIndex = pageNum * ITEMS_PER_PAGE;
+          const endIndex = startIndex + ITEMS_PER_PAGE;
+          const newLogs = allSearchResults.slice(startIndex, endIndex);
+          
+          if (newLogs.length < ITEMS_PER_PAGE || endIndex >= allSearchResults.length) {
+            setHasMore(false);
+          }
+          
           setDisplayedLogs(prev => [...prev, ...newLogs]);
         }
       } else {
@@ -112,6 +119,7 @@ export const WorkoutLogs: React.FC = () => {
       } else {
         // For search or empty state: Use the async loading
         setDisplayedLogs([]);
+        setAllSearchResults([]);
         await loadMoreLogs(0, search);
         setIsLoading(false);
         
@@ -173,6 +181,12 @@ export const WorkoutLogs: React.FC = () => {
       setShowDeleteModal(false);
       setSelectedLogId(null);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearch('');
+    setAllSearchResults([]);
+    clearSearchResults();
   };
 
   if (isLoading && showSkeleton) {
@@ -301,7 +315,7 @@ export const WorkoutLogs: React.FC = () => {
                   transition={{ delay: 0.15, duration: 0.2 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setSearch('')}
+                  onClick={handleClearSearch}
                   className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   Clear search
