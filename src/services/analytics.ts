@@ -90,6 +90,12 @@ export const Analytics = {
     // No-op implementation
   },
 
+  userDeletedAccount: (_properties: {
+    userId: string;
+  }) => {
+    // No-op implementation
+  },
+
   // Settings Events
   settingsChanged: (_properties: {
     setting: string;

@@ -2,18 +2,21 @@ import React, { useState, useRef } from 'react';
 import { useSettings } from '../context/SettingsContext';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
-import { Scale, Lock, Clock, Home } from 'lucide-react';
+import { Scale, Lock, Clock, Home, Trash2, AlertTriangle } from 'lucide-react';
 import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { PageHeader } from './ui/PageHeader';
+import { DeleteAccountModal } from './DeleteAccountModal';
 
 export const Settings: React.FC = () => {
   const { weightUnit, setWeightUnit, disableRestTimer, setDisableRestTimer, defaultHomePage, setDefaultHomePage } = useSettings();
   const { currentWorkout } = useWorkout();
-  const { updatePassword } = useAuth();
+  const { user, updatePassword, deleteAccount } = useAuth();
   const [newPassword, setNewPassword] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
   const [updateError, setUpdateError] = useState<string | null>(null);
   const [updateSuccess, setUpdateSuccess] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handlePasswordUpdate = async () => {
@@ -31,6 +34,17 @@ export const Settings: React.FC = () => {
       setUpdateError(error instanceof Error ? error.message : 'Failed to update password');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleDeleteAccount = async (password: string) => {
+    setIsDeleting(true);
+    try {
+      await deleteAccount(password);
+      // Account deletion successful - user will be signed out automatically
+    } catch (error) {
+      setIsDeleting(false);
+      throw error; // Re-throw to be handled by the modal
     }
   };
 
@@ -204,12 +218,42 @@ export const Settings: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Danger Zone */}
+                  <div className="bg-red-50 border border-red-200 rounded-lg shadow-sm p-4">
+                    <div className="flex flex-col items-start gap-4">
+                      <div className="p-2 bg-red-100 rounded-lg">
+                        <AlertTriangle className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="flex flex-col mx-0">
+                        <h3 className="text-lg font-semibold mb-0 text-red-800">Danger Zone</h3>
+                        <p className="text-red-700 text-sm mb-4">
+                          Permanently delete your account and all associated data. This action cannot be undone.
+                        </p>
+                        <button
+                          onClick={() => setShowDeleteConfirm(true)}
+                          className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium text-sm"
+                        >
+                          <Trash2 size={16} className="mr-2" />
+                          Delete Account
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      
+      <DeleteAccountModal
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDeleteAccount}
+        isDeleting={isDeleting}
+        userEmail={user?.email}
+      />
     </div>
   );
 };
