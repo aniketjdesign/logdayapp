@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import { useWorkout } from '../../context/WorkoutContext';
 import { RoutineCreator } from './RoutineCreator';
 import { FolderView } from './FolderView';
+import { LogdayRoutinesView } from './LogdayRoutinesView';
 import { Plus } from 'lucide-react';
-import { OngoingWorkoutMessage } from '../OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from '../others/OngoingWorkoutMessage';
 import { DeleteRoutinePopup } from '../ui/Popup';
 import { PageHeader } from '../ui/PageHeader';
 
@@ -52,6 +53,7 @@ export const RoutineView = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  // const [activeTab, setActiveTab] = useState<'logday' | 'user'>('user');
 
   const handleCreateRoutine = (folderId?: string) => {
     setSelectedRoutine(null);
@@ -133,11 +135,6 @@ export const RoutineView = () => {
           {currentWorkout && <OngoingWorkoutMessage />}
         </div>
       <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Fixed header section
-        <div className="flex-shrink-0 z-10">
-          {currentWorkout && <OngoingWorkoutMessage />}
-        </div> */}
-
         {/* Scrollable content area */}
         <div 
           ref={scrollContainerRef} 
@@ -146,43 +143,86 @@ export const RoutineView = () => {
           
           <div className="max-w-2xl pb-20 mx-auto">
             <PageHeader
-              title={<span className="flex items-center">Routines <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">Beta</span></span>}
+              title={<span className="flex items-center">Routines</span>}
               subtitle="Create, view and manage your routines"
               scrollContainerRef={scrollContainerRef}
             />
             
-            <div>
-              <motion.div 
-                className="px-4 sticky top-[35px] z-15 bg-slate-50 py-3 rounded-lg mb-4"
-                initial={{ y: 10, opacity: 0.5 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.25, delay: 0.2 }}>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleCreateRoutine()}
-                  className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">
-                  <Plus size={20} className="mr-1" />
-                  New Routine
-                </motion.button>
-              </motion.div>
+            {/* Tab Navigation - Commented out for next update */}
+            {/* <div className="px-4 mb-4">
+              <div className="flex border-b border-gray-200">
+                <button
+                  onClick={() => setActiveTab('user')}
+                  className={`py-2 px-4 text-sm font-medium ${
+                    activeTab === 'user'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  Your Routines
+                </button>
+                <button
+                  onClick={() => setActiveTab('logday')}
+                  className={`py-2 px-4 text-sm font-medium ${
+                    activeTab === 'logday'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  By Logday
+                </button>
+              </div>
+            </div> */}
 
+            {/* {activeTab === 'user' && ( */}
+              <div>
+                <motion.div 
+                  className="px-4 sticky top-[35px] z-15 bg-slate-50 py-3 rounded-lg mb-4"
+                  initial={{ y: 10, opacity: 0.5 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.2 }}>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => handleCreateRoutine()}
+                    className="flex flex-row items-center justify-center bg-blue-600 text-white w-full py-2 px-4 rounded-xl hover:bg-blue-700 transition-colors">
+                    <Plus size={20} className="mr-1" />
+                    New Routine
+                  </motion.button>
+                </motion.div>
+
+                <motion.div
+                  initial={{ y: 15, opacity: 0.5 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.25 }}
+                  className="px-4 pb-8">
+                  <FolderView
+                    selectedFolderId={selectedFolderId}
+                    onFolderSelect={setSelectedFolderId}
+                    onEditRoutine={(routine) => {
+                      setSelectedRoutine(routine);
+                      setShowRoutineCreator(true);
+                    }}
+                    onCreateRoutine={handleCreateRoutine}
+                    />
+                </motion.div>
+              </div>
+            {/* )} */}
+
+            {/* {activeTab === 'logday' && (
               <motion.div
-                initial={{ y: 15, opacity: 0.5 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ duration: 0.25, delay: 0.25 }}
-                className="px-4 pb-8">
-                <FolderView
-                  selectedFolderId={selectedFolderId}
-                  onFolderSelect={setSelectedFolderId}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.25 }}
+              >
+                <LogdayRoutinesView 
                   onEditRoutine={(routine) => {
                     setSelectedRoutine(routine);
                     setShowRoutineCreator(true);
                   }}
-                  onCreateRoutine={handleCreateRoutine}
-                  />
+                />
               </motion.div>
-            </div>
+            )} */}
           </div>
         </div>
       </div>

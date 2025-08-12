@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkout } from '../../context/WorkoutContext';
+import { useSettings } from '../../context/SettingsContext';
 import { ExerciseSelectionModal } from '../ExerciseSelectionModal';
 import { Plus, X, Trash, MoveVertical, GripVertical, MoreVertical, RefreshCw } from 'lucide-react';
 import { Dropdown } from '../ui/Dropdown';
@@ -133,7 +134,8 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
   routine,
   folderId,
 }) => {
-  const { folders, addFolder, moveRoutine } = useWorkout();
+  const { folders, addFolder, moveRoutine, currentWorkout } = useWorkout();
+  const { weightUnit } = useSettings();
   const [name, setName] = useState(routine?.name || '');
   const [description, setDescription] = useState(routine?.description || '');
   const [exerciseData, setExerciseData] = useState<RoutineExerciseData[]>([]);
@@ -348,7 +350,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
     <div className="fixed inset-0 bg-gray-50 z-50">
       <div className="flex flex-col h-full">
         <div className="border-b" style={{
-          paddingTop: 'env(safe-area-inset-top)'
+          paddingTop: currentWorkout ? 'calc(env(safe-area-inset-top) + 125px)' : 'env(safe-area-inset-top)'
         }}>
           <div className="flex items-center justify-between p-4">
             <h1 className="text-lg font-bold">
@@ -537,7 +539,7 @@ export const RoutineSetup: React.FC<RoutineSetupProps> = ({
                                 )
                               }
                               className="w-full p-2 border rounded-lg  focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Weight (kg)"
+                              placeholder={`Weight (${weightUnit})`}
                             />
                             <input
                               type="number"

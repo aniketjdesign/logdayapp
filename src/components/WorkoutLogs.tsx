@@ -5,7 +5,7 @@ import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 import { ConfirmationModal } from './ConfirmationModal';
-import { OngoingWorkoutMessage } from './OngoingWorkoutMessage';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { WorkoutLogCard } from './WorkoutLogCard';
 import { EmptyState } from './EmptyState';
 import { PageHeader } from './ui/PageHeader';
@@ -14,15 +14,79 @@ import { PageHeader } from './ui/PageHeader';
 const LOGS_LOADING_KEY = 'logday_logs_loaded';
 
 export const WorkoutLogs: React.FC = () => {
-  const { workoutLogs, searchLogs, deleteLog, currentWorkout } = useWorkout();
+  const { workoutLogs, searchResults, searchLogs, deleteLog, currentWorkout, clearSearchResults } = useWorkout();
   const [search, setSearch] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedLogId, setSelectedLogId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const [displayedLogs, setDisplayedLogs] = useState<any[]>([]);
+  const [allSearchResults, setAllSearchResults] = useState<any[]>([]);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
+  const ITEMS_PER_PAGE = 10;
+
+  // Load more logs function
+  const loadMoreLogs = async (pageNum: number, searchTerm: string = '') => {
+    if (isLoadingMore || !hasMore) return;
+    
+    setIsLoadingMore(true);
+    try {
+      if (searchTerm) {
+        // For search queries, get all search results first time, then paginate
+        if (pageNum === 0) {
+          const searchResults = await searchLogs(searchTerm);
+          setAllSearchResults(searchResults);
+          
+          const firstPage = searchResults.slice(0, ITEMS_PER_PAGE);
+          setDisplayedLogs(firstPage);
+          
+          if (searchResults.length <= ITEMS_PER_PAGE) {
+            setHasMore(false);
+          }
+        } else {
+          // For subsequent pages, paginate from allSearchResults
+          const startIndex = pageNum * ITEMS_PER_PAGE;
+          const endIndex = startIndex + ITEMS_PER_PAGE;
+          const newLogs = allSearchResults.slice(startIndex, endIndex);
+          
+          if (newLogs.length < ITEMS_PER_PAGE || endIndex >= allSearchResults.length) {
+            setHasMore(false);
+          }
+          
+          setDisplayedLogs(prev => [...prev, ...newLogs]);
+        }
+      } else {
+        // For no search, paginate from existing workoutLogs
+        const startIndex = pageNum * ITEMS_PER_PAGE;
+        const endIndex = startIndex + ITEMS_PER_PAGE;
+        const newLogs = workoutLogs.slice(startIndex, endIndex);
+        
+        if (newLogs.length < ITEMS_PER_PAGE || endIndex >= workoutLogs.length) {
+          setHasMore(false);
+        }
+        
+        if (pageNum === 0) {
+          setDisplayedLogs(newLogs);
+        } else {
+          setDisplayedLogs(prev => [...prev, ...newLogs]);
+        }
+      }
+      
+      setPage(pageNum);
+    } catch (error) {
+      console.error('Error loading logs:', error);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Initial load effect
   useEffect(() => {
     // Check if this is a page load/refresh or navigation
     const navigationEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
@@ -33,17 +97,40 @@ export const WorkoutLogs: React.FC = () => {
     const shouldShowLoading = isPageLoadOrRefresh && !localStorage.getItem(LOGS_LOADING_KEY);
     setShowSkeleton(shouldShowLoading);
     
-    const loadLogs = async () => {
-      await searchLogs(search);
-      setIsLoading(false);
+    const loadInitialLogs = async () => {
+      setPage(0);
+      setHasMore(true);
       
-      // Store that we've loaded the page
-      if (shouldShowLoading) {
-        localStorage.setItem(LOGS_LOADING_KEY, 'true');
+      // For instant first load: Use existing workoutLogs from context if no search
+      if (!search && workoutLogs.length > 0) {
+        const firstPageLogs = workoutLogs.slice(0, ITEMS_PER_PAGE);
+        setDisplayedLogs(firstPageLogs);
+        setIsLoading(false);
+        
+        // Check if we have more logs to load
+        if (workoutLogs.length <= ITEMS_PER_PAGE) {
+          setHasMore(false);
+        }
+        
+        // Store that we've loaded the page
+        if (shouldShowLoading) {
+          localStorage.setItem(LOGS_LOADING_KEY, 'true');
+        }
+      } else {
+        // For search or empty state: Use the async loading
+        setDisplayedLogs([]);
+        setAllSearchResults([]);
+        await loadMoreLogs(0, search);
+        setIsLoading(false);
+        
+        // Store that we've loaded the page
+        if (shouldShowLoading) {
+          localStorage.setItem(LOGS_LOADING_KEY, 'true');
+        }
       }
     };
     
-    loadLogs();
+    loadInitialLogs();
     
     // Clear localStorage on page unload (refresh)
     const handleBeforeUnload = () => {
@@ -54,7 +141,34 @@ export const WorkoutLogs: React.FC = () => {
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
-  }, [search, searchLogs]);
+  }, [search, workoutLogs]);
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !isLoadingMore && hasMore && !isLoading) {
+          loadMoreLogs(page + 1, search);
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '100px',
+      }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [page, search, isLoadingMore, hasMore, isLoading]);
 
   const handleDeleteClick = (logId: string) => {
     setSelectedLogId(logId);
@@ -67,6 +181,12 @@ export const WorkoutLogs: React.FC = () => {
       setShowDeleteModal(false);
       setSelectedLogId(null);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearch('');
+    setAllSearchResults([]);
+    clearSearchResults();
   };
 
   if (isLoading && showSkeleton) {
@@ -101,7 +221,7 @@ export const WorkoutLogs: React.FC = () => {
     );
   }
 
-  if (workoutLogs.length === 0 && !search) {
+  if (displayedLogs.length === 0 && !search && !isLoading) {
     return (
       <div className="max-w-4xl mx-auto p-4 sm:p-6 pb-32">
           <motion.h1 
@@ -176,7 +296,7 @@ export const WorkoutLogs: React.FC = () => {
             </motion.div>
 
           <div className="px-4 sm:px-6">
-            {workoutLogs.length === 0 && search ? (
+            {displayedLogs.length === 0 && search && !isLoading ? (
               <motion.div 
                 className="text-center py-8"
                 initial={{ opacity: 0.5, y: 5 }}
@@ -195,7 +315,7 @@ export const WorkoutLogs: React.FC = () => {
                   transition={{ delay: 0.15, duration: 0.2 }}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
-                  onClick={() => setSearch('')}
+                  onClick={handleClearSearch}
                   className="mt-2 text-blue-600 hover:text-blue-700 text-sm font-medium"
                 >
                   Clear search
@@ -207,7 +327,7 @@ export const WorkoutLogs: React.FC = () => {
                 initial={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.25 }}>
-                {workoutLogs.map((log, index) => (
+                {displayedLogs.map((log, index) => (
                   <motion.div
                     key={log.id}
                     initial={{ opacity: 0.5, y: 10 }}
@@ -220,6 +340,33 @@ export const WorkoutLogs: React.FC = () => {
                     />
                   </motion.div>
                 ))}
+                
+                {/* Loading indicator for more items */}
+                {hasMore && (
+                  <div ref={loadMoreRef} className="flex justify-center py-4">
+                    {isLoadingMore && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="flex items-center space-x-2 text-gray-500"
+                      >
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+                        <span className="text-sm">Loading more workouts...</span>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+                
+                {/* End of list indicator */}
+                {!hasMore && displayedLogs.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-4 text-gray-500 text-sm"
+                  >
+                    No more workouts to load
+                  </motion.div>
+                )}
               </motion.div>
             )}
           </div>

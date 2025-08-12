@@ -23,6 +23,7 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
     category: ''
   });
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,12 +54,26 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isAdding) return; // Prevent double submission
+    
+    setIsAdding(true);
     try {
+      // Add a small delay to show loading state and prevent rapid double clicks
+      await new Promise(resolve => setTimeout(resolve, 300));
       const newExercise = await exerciseService.createExercise(form);
       onExerciseAdded(newExercise);
       onClose();
+      // Reset form for next use
+      setForm({
+        name: '',
+        muscle_group: 'Chest',
+        instruction: '',
+        category: ''
+      });
     } catch (error) {
       console.error('Failed to create exercise:', error);
+    } finally {
+      setIsAdding(false);
     }
   };
 
@@ -73,16 +88,21 @@ export const AddExerciseModal: React.FC<AddExerciseModalProps> = ({
       <button
         type="button"
         onClick={onClose}
-        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+        disabled={isAdding}
+        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Cancel
       </button>
       <button
         type="button"
         onClick={() => formRef.current?.requestSubmit()}
-        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        disabled={isAdding}
+        className="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
       >
-        Add Exercise
+        {isAdding && (
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        )}
+        {isAdding ? 'Adding...' : 'Add Exercise'}
       </button>
     </div>
   );

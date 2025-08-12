@@ -1,6 +1,6 @@
 import React from 'react';
 import { X, Share } from 'lucide-react';
-import { useInstallPrompt } from '../hooks/useInstallPrompt';
+import { useInstallPrompt } from '../../hooks/useInstallPrompt';
 
 export const InstallAppToast: React.FC = () => {
   const { showInstallPrompt, hideInstallPrompt, isInstallable, isIOS } = useInstallPrompt();

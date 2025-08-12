@@ -12,6 +12,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -182,6 +183,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
+  const deleteAccount = async (password: string) => {
+    if (!user) throw new Error('No user logged in');
+    
+    // First, verify the password by attempting to sign in
+    const { error: verifyError } = await supabase.auth.signInWithPassword({
+      email: user.email!,
+      password: password,
+    });
+    
+    if (verifyError) {
+      throw new Error('Invalid password. Please enter your correct password.');
+    }
+
+    try {
+      // Call our Supabase Edge Function to handle account deletion
+      const { error: deleteError } = await supabase.functions.invoke('delete-account', {
+        body: { password }
+      });
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      // Track the account deletion
+      Analytics.userDeletedAccount({ userId: user.id });
+      
+      // Clear all local data and sign out
+      await signOut();
+    } catch (error: any) {
+      console.error('Error deleting account:', error);
+      throw new Error(error.message || 'Failed to delete account. Please contact support.');
+    }
+  };
+
   const value: AuthContextType = {
     user,
     signIn,
@@ -190,6 +225,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle,
     updatePassword,
     resetPassword,
+    deleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

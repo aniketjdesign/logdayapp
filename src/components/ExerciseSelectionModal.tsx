@@ -59,7 +59,7 @@ export const ExerciseSelectionModal: React.FC<ExerciseSelectionModalProps> = ({
             </button>
           </div>
 
-          <div className="h-[calc(100vh-96px)] overflow-y-auto">
+          <div className="h-[calc(100vh-96px)] overflow-y-auto pb-40">
             <ExerciseSelector
               customExercises={customExercises}
               recentExercises={[]}

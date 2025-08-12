@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MoreVertical, X, Check } from 'lucide-react';
+import { X, Check } from 'lucide-react';
 import { WorkoutSet, Exercise } from '../types/workout';
 import { RemoveScroll } from 'react-remove-scroll';
 import { SetIndicatorAccordion } from './mobile/SetIndicatorAccordion';
+import { useSettings } from '../context/SettingsContext';
 
 interface MobileSetRowProps {
   set: WorkoutSet;
@@ -24,6 +25,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   onOpenNoteModal,
   onSetComplete,
 }) => {
+  const { weightUnit, convertWeight } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
   const [showSetTypeMenu, setShowSetTypeMenu] = useState(false);
   const [isSetComplete, setIsSetComplete] = useState(false);
@@ -34,6 +36,9 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
   const isBodyweight = exercise.name.includes('(Bodyweight)');
   const menuRef = useRef<HTMLDivElement>(null);
   const setNumberRef = useRef<HTMLDivElement>(null);
+
+
+
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -64,6 +69,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
 
   // Check if any non-warmup type is selected
   const hasNonWarmupType = set.isPR || set.isDropset || set.isFailure;
+
 
   const handlePerformedRepsChange = (value: string) => {
     onUpdate('performedReps', value);
@@ -195,7 +201,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
         <div className="relative overflow-hidden">
           {/* Delete action background (always present behind the row) */}
           <div className="absolute inset-0 flex justify-end">
-            <div className="bg-red-400 rounded-lg text-white font-medium flex items-center justify-end w-full pr-4">
+            <div className="bg-red-500 rounded-lg text-white font-medium flex items-center justify-end w-full pr-4">
               Delete
             </div>
           </div>
@@ -226,7 +232,6 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
               <div className="flex items-center" ref={setNumberRef} onClick={() => setShowSetTypeMenu(!showSetTypeMenu)}>
                 <SetIndicatorAccordion 
                   set={set}
-                  showSetTypeMenu={showSetTypeMenu}
                 />
               </div>
 
@@ -246,7 +251,12 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                   type="number"
                   step="0.25"
                   min="0"
-                  placeholder={previousSet?.weight?.toString() || '-'}
+                  placeholder={previousSet?.weight ? 
+                    // Convert previous set weight based on user's weight unit preference
+                    (weightUnit === 'lbs' ? 
+                      convertWeight(previousSet.weight, 'kgs', 'lbs').toFixed(1) : 
+                      previousSet.weight.toString()) : 
+                    '-'}
                   className={getColumnClass(true, 'weight')}
                   value={set.weight || ''}
                   onChange={(e) => handleWeightChange(e.target.value)}
@@ -385,6 +395,7 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                 hasNonWarmupType={hasNonWarmupType}
                 exerciseId={exercise.id}
                 onUpdateNote={(note: string | null) => {
+                  console.log('[MobileSetRow] onUpdateNote: Received note:', note);
                   onUpdate('comments', note);
                 }}
               />

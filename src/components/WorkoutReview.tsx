@@ -4,6 +4,7 @@ import { Trophy, X, Medal, History, Plus, Dumbbell, Timer, Award } from 'lucide-
 import { WorkoutLog } from '../types/workout';
 import { useWorkout } from '../context/WorkoutContext';
 import { useSettings } from '../context/SettingsContext';
+import { calculateWorkoutStats } from '../utils/workoutStats';
 import Lottie from 'lottie-react';
 import confettiAnimation from '../assets/confetti.json';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,46 +37,7 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
   }, []);
 
   const calculateStats = () => {
-    let totalWeight = 0;
-    let totalSets = 0;
-    let totalPRs = 0;
-    let totalDistance = 0;
-    let totalTime = 0;
-
-    workout.exercises.forEach(({ exercise, sets }) => {
-      const isBodyweight = exercise.name.includes('(Bodyweight)');
-      const isCardio = exercise.muscleGroup === 'Cardio';
-      const isDumbbell = exercise.name.toLowerCase().includes('dumbbell');
-      
-      // Exceptions to the dumbbell multiplication rule
-      const isDumbbellException = 
-        exercise.name.includes('Weight Lying Raises') || 
-        exercise.name.includes('Sumo Dumbbell Squats');
-
-      sets.forEach(set => {
-        if (isCardio) {
-          if (set.distance) totalDistance += set.distance;
-          if (set.time) {
-            const [minutes = 0, seconds = 0] = set.time.split(':').map(Number);
-            totalTime += minutes * 60 + seconds;
-          }
-        } else if (!isBodyweight && set.weight && set.performedReps) {
-          const weight = weightUnit === 'lb' ? convertWeight(set.weight, 'kg', 'lb') : set.weight;
-          const reps = parseInt(set.performedReps) || 0;
-          
-          // Multiply by 2 for dumbbell exercises (except exceptions)
-          if (isDumbbell && !isDumbbellException) {
-            totalWeight += weight * reps * 2; // Multiply by 2 for dumbbells (both arms)
-          } else {
-            totalWeight += weight * reps;
-          }
-        }
-        totalSets++;
-        if (set.isPR) totalPRs++;
-      });
-    });
-
-    return { totalWeight, totalSets, totalPRs, totalDistance, totalTime };
+    return calculateWorkoutStats(workout, weightUnit, convertWeight);
   };
 
   const formatTime = (seconds: number) => {
@@ -133,7 +95,7 @@ export const WorkoutReview: React.FC<WorkoutReviewProps> = ({ workout, onClose }
     navigate(homePath);
   };
 
-  const { totalWeight, totalSets, totalPRs, totalDistance, totalTime } = calculateStats();
+  const { totalVolume: totalWeight, totalSets, totalPRs, totalDistance, totalTime } = calculateStats();
   const duration = Math.floor((new Date(workout.endTime).getTime() - new Date(workout.startTime).getTime()) / 1000);
   const bestSets = getBestSets();
 

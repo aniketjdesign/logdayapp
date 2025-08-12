@@ -13,6 +13,7 @@ interface RoutinePreviewSheetProps {
   onEdit: () => void;
   onDelete?: (routineId: string) => void;
   onMove?: () => void;
+  isLogdayRoutine?: boolean;
 }
 
 export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
@@ -22,6 +23,7 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
   onEdit,
   onDelete,
   onMove,
+  isLogdayRoutine = false,
 }) => {
   const { startWorkout } = useWorkout();
   const navigate = useNavigate();
@@ -81,7 +83,7 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
             {/* Header */}
             <div className="flex items-start justify-between p-4 border-b">
               <div>
-                <h2 className="text-base font-semibold">{routine.name}</h2>
+                <h2 className="text-sm font-semibold">{routine.name}</h2>
                 {routine.description && (
                   <p className="text-sm text-gray-600 mt-0.5">{routine.description}</p>
                 )}
@@ -105,21 +107,25 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
                         Start Workout
                       </button>
                       
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onClose();
-                          onEdit();
-                        }}
-                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      >
-                        <Edit2 size={16} />
-                        Edit Routine
-                      </button>
-                      {onMove && (
+                      {!isLogdayRoutine && (
                         <button
                           onClick={() => {
                             setShowMenu(false);
+                            onClose();
+                            onEdit();
+                          }}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
+                          <Edit2 size={16} />
+                          Edit Routine
+                        </button>
+                      )}
+                      
+                      {onMove && !isLogdayRoutine && (
+                        <button
+                          onClick={() => {
+                            setShowMenu(false);
+                            onClose();
                             onMove();
                           }}
                           className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
@@ -128,7 +134,7 @@ export const RoutinePreviewSheet: React.FC<RoutinePreviewSheetProps> = ({
                           Move Routine
                         </button>
                       )}
-                      {onDelete && (
+                      {onDelete && !isLogdayRoutine && (
                         <button
                           onClick={() => {
                             setShowMenu(false);

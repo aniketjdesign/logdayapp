@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogDayLogo } from '../LogDayLogo';
+import { LogDayLogo } from '../others/LogDayLogo';
 import { Mail, Globe, MessageCircleMore } from 'lucide-react';
 
 export const AuthFooter: React.FC = () => {

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { Exercise, WorkoutLog, WorkoutExercise, Folder, Routine } from '../types/workout';
 import { supabaseService } from '../services/supabaseService';
 import { useAuth } from './AuthContext';
@@ -14,6 +14,7 @@ interface WorkoutContextType {
   selectedExercises: Exercise[];
   currentWorkout: WorkoutLog | null;
   workoutLogs: WorkoutLog[];
+  searchResults: WorkoutLog[];
   currentView: View;
   customExercises: Exercise[];
   folders: Folder[];
@@ -29,7 +30,8 @@ interface WorkoutContextType {
   deleteExercise: (exerciseId: string) => void;
   deleteLog: (logId: string) => void;
   setCurrentView: (view: View) => void;
-  searchLogs: (query: string) => Promise<void>;
+  searchLogs: (query: string, page?: number, limit?: number) => Promise<WorkoutLog[]>;
+  clearSearchResults: () => void;
   clearWorkoutState: () => void;
   addFolder: (folder: { name: string }) => Promise<void>;
   updateFolder: (id: string, updates: { name: string }) => Promise<void>;
@@ -51,6 +53,7 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedExercises, setSelectedExercises] = useState<Exercise[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<WorkoutLog | null>(null);
   const [workoutLogs, setWorkoutLogs] = useState<WorkoutLog[]>([]);
+  const [searchResults, setSearchResults] = useState<WorkoutLog[]>([]);
   const [currentView, setCurrentView] = useState<View>('exercises');
   const [customExercises, setCustomExercises] = useState<Exercise[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -344,9 +347,26 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
     setCurrentWorkout(prev => {
       if (!prev) return null;
+      
+      // Find the exercise to be deleted and its superset partner if any
+      const exerciseToDelete = prev.exercises.find(ex => ex.exercise.id === exerciseId);
+      const supersetPartnerId = exerciseToDelete?.supersetWith;
+      
+      // Remove the exercise and clean up superset relationships
+      const updatedExercises = prev.exercises
+        .filter(ex => ex.exercise.id !== exerciseId)
+        .map(ex => {
+          // If this exercise was supersetted with the deleted exercise, remove the superset reference
+          if (supersetPartnerId && ex.exercise.id === supersetPartnerId) {
+            const { supersetWith, ...rest } = ex;
+            return rest as WorkoutExercise;
+          }
+          return ex;
+        });
+      
       return {
         ...prev,
-        exercises: prev.exercises.filter(ex => ex.exercise.id !== exerciseId)
+        exercises: updatedExercises
       };
     });
   };
@@ -367,13 +387,17 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const searchLogs = async (query: string) => {
-    if (user) {
-      const response = await supabaseService.searchWorkoutLogs(query);
-      if (!response.error) {
-        setWorkoutLogs(response.data);
-      }
-    }
+  const searchLogs = async (query: string, page?: number, limit?: number): Promise<WorkoutLog[]> => {
+    if (!user) return [];
+    
+    const response = await supabaseService.searchWorkoutLogs(query);
+    if (response.error) return [];
+    
+    return response.data;
+  };
+
+  const clearSearchResults = () => {
+    setSearchResults([]);
   };
 
   const clearWorkoutState = () => {
@@ -488,36 +512,70 @@ export const WorkoutProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const contextValue = useMemo(() => ({
+    selectedExercises,
+    currentWorkout,
+    workoutLogs,
+    searchResults,
+    currentView,
+    customExercises,
+    folders,
+    routines,
+    setSelectedExercises,
+    setCurrentWorkout,
+    startWorkout,
+    completeWorkout,
+    updateWorkoutExercise,
+    reorderWorkoutExercises,
+    addExercisesToWorkout,
+    addCustomExercise,
+    deleteExercise,
+    deleteLog,
+    setCurrentView,
+    searchLogs,
+    clearSearchResults,
+    clearWorkoutState,
+    addFolder,
+    updateFolder,
+    deleteFolder,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
+    moveRoutine,
+  }), [
+    selectedExercises,
+    currentWorkout,
+    workoutLogs,
+    searchResults,
+    currentView,
+    customExercises,
+    folders,
+    routines,
+    setSelectedExercises,
+    setCurrentWorkout,
+    startWorkout,
+    completeWorkout,
+    updateWorkoutExercise,
+    reorderWorkoutExercises,
+    addExercisesToWorkout,
+    addCustomExercise,
+    deleteExercise,
+    deleteLog,
+    setCurrentView,
+    searchLogs,
+    clearSearchResults,
+    clearWorkoutState,
+    addFolder,
+    updateFolder,
+    deleteFolder,
+    addRoutine,
+    updateRoutine,
+    deleteRoutine,
+    moveRoutine,
+  ]);
+
   return (
-    <WorkoutContext.Provider value={{
-      selectedExercises,
-      currentWorkout,
-      workoutLogs,
-      currentView,
-      customExercises,
-      folders,
-      routines,
-      setSelectedExercises,
-      setCurrentWorkout,
-      startWorkout,
-      completeWorkout,
-      updateWorkoutExercise,
-      reorderWorkoutExercises,
-      addExercisesToWorkout,
-      addCustomExercise,
-      deleteExercise,
-      deleteLog,
-      setCurrentView,
-      searchLogs,
-      clearWorkoutState,
-      addFolder,
-      updateFolder,
-      deleteFolder,
-      addRoutine,
-      updateRoutine,
-      deleteRoutine,
-      moveRoutine,
-    }}>
+    <WorkoutContext.Provider value={contextValue}>
       {children}
     </WorkoutContext.Provider>
   );

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Send, Mail } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useWorkout } from '../context/WorkoutContext';
+import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 
 const RedditIcon = () => (
   <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
@@ -11,6 +13,7 @@ const RedditIcon = () => (
 
 export const ContactForm: React.FC = () => {
   const { user } = useAuth();
+  const { currentWorkout } = useWorkout();
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
@@ -56,11 +59,14 @@ export const ContactForm: React.FC = () => {
 
   return (
     <motion.div 
-      className="max-w-2xl mx-auto px-4 py-6"
+      className="max-w-2xl mx-auto"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.4 }}
     >
+      {currentWorkout && <OngoingWorkoutMessage />}
+      
+      <div className="mx-auto px-4 py-6">
       <motion.div 
         className="mb-8"
         initial={{ opacity: 0, y: 15 }}
@@ -160,6 +166,8 @@ export const ContactForm: React.FC = () => {
           <span>hello@logday.app</span>
         </a>
       </motion.div>
+      </div>
     </motion.div>
+
   );
 };

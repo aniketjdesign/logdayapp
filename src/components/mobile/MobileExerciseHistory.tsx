@@ -1,7 +1,8 @@
 import React from 'react';
-import { FileText, BarChart2 } from 'lucide-react';
+import { FileText, BarChart2, Target } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Exercise, WorkoutLog } from '../../types/workout';
+import { useSettings } from '../../context/SettingsContext';
 
 interface MobileExerciseHistoryProps {
   exercise: Exercise;
@@ -23,6 +24,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
@@ -31,12 +33,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
     }).format(date);
   };
 
-  const formatSet = (set: any) => {
-    if (exercise.metrics?.time) {
-      return `${set.time}${set.distance ? ` | ${set.distance}km` : ''}`;
-    }
-    return `${set.weight}${weightUnit} x ${set.performedReps}`;
-  };
+  const { convertWeight } = useSettings();
 
   const getExerciseProgressionData = () => {
     if (!exerciseHistory?.[exercise.id]) return [];
@@ -55,13 +52,18 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         const movementNumber = workout.exercises.findIndex(e => e.exercise.id === exercise.id) + 1;
         const totalMovements = workout.exercises.length;
         
+        // Convert the weight based on current weight unit setting
+        const convertedWeight = maxWeightSet?.weight ? 
+          convertWeight(maxWeightSet.weight, 'kgs', weightUnit as 'kgs' | 'lbs') : 0;
+        
         return {
           date: new Date(workout.startTime),
           formattedDate: new Intl.DateTimeFormat('en-US', {
             month: 'short',
             day: 'numeric',
           }).format(new Date(workout.startTime)),
-          weight: maxWeightSet?.weight || 0,
+          weight: convertedWeight,
+          originalWeight: maxWeightSet?.weight || 0,
           reps: maxWeightSet?.performedReps || '0',
           movementInfo: `Exercise #${movementNumber} of ${totalMovements}`
         };
@@ -77,7 +79,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         <div className="bg-white p-3 shadow-lg rounded-lg border">
           <p className="text-sm font-medium text-gray-900">{label}</p>
           <p className="text-sm text-gray-600">
-            Weight: {data.weight}{weightUnit}
+            Weight: {data.weight.toFixed(1)}{weightUnit}
           </p>
           <p className="text-sm text-gray-600">
             Reps: {data.reps}
@@ -152,7 +154,8 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
                         .map((e, originalIndex) => ({
                           ...e,
                           originalIndex: originalIndex + 1,
-                          firstSetTime: e.sets[0]?.timestamp
+                          // Use the first set's time property if available, or fall back to the workout start time
+                          firstSetTime: e.sets[0]?.time || workout.startTime
                         }))
                         .sort((a, b) => {
                           if (a.firstSetTime && b.firstSetTime) {
@@ -168,16 +171,50 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
                 </div>
               </div>
               <div className="space-y-1.5 bg-gray-50">
-                {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set) => (
-                  <div key={set.id} className="flex items-center gap-3 text-xs px-2.5">
-                    <span className="font-medium text-gray-700">
-                      {formatSet(set)}
-                    </span>
-                    {set.isPR && (
-                      <span className="text-xs px-1.5 py-0.5 bg-green-50 text-green-700 rounded font-medium">
-                        PR
+                {workout.exercises.find(e => e.exercise.id === exercise.id)?.sets.map((set, index) => (
+                  <div key={set.id} className="flex items-center justify-between text-xs px-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="w-4 text-gray-500 text-center">{index + 1}</span>
+                      <span className="font-medium text-gray-700">
+                        <div className="flex items-center gap-2">
+                          <span>
+                            {exercise.name.includes('(Bodyweight)') 
+                              ? 'BW'
+                              : `${set.weight ? convertWeight(set.weight, 'kgs', weightUnit as 'kgs' | 'lbs').toFixed(1) : '0'} ${weightUnit}`} × {set.performedReps || '-'}
+                          </span>
+                          {set.targetReps && (
+                            <div className="flex items-center text-gray-500 text-xs">
+                              <Target size={10} className="mr-0.5" />
+                              {set.targetReps}
+                            </div>
+                          )}
+                        </div>
                       </span>
-                    )}
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {set.isPR && (
+                        <span className="text-xs font-medium text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded">
+                          PR
+                        </span>
+                      )}
+                      <div className="flex -space-x-1">
+                        {set.isWarmup && (
+                          <span className="text-xs font-medium text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded">
+                            W
+                          </span>
+                        )}
+                        {set.isDropset && (
+                          <span className="text-xs font-medium text-purple-600 bg-purple-50 px-1.5 py-0.5 rounded">
+                            D
+                          </span>
+                        )}
+                        {set.isFailure && (
+                          <span className="text-xs font-medium text-red-600 bg-red-50 px-1.5 py-0.5 rounded">
+                            F
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

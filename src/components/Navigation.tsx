@@ -56,7 +56,7 @@ export const Navigation: React.FC = () => {
   return (
     <>
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 safe-bottom">
+      <div className="fixed bottom-0 left-0 right-0 md:left-1/2 md:transform md:mb-4 md:border md:border-gray-200 md:rounded-2xl md:h-20 md:-translate-x-1/2 md:max-w-2xl bg-white border-t border-gray-200 z-40 safe-bottom">
         <div className="flex justify-around items-start pt-0 h-24">
           {currentWorkout && (
             <motion.button

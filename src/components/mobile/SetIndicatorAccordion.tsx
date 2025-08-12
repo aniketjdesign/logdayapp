@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { History, Pin } from 'lucide-react';
+import { Check, History } from 'lucide-react';
 import { WorkoutSet } from '../../types/workout';
 import { useWorkout } from '../../context/WorkoutContext';
 
@@ -58,7 +58,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
         const indicators = [];
         if (set.isFailure && (set.isPR || set.isDropset)) indicators.push('failure');
         if (set.isPR && set.isDropset) indicators.push('pr');
-        if (set.comments) indicators.push('notes');
         
         // If only one indicator, position it at the top right
         if (indicators.length === 1) {
@@ -69,9 +68,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
               )}
               {indicators[0] === 'pr' && (
                 <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
-              )}
-              {indicators[0] === 'notes' && (
-                <div className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
               )}
             </>
           );
@@ -89,9 +85,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
                 <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
               )}
               
-              {set.comments && (
-                <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
-              )}
             </div>
           );
         }
@@ -108,9 +101,6 @@ export const SetIndicatorAccordion: React.FC<SetIndicatorAccordionProps> & {
                 <div className="w-3 h-3 rounded-full bg-yellow-400 border border-white"></div>
               )}
               
-              {set.comments && (
-                <div className="w-3 h-3 rounded-full bg-blue-500 border border-white"></div>
-              )}
             </div>
           );
         }
@@ -133,7 +123,9 @@ SetIndicatorAccordion.Content = ({
   const { workoutLogs } = useWorkout();
   
   // Note state
-  const [note, setNote] = useState(set.comments || '');
+  const [note, setNote] = useState('');
+  const [isSaved, setIsSaved] = useState(false);
+  const [localNotes, setLocalNotes] = useState<Array<{note: string, date: Date}>>([]);
 
   // Get the most recent notes for this exercise and set number
   const recentNotes = exerciseId ? workoutLogs
@@ -142,36 +134,50 @@ SetIndicatorAccordion.Content = ({
         .filter(ex => ex.exercise.id === exerciseId)
         .flatMap(ex => 
           ex.sets
-            .filter((s, index) => index + 1 === set.setNumber && s.comments && s.comments.trim().length > 0)
+            .filter(s => 
+              s.setNumber === set.setNumber && 
+              s.comments
+            )
             .map(s => ({
-              note: s.comments,
+              note: s.comments || '',
               date: new Date(log.startTime)
             }))
+            .filter(noteObj => noteObj.note.trim() !== '') // Filter out empty notes
         )
     )
     .sort((a, b) => b.date.getTime() - a.date.getTime())
-    .slice(0, 2) : []; // Get last 2 pinned notes
+    .slice(0, 3) : []; // Get last 3 notes from history
     
-  // No auto-pinning of previous notes
+  // Combine local notes with recent notes from history
+  const allNotes = [...localNotes, ...recentNotes]
+    .sort((a, b) => b.date.getTime() - a.date.getTime())
+    .slice(0, 3); // Show only the 3 most recent notes
+
+  // Initialize with existing comment if available
   useEffect(() => {
-    // Initialize with existing comment if available
     if (set.comments) {
       setNote(set.comments);
+      setIsSaved(true);
+    } else {
+      setNote('');
+      setIsSaved(false);
     }
   }, [set.comments]);
 
-  // Toggle pin/unpin note
-  const togglePinNote = () => {
-    if (set.comments) {
-      // If note is already pinned, unpin it
-      if (onUpdateNote) {
-        onUpdateNote(null);
-      }
-    } else if (note.trim() && onUpdateNote) {
-      // If note is not pinned, pin it
-      onUpdateNote(note);
+  // Save note function
+  const saveNote = () => {
+    if (note.trim() && onUpdateNote) {
+      const noteToSave = note.trim();
+      
+      // Save the note to the backend
+      onUpdateNote(noteToSave);
+      setIsSaved(true);
+      
+      // Don't add to local notes immediately - keep it in the input field
+      // The note will appear in past notes in future workouts from workout logs
     }
   };
+
 
   // Format date for display
   const formatDate = (date: Date): string => {
@@ -279,55 +285,62 @@ SetIndicatorAccordion.Content = ({
           <div className="flex items-center gap-2">
             <input
               type="text"
-              placeholder={set.comments ? "Unpin to edit note" : "Add a note..."}
-              className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                set.comments ? 'bg-gray-100 cursor-not-allowed' : ''
+              placeholder="Add a note..."
+              className={`flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors ${
+                isSaved ? 'bg-green-100' : 'bg-white'
               }`}
               value={note}
-              onChange={(e) => setNote(e.target.value)}
-              disabled={!!set.comments}
-              readOnly={!!set.comments}
+              onChange={(e) => {
+                setNote(e.target.value);
+                setIsSaved(false);
+              }}
             />
             
             <div className="flex gap-1">
+              {/* Save Button (Checkmark) */}
               <button
-                onClick={togglePinNote}
-                disabled={!note.trim() && !set.comments}
+                onClick={saveNote}
+                disabled={!note.trim()}
                 className={`p-1.5 rounded-md flex items-center justify-center ${
-                  set.comments
-                    ? 'bg-amber-500 hover:bg-amber-600' 
-                    : note.trim()
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : 'bg-gray-300 cursor-not-allowed'
+                  !note.trim() 
+                    ? 'bg-gray-300 cursor-not-allowed'
+                    : isSaved
+                      ? 'bg-green-500 hover:bg-green-600'
+                      : 'bg-green-600 hover:bg-green-700'
                 }`}
-                title={set.comments ? "Unpin note" : "Pin note"}
+                title="Save note"
               >
-                <Pin 
+                <Check 
                   size={16} 
                   className="text-white" 
-                  style={set.comments ? { transform: 'rotate(45deg)' } : undefined} 
                 />
               </button>
+
             </div>
           </div>
 
-          {/* Past Notes Section - showing last 2 pinned notes with date stamp */}
-          {recentNotes.length > 0 && (
+          {/* Past Notes Section - showing last 3 notes with date stamp */}
+          {allNotes.length > 0 && (
             <div className="space-y-1 px-1">
               <div className="flex items-center text-xs text-gray-600">
                 <History size={12} className="text-gray-400 mr-0.5 flex-shrink-0" />
                 <span className="text-xs font-medium text-gray-400">Past Notes</span>
               </div>
               
-              {recentNotes.map((pastNote, index) => (
+              {allNotes
+                .filter(pastNote => pastNote.note.trim() !== '') // Filter out empty notes
+                .map((pastNote, index) => (
                 <div key={index} className="flex items-center text-xs text-gray-600 bg-gray-50 p-1 border-b border-gray-200">
                   <div className="flex flex-row justify-between w-full">
                     <div 
-                      className="cursor-pointer hover:text-gray-800 line-clamp-2"
-                      onClick={() => setNote(pastNote.note)}
+                      className="cursor-pointer hover:text-gray-800 line-clamp-2 flex items-center"
+                      onClick={() => {
+                        setNote(pastNote.note);
+                        setIsSaved(false);
+                      }}
                       title={pastNote.note}
                     >
-                      {pastNote.note}
+                      <span>{pastNote.note}</span>
                     </div>
                     <div className="text-gray-400">
                       {formatDate(pastNote.date)}

@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Link2, Play, Save } from 'lucide-react';
+import { Calendar, Clock, Repeat1, MoreVertical, Trash2, Medal, Save } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutLog } from '../types/workout';
 import { useSettings } from '../context/SettingsContext';
+import { calculateWorkoutStats } from '../utils/workoutStats';
 import { ExerciseSetList } from './ExerciseSetList';
 import { useWorkout } from '../context/WorkoutContext';
 import { useNavigate } from 'react-router-dom';
@@ -49,29 +50,12 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   };
 
   const getWorkoutStats = () => {
-    let totalVolume = 0;
-    let totalPRs = 0;
-    let totalSets = 0;
-
-    log.exercises.forEach(({ exercise, sets }) => {
-      const isBodyweight = exercise.name.includes('(Bodyweight)');
-      sets.forEach(set => {
-        if (!isBodyweight && set.weight && set.performedReps) {
-          const weight = weightUnit === 'lb' 
-            ? convertWeight(set.weight, 'kg', 'lb')
-            : set.weight;
-          totalVolume += weight * parseInt(set.performedReps);
-        }
-        if (set.isPR) totalPRs++;
-        totalSets++;
-      });
-    });
-
+    const stats = calculateWorkoutStats(log, weightUnit, convertWeight);
     return {
-      volume: Math.round(totalVolume),
-      prs: totalPRs,
+      volume: stats.totalVolume,
+      prs: stats.totalPRs,
       exercises: log.exercises.length,
-      sets: totalSets
+      sets: stats.totalSets
     };
   };
 
@@ -98,9 +82,14 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
       exercise,
       supersetWith,
       sets: sets.map(set => {
+        // Weights are already stored in kgs in the database, so no conversion needed
+        // We just need to use the original weight value
+        let weight = set.weight;
+        
         // Preserve all set data except performed values
         const newSet = {
           ...set,
+          weight, // Use the properly converted weight
           id: generateUUID(),
           performedReps: '',  // Clear performed reps
           comments: '',       // Clear comments
@@ -129,8 +118,8 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               }
             }}
           >
-            <h3 className="text-base font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
-            <div className="mt-0.5 text-xs font-medium text-gray-600">
+            <h3 className="text-sm font-bold text-gray-900">{log.name || 'Unnamed Workout'}</h3>
+            <div className="mt-0.5 text-xs text-gray-500">
               <div className="flex items-center">
                 <Calendar size={12} className="mr-1" />
                 {formatDate(log.startTime)}
@@ -140,7 +129,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
           <div className="relative">
             <button
               ref={menuButtonRef}
-              onClick={(e) => {
+              onClick={() => {
                 setShowMenu(!showMenu);
               }}
               className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors bg-gray-50"
@@ -292,10 +281,16 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               name: log.name || 'Workout Routine',
               exercises: log.exercises.map(ex => ({
                 exercise: ex.exercise,
-                sets: ex.sets.map(set => ({
-                  weight: set.weight || '',
-                  goal: set.performedReps || '',
-                }))
+                sets: ex.sets.map(set => {
+                  // Weights are already stored in kgs in the database, so no conversion needed
+                  // We just need to use the original weight value
+                  let weight = set.weight;
+                  
+                  return {
+                    weight: weight || '',
+                    goal: set.performedReps || '',
+                  };
+                })
               }))
             }}
           />

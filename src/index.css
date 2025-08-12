@@ -155,7 +155,7 @@
   overflow: hidden;
 }
 
-.app-header {
+.app-header {  
   flex-shrink: 0;
   position: fixed;
   top: 0;

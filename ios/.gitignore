@@ -2,7 +2,6 @@ App/build
 App/Pods
 App/output
 App/App/public
-App/Logday/public
 DerivedData
 xcuserdata
 
@@ -12,10 +11,3 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
-App/Logday/capacitor.config.json
-App/Logday/config.xml
-
-# Local testing folder
-.testing
-.env
-.netlify

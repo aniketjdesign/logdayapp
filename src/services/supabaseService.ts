@@ -558,4 +558,54 @@ export const supabaseService = {
       return { error };
     }
   },
+
+  async getLogdayRoutines() {
+    try {
+      // Fetch folders (type = 'folder')
+      const { data: folders, error: foldersError } = await supabase
+        .from('logday_routines')
+        .select('id, name, description, type, parent_id, created_at, updated_at')
+        .eq('type', 'folder')
+        .order('created_at', { ascending: false });
+
+      if (foldersError) throw foldersError;
+
+      // Fetch routines (type = 'routine')
+      const { data: routines, error: routinesError } = await supabase
+        .from('logday_routines')
+        .select('id, name, description, type, parent_id, exercises, total_exercises, total_sets, created_at, updated_at')
+        .eq('type', 'routine')
+        .order('created_at', { ascending: false });
+
+      if (routinesError) throw routinesError;
+
+      return { 
+        folders: folders || [], 
+        routines: routines || [], 
+        error: null 
+      };
+    } catch (error) {
+      return { folders: [], routines: [], error };
+    }
+  },
+
+  async getLogdayRoutineById(id: string) {
+    try {
+      // Validate UUID format
+      if (!isValidUUID(id)) {
+        throw new Error('Invalid UUID format');
+      }
+
+      const { data, error } = await supabase
+        .from('logday_routines')
+        .select('id, name, description, type, parent_id, exercises, total_exercises, total_sets, created_at, updated_at')
+        .eq('id', id)
+        .single();
+
+      if (error) throw error;
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  }
 };
