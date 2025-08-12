@@ -10,13 +10,13 @@ The AI Workout Coach is an intelligent fitness assistant integrated into Logday 
 ## 🔧 Setup Instructions
 
 ### 1. Environment Variables
-Add your OpenAI API key to your `.env` file:
+Add your Google Gemini API key to your `.env` file:
 ```bash
 # Copy from .env.example
 cp .env.example .env
 
-# Add your OpenAI API key
-VITE_OPENAI_API_KEY=sk-your-openai-api-key-here
+# Add your Google Gemini API key
+VITE_GOOGLE_GEMINI_API_KEY=your-gemini-api-key-here
 ```
 
 ### 2. Database Migration
@@ -29,12 +29,13 @@ npx supabase db reset
 npx supabase db push
 ```
 
-### 3. OpenAI API Key Setup
-1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Create an account or sign in
-3. Navigate to API Keys section
-4. Create a new API key
-5. Add it to your `.env` file as `VITE_OPENAI_API_KEY`
+### 3. Google Gemini API Key Setup
+1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey)
+2. Create an account or sign in with your Google account
+3. Click "Create API Key"
+4. Select your Google Cloud project (or create a new one)
+5. Copy the generated API key
+6. Add it to your `.env` file as `VITE_GOOGLE_GEMINI_API_KEY`
 
 ## 🏗️ Architecture
 
@@ -53,14 +54,14 @@ npx supabase db push
 
 ### Services
 - `aiCoachService` - Handles AI API calls and data persistence
-- OpenAI GPT-4 integration for intelligent responses
+- Google Gemini 1.5 Flash integration for intelligent responses
 - Supabase integration for data storage and RLS
 
 ## 🎯 Features Implemented
 
 ### Phase 1: Basic Chat Interface ✅
 - [x] Chat UI with message bubbles and typing indicators
-- [x] OpenAI GPT-4 integration for AI responses
+- [x] Google Gemini 1.5 Flash integration for AI responses
 - [x] Message persistence in Supabase
 - [x] Exercise form Q&A capabilities
 - [x] Navigation integration
@@ -74,7 +75,7 @@ npx supabase db push
 
 ## 🔒 Security Features
 - **Row Level Security (RLS)** - Users can only access their own data
-- **API Key Protection** - OpenAI key stored securely in environment variables
+- **API Key Protection** - Gemini API key stored securely in environment variables
 - **Input Validation** - All user inputs are validated and sanitized
 - **Rate Limiting** - Built-in protection against API abuse
 
@@ -120,8 +121,8 @@ Try these sample prompts:
 
 ### Common Issues
 1. **"AI Coach is thinking..." never resolves**
-   - Check your OpenAI API key is valid
-   - Verify you have API credits remaining
+   - Check your Google Gemini API key is valid
+   - Verify your API quota hasn't been exceeded
    - Check browser console for errors
 
 2. **Messages not saving**
@@ -141,8 +142,8 @@ VITE_DEBUG_AI_COACH=true
 ```
 
 ## 📊 Cost Estimation
-- **OpenAI API**: ~$0.002 per conversation
-- **Estimated monthly cost**: $10-50 for 1000 active users
+- **Google Gemini API**: ~$0.001 per conversation (free quota: 15 requests/minute)
+- **Estimated monthly cost**: $5-25 for 1000 active users (very cost-effective)
 - **Supabase**: Included in existing plan
 
 ## 🎉 Success!

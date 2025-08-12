@@ -1,9 +1,11 @@
 import { supabase } from '../config/supabase';
 import { exercises } from '../data/exercises';
 import { exerciseService } from './exerciseService';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 // AI API configuration
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
+const GEMINI_API_KEY = import.meta.env.VITE_GOOGLE_GEMINI_API_KEY || '';
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
 export interface ChatMessage {
   id: string;
@@ -76,31 +78,34 @@ Always maintain a friendly, knowledgeable tone like a personal trainer would.`;
       // Build context-aware prompt
       const contextPrompt = this.buildContextPrompt(context, workoutData, availableExercises);
       
-      // Prepare messages for AI
-      const messages = [
-        { role: 'system', content: this.systemPrompt + contextPrompt },
-        ...history.map(msg => ({ role: msg.role, content: msg.content })),
-        { role: 'user', content: message }
-      ];
-
-      // Get AI response using fetch (replace with your preferred AI service)
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: messages,
-          max_tokens: 500,
-          temperature: 0.7,
-        }),
+      // Prepare conversation for Gemini
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      // Build conversation history for Gemini
+      const conversationHistory = history.map(msg => {
+        if (msg.role === 'user') {
+          return { role: 'user', parts: [{ text: msg.content }] };
+        } else {
+          return { role: 'model', parts: [{ text: msg.content }] };
+        }
       });
 
-      const data = await response.json();
+      // Create full prompt including system prompt and context
+      const fullPrompt = this.systemPrompt + contextPrompt + '\n\nUser: ' + message;
 
-      const aiResponse = data.choices?.[0]?.message?.content || 'Sorry, I had trouble processing that. Can you try again?';
+      // Get AI response using Gemini
+      const result = await model.generateContent({
+        contents: [
+          ...conversationHistory,
+          { role: 'user', parts: [{ text: fullPrompt }] }
+        ],
+        generationConfig: {
+          maxOutputTokens: 500,
+          temperature: 0.7,
+        },
+      });
+
+      const aiResponse = result.response.text() || 'Sorry, I had trouble processing that. Can you try again?';
 
       // Save user message
       await this.saveMessage({
@@ -157,26 +162,24 @@ Provide analysis in this format:
   "focusAreas": ["area1", "area2"]
 }`;
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            { role: 'system', content: 'You are a fitness analysis expert. Analyze workout data and return JSON only.' },
-            { role: 'user', content: analysisPrompt }
-          ],
-          max_tokens: 400,
+      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      
+      const result = await model.generateContent({
+        contents: [
+          { 
+            role: 'user', 
+            parts: [{ 
+              text: 'You are a fitness analysis expert. Analyze workout data and return JSON only.\n\n' + analysisPrompt 
+            }] 
+          }
+        ],
+        generationConfig: {
+          maxOutputTokens: 400,
           temperature: 0.3,
-        }),
+        },
       });
 
-      const data = await response.json();
-
-      const analysisText = data.choices?.[0]?.message?.content || '{}';
+      const analysisText = result.response.text() || '{}';
       
       try {
         return JSON.parse(analysisText);
