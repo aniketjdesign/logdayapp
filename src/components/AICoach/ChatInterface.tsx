@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { WorkoutSuggestion } from './WorkoutSuggestion';
 import { parseWorkoutFromText, isWorkoutSuggestion } from '../../utils/workoutParser';
 import { WorkoutExercise } from '../../types/workout';
+import ReactMarkdown from 'react-markdown';
 
 interface ChatInterfaceProps {
   messages: ChatMessage[];
@@ -83,9 +84,32 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       ? 'bg-blue-600 text-white rounded-br-md'
                       : 'bg-white text-gray-800 rounded-bl-md shadow-sm border border-gray-100'
                   }`}>
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
+                    {message.role === 'user' ? (
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                    ) : (
+                      <div className="text-sm leading-relaxed prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          components={{
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                            ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                            li: ({ children }) => <li className="text-sm">{children}</li>,
+                            code: ({ children }) => <code className="bg-gray-100 px-1 py-0.5 rounded text-xs font-mono">{children}</code>,
+                            pre: ({ children }) => <pre className="bg-gray-100 p-2 rounded text-xs font-mono overflow-x-auto">{children}</pre>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                            h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
+                            h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
+                            h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+                            blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic text-gray-600">{children}</blockquote>,
+                          }}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    )}
                     <p className={`text-xs mt-2 ${
                       message.role === 'user' ? 'text-blue-200' : 'text-gray-400'
                     }`}>
@@ -117,6 +141,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
                       );
                     }
                   })()}
+
                 </div>
               </div>
             </motion.div>
@@ -149,7 +174,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
 
       {/* Input Area */}
       <div 
-        className="border-t border-gray-200 bg-white p-4 flex-shrink-0 fixed z-50 w-full"
+        className="max-w-[720px] mx-auto border-t border-gray-200 bg-gray-50 p-4 flex-shrink-0 fixed z-50 w-full"
         style={{ bottom: '96px' }}
       >
         <div className="flex items-center space-x-3">
@@ -162,7 +187,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({
               onKeyPress={handleKeyPress}
               placeholder={placeholder}
               disabled={isLoading}
-              className="w-full px-4 py-3 pr-12 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full px-4 bg-white py-3 pr-12 bg-gray-50 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             />
           </div>
           

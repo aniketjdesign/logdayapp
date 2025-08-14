@@ -138,7 +138,7 @@ How can I help you crush your fitness goals?`,
 
   return (
     <div 
-      className="flex flex-col bg-gray-50" 
+      className="flex flex-col bg-gray-50 max-w-[720px] mx-auto" 
       style={{ 
         height: 'calc(var(--vh, 1vh) * 100)',
         minHeight: '100vh',
