@@ -252,10 +252,8 @@ export const MobileSetRow: React.FC<MobileSetRowProps> = ({
                   step="0.25"
                   min="0"
                   placeholder={previousSet?.weight ? 
-                    // Convert previous set weight based on user's weight unit preference
-                    (weightUnit === 'lbs' ? 
-                      convertWeight(previousSet.weight, 'kgs', 'lbs').toFixed(1) : 
-                      previousSet.weight.toString()) : 
+                    // Use previous set weight directly since it's stored in user's preferred unit
+                    previousSet.weight.toString() : 
                     '-'}
                   className={getColumnClass(true, 'weight')}
                   value={set.weight || ''}

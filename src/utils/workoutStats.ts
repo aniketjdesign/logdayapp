@@ -25,8 +25,8 @@ export const calculateWorkoutStats = (workout: WorkoutLog, weightUnit: 'lbs' | '
           totalTime += minutes * 60 + seconds;
         }
       } else if (!isBodyweight && set.weight && set.performedReps) {
-        // All weights are stored in kgs, so convert if user's preference is lbs
-        const weight = weightUnit === 'lbs' && convertWeight ? convertWeight(set.weight, 'kgs', 'lbs') : set.weight;
+        // Weights are stored in user's preferred unit, use directly
+        const weight = set.weight;
         const reps = parseInt(set.performedReps) || 0;
         
         // Multiply by 2 for dumbbell exercises (except exceptions)

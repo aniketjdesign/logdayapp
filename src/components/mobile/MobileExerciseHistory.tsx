@@ -52,9 +52,8 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
         const movementNumber = workout.exercises.findIndex(e => e.exercise.id === exercise.id) + 1;
         const totalMovements = workout.exercises.length;
         
-        // Convert the weight based on current weight unit setting
-        const convertedWeight = maxWeightSet?.weight ? 
-          convertWeight(maxWeightSet.weight, 'kgs', weightUnit as 'kgs' | 'lbs') : 0;
+        // Use the weight directly since it's stored in user's preferred unit
+        const convertedWeight = maxWeightSet?.weight || 0;
         
         return {
           date: new Date(workout.startTime),
@@ -180,7 +179,7 @@ export const MobileExerciseHistory: React.FC<MobileExerciseHistoryProps> = ({
                           <span>
                             {exercise.name.includes('(Bodyweight)') 
                               ? 'BW'
-                              : `${set.weight ? convertWeight(set.weight, 'kgs', weightUnit as 'kgs' | 'lbs').toFixed(1) : '0'} ${weightUnit}`} × {set.performedReps || '-'}
+                              : `${set.weight ? set.weight.toFixed(1) : '0'} ${weightUnit}`} × {set.performedReps || '-'}
                           </span>
                           {set.targetReps && (
                             <div className="flex items-center text-gray-500 text-xs">

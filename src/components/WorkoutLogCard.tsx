@@ -24,7 +24,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   const [showRoutineSetup, setShowRoutineSetup] = useState(false);
   const { startWorkout, addRoutine } = useWorkout();
   const navigate = useNavigate();
-  const { weightUnit, convertWeight } = useSettings();
+  const { weightUnit } = useSettings();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -50,7 +50,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
   };
 
   const getWorkoutStats = () => {
-    const stats = calculateWorkoutStats(log, weightUnit, convertWeight);
+    const stats = calculateWorkoutStats(log, weightUnit);
     return {
       volume: stats.totalVolume,
       prs: stats.totalPRs,
@@ -82,8 +82,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
       exercise,
       supersetWith,
       sets: sets.map(set => {
-        // Weights are already stored in kgs in the database, so no conversion needed
-        // We just need to use the original weight value
+        // Use the weight directly since it's stored in user's preferred unit
         let weight = set.weight;
         
         // Preserve all set data except performed values
@@ -282,8 +281,7 @@ export const WorkoutLogCard: React.FC<WorkoutLogCardProps> = ({ log, onDelete })
               exercises: log.exercises.map(ex => ({
                 exercise: ex.exercise,
                 sets: ex.sets.map(set => {
-                  // Weights are already stored in kgs in the database, so no conversion needed
-                  // We just need to use the original weight value
+                  // Use the weight directly since it's stored in user's preferred unit
                   let weight = set.weight;
                   
                   return {

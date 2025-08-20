@@ -10,7 +10,7 @@ interface ExerciseSetListProps {
 }
 
 export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets, supersetPartner }) => {
-  const { weightUnit, convertWeight } = useSettings();
+  const { weightUnit } = useSettings();
   const isBodyweight = exercise.name.includes('(Bodyweight)');
   const isCardio = exercise.muscleGroup === 'Cardio';
   const isTimeBasedCore = exercise.muscleGroup === 'Core' && exercise.metrics?.time;
@@ -31,9 +31,7 @@ export const ExerciseSetList: React.FC<ExerciseSetListProps> = ({ exercise, sets
       case 'Weight':
         if (isBodyweight) return 'BW';
         const weight = set.weight || 0;
-        return weightUnit === 'lbs' 
-          ? `${convertWeight(weight, 'kgs', 'lbs').toFixed(1)} ${weightUnit}`
-          : `${weight} ${weightUnit}`;
+        return `${weight} ${weightUnit}`;
       case 'Goal':
         return set.targetReps || '-';
       case 'Actual':

@@ -17,7 +17,7 @@ interface WorkoutDetailsModalProps {
 }
 
 export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, onClose, onDelete }) => {
-  const { weightUnit, convertWeight } = useSettings();
+  const { weightUnit } = useSettings();
   const [showMenu, setShowMenu] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [showRoutineSetup, setShowRoutineSetup] = useState(false);
@@ -303,7 +303,7 @@ export const WorkoutDetailsModal: React.FC<WorkoutDetailsModalProps> = ({ log, o
                                 <span>
                                   {mainExercise.exercise.name.includes('(Bodyweight)') 
                                     ? 'BW'
-                                    : `${weightUnit === 'lbs' ? convertWeight(set.weight || 0, 'kgs', 'lbs').toFixed(1) : (set.weight || 0)} ${weightUnit}`} × {set.performedReps || '-'}
+                                    : `${set.weight || 0} ${weightUnit}`} × {set.performedReps || '-'}
                                 </span>
                                 {set.targetReps && (
                                   <div className="flex items-center text-gray-500 text-xs">
