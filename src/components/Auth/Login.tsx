@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { AlertCircle, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { AlertCircle, Eye, EyeOff, ArrowRight, CheckCircle } from 'lucide-react';
 import { LogDayLogo } from '../others/LogDayLogo';
 
 export const Login: React.FC = () => {
@@ -11,7 +11,10 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [fadeIn, setFadeIn] = useState(false);
-  const { signIn } = useAuth();
+  const [showResendVerification, setShowResendVerification] = useState(false);
+  const [resendingVerification, setResendingVerification] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
+  const { signIn, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -19,6 +22,25 @@ export const Login: React.FC = () => {
     // Add fade-in animation effect
     setFadeIn(true);
   }, []);
+
+  const handleResendVerification = async () => {
+    if (!email) {
+      setResendMessage('Please enter your email address first');
+      return;
+    }
+
+    try {
+      setResendingVerification(true);
+      setResendMessage('');
+      await resendConfirmation(email);
+      setResendMessage('Verification email sent! Please check your inbox.');
+    } catch (err: unknown) {
+      console.error('Resend verification error:', err);
+      setResendMessage('Failed to resend verification email. Please try again.');
+    } finally {
+      setResendingVerification(false);
+    }
+  };
 
   // Function to check rate limits
   const checkRateLimits = async (email: string) => {
@@ -105,21 +127,28 @@ export const Login: React.FC = () => {
       await signIn(email, password);
       
       // Redirect to the originally requested URL or default to home
-      const from = (location.state as any)?.from?.pathname || '/';
+      const from = (location.state as { from?: { pathname: string } })?.from?.pathname || '/';
       navigate(from, { replace: true });
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Login error:', err);
       
       // Record failed login attempt
       await recordFailedLogin(email);
       
       // Set appropriate error message based on error type
-      if (err?.message?.includes('Invalid login credentials')) {
+      const error = err as Error;
+      if (error?.message?.includes('Please verify your email')) {
+        setError('Please verify your email before signing in.');
+        setShowResendVerification(true);
+      } else if (error?.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password. Please try again.');
-      } else if (err?.name === 'AuthApiError' && err?.status === 400) {
+        setShowResendVerification(false);
+      } else if ((error as any)?.name === 'AuthApiError' && (error as any)?.status === 400) {
         setError('Invalid email or password. Please try again.');
+        setShowResendVerification(false);
       } else {
-        setError('Failed to sign in: ' + (err?.message || 'Please check your credentials and try again.'));
+        setError('Failed to sign in: ' + (error?.message || 'Please check your credentials and try again.'));
+        setShowResendVerification(false);
       }
     } finally {
       setLoading(false);
@@ -143,10 +172,35 @@ export const Login: React.FC = () => {
           </p>
         </div>
 
+        {(location.state as { message?: string })?.message && (
+          <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg relative flex items-center" role="alert">
+            <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0" />
+            <span className="block sm:inline text-sm">{(location.state as { message: string }).message}</span>
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg relative flex items-center animate-pulse-once" role="alert">
             <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0" />
             <span className="block sm:inline text-sm">{error}</span>
+          </div>
+        )}
+
+        {showResendVerification && (
+          <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-lg">
+            <p className="text-sm mb-2">Haven't received the verification email?</p>
+            <button
+              onClick={handleResendVerification}
+              disabled={resendingVerification}
+              className="text-sm font-medium text-blue-600 hover:text-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {resendingVerification ? 'Sending...' : 'Resend verification email'}
+            </button>
+            {resendMessage && (
+              <p className={`text-xs mt-2 ${resendMessage.includes('sent') ? 'text-green-600' : 'text-red-600'}`}>
+                {resendMessage}
+              </p>
+            )}
           </div>
         )}
 

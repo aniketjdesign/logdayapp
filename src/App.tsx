@@ -11,6 +11,7 @@ import { WorkoutLogs } from './components/WorkoutLogs';
 import { Settings } from './components/Settings';
 import { Login } from './components/Auth/Login';
 import { SignUp } from './components/Auth/SignUp';
+import { AuthCallback } from './components/Auth/AuthCallback';
 import { SplashScreen } from './components/others/SplashScreen';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ResetPasswordConfirmPage from './pages/ResetPasswordConfirmPage';
@@ -98,6 +99,7 @@ const AppContent = () => {
       location.pathname === '/login' || 
       location.pathname === '/signup' || 
       location.pathname === '/reset-password' || 
+      location.pathname === '/auth/callback' ||
       isResetPasswordConfirmRoute
     ) {
       return (
@@ -107,6 +109,7 @@ const AppContent = () => {
           <Route path="/signup" element={<SignUp />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/reset-password-confirm" element={<ResetPasswordConfirmPage />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="*" element={<Navigate to={isDesktop ? "/login" : "/splash"} replace />} />
         </Routes>
       );

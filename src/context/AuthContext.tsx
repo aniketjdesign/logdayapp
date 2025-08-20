@@ -13,6 +13,7 @@ interface AuthContextType {
   updatePassword: (newPassword: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   deleteAccount: (password: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -69,6 +70,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error("Supabase auth error:", error);
         throw error;
       }
+
+      // Check if email is verified
+      if (!data.user.email_confirmed_at) {
+        throw new Error('Please verify your email before signing in. Check your inbox for a confirmation link.');
+      }
       
       console.log("Authentication successful");
       identifyUser(data.user);
@@ -90,6 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`
+        }
       });
       
       if (response.error) {
@@ -98,13 +107,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (response.data.user) {
-        console.log("Signup successful");
-        identifyUser(response.data.user);
-        Analytics.userSignedUp({
-          userId: response.data.user.id,
-          email: response.data.user.email || '',
-          createdAt: response.data.user.created_at
-        });
+        console.log("Signup successful, verification email sent");
+        // Don't identify user or track signup until email is verified
+        console.log("User needs to verify email before completing signup");
       }
       
       return response;
@@ -217,6 +222,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`
+      }
+    });
+    if (error) throw error;
+  };
+
   const value: AuthContextType = {
     user,
     signIn,
@@ -226,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updatePassword,
     resetPassword,
     deleteAccount,
+    resendConfirmation,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
