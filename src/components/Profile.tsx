@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { X, LogOut, Bell, User, Share, RefreshCw, Settings, MessageSquare, Clock, BarChart, TrendingUp, Award, ChevronDown } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { X, LogOut, Bell, User, Share, RefreshCw, Settings, MessageSquare, Clock, BarChart, TrendingUp, Award, ChevronDown, ChevronRight, Weight, Plus, Scale, ArrowUp, ArrowDown, Calendar, Save } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useWorkout } from '../context/WorkoutContext';
 import { useAuth } from '../context/AuthContext';
 import { useInstallPrompt } from '../hooks/useInstallPrompt';
@@ -11,6 +11,8 @@ import { MuscleGroup, WorkoutLog } from '../types/workout';
 import { PageHeader } from './ui/PageHeader';
 import { OngoingWorkoutMessage } from './others/OngoingWorkoutMessage';
 import { useOnboarding } from '../context/OnboardingContext';
+import { supabaseService } from '../services/supabaseService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 declare global {
   interface Window {
@@ -44,6 +46,18 @@ export const Profile: React.FC = () => {
   const [showDateSelector, setShowDateSelector] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
+  const [userProfile, setUserProfile] = useState<any>(null);
+  const [weightLogs, setWeightLogs] = useState<any[]>([]);
+  const [weightStats, setWeightStats] = useState<any>(null);
+  const [showWeightModal, setShowWeightModal] = useState(false);
+  const [weightFormData, setWeightFormData] = useState({
+    weight: '',
+    logged_at: new Date().toISOString().slice(0, 16),
+    notes: ''
+  });
+  const [isSavingWeight, setIsSavingWeight] = useState(false);
+  const [weightError, setWeightError] = useState<string | null>(null);
+  const [weightUnit, setWeightUnit] = useState<'lbs' | 'kgs'>('lbs');
   
   const navigate = useNavigate();
   const { 
@@ -78,6 +92,80 @@ export const Profile: React.FC = () => {
       calculateInsights(workoutLogs);
     }
   }, [workoutLogs, datePeriod]);
+
+  // Load user profile
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      try {
+        const { data } = await supabaseService.getUserProfile();
+        setUserProfile(data);
+      } catch (error) {
+        console.error('Error loading user profile:', error);
+      }
+    };
+
+    if (user) {
+      loadUserProfile();
+    }
+  }, [user]);
+
+  // Load weight data
+  useEffect(() => {
+    const loadWeightData = async () => {
+      try {
+        const [logsResult, statsResult, settingsResult, profileResult] = await Promise.all([
+          supabaseService.getWeightLogs(),
+          supabaseService.getWeightStats(),
+          supabaseService.getUserSettings(),
+          supabaseService.getUserProfile()
+        ]);
+
+        if (!logsResult.error) {
+          setWeightLogs(logsResult.data);
+        }
+
+        if (!settingsResult.error) {
+          setWeightUnit(settingsResult.weightUnit);
+        }
+
+        // Handle weight stats with fallback to profile weight
+        if (!statsResult.error && statsResult.data && statsResult.data.totalEntries > 0) {
+          // Has weight logs, use stats from database
+          setWeightStats(statsResult.data);
+        } else if (!profileResult.error && profileResult.data?.weight) {
+          // No weight logs but profile has weight, create initial stats
+          setWeightStats({
+            currentWeight: profileResult.data.weight,
+            previousWeight: null,
+            weightChange: null,
+            totalEntries: 0,
+            avgLast7Days: profileResult.data.weight,
+            avgLast30Days: profileResult.data.weight,
+            firstEntryDate: null,
+            lastEntryDate: null
+          });
+        } else {
+          // No weight data available
+          setWeightStats({
+            currentWeight: null,
+            previousWeight: null,
+            weightChange: null,
+            totalEntries: 0,
+            avgLast7Days: null,
+            avgLast30Days: null,
+            firstEntryDate: null,
+            lastEntryDate: null
+          });
+        }
+      } catch (error) {
+        console.error('Error loading weight data:', error);
+      }
+    };
+
+    if (user) {
+      loadWeightData();
+    }
+  }, [user]);
 
   useEffect(() => {
     // Check if this is a page load/refresh or navigation
@@ -313,6 +401,126 @@ export const Profile: React.FC = () => {
     showWhatsNewManually();
   };
 
+  // Weight tracking functions
+  const formatWeight = (weight: number | null) => {
+    if (!weight) return 'N/A';
+    return `${weight} ${weightUnit}`;
+  };
+
+  const getWeightChangeDisplay = (change: number | null) => {
+    if (!change) return { text: 'N/A', icon: null, color: 'text-gray-500' };
+    
+    const isIncrease = change > 0;
+    return {
+      text: `${Math.abs(change).toFixed(1)} ${weightUnit}`,
+      icon: isIncrease ? ArrowUp : ArrowDown,
+      color: isIncrease ? 'text-red-500' : 'text-green-500'
+    };
+  };
+
+  const handleWeightLog = async () => {
+    if (!weightFormData.weight || !weightFormData.logged_at) {
+      setWeightError('Weight and date are required');
+      return;
+    }
+
+    setIsSavingWeight(true);
+    setWeightError(null);
+
+    try {
+      const { error } = await supabaseService.addWeightLog({
+        weight: parseFloat(weightFormData.weight),
+        logged_at: weightFormData.logged_at,
+        notes: weightFormData.notes || undefined
+      });
+
+      if (error) {
+        setWeightError('Failed to add weight log');
+      } else {
+        setShowWeightModal(false);
+        setWeightFormData({
+          weight: '',
+          logged_at: new Date().toISOString().slice(0, 16),
+          notes: ''
+        });
+        
+        // Reload weight data and profile
+        const [logsResult, statsResult, profileResult] = await Promise.all([
+          supabaseService.getWeightLogs(),
+          supabaseService.getWeightStats(),
+          supabaseService.getUserProfile()
+        ]);
+
+        if (!logsResult.error) {
+          setWeightLogs(logsResult.data);
+        }
+
+        if (!statsResult.error) {
+          setWeightStats(statsResult.data);
+        }
+
+        // Update user profile state as well since weight might have synced
+        if (!profileResult.error && profileResult.data) {
+          setUserProfile(profileResult.data);
+        }
+
+        // Trigger weight update event for other components
+        window.dispatchEvent(new CustomEvent('weightUpdated'));
+      }
+    } catch (error) {
+      setWeightError('Failed to add weight log');
+      console.error('Error adding weight log:', error);
+    } finally {
+      setIsSavingWeight(false);
+    }
+  };
+
+  const closeWeightModal = () => {
+    setShowWeightModal(false);
+    setWeightFormData({
+      weight: '',
+      logged_at: new Date().toISOString().slice(0, 16),
+      notes: ''
+    });
+    setWeightError(null);
+  };
+
+  const prepareWeightChartData = () => {
+    return weightLogs
+      .slice(0, 10) // Show last 10 entries
+      .reverse()
+      .map(log => ({
+        date: log.logged_at,
+        weight: log.weight,
+        formattedDate: new Date(log.logged_at).toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric'
+        })
+      }));
+  };
+
+  const CustomWeightTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+          <p className="text-sm text-gray-600">
+            {new Date(label).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })}
+          </p>
+          <p className="text-lg font-semibold text-blue-600">
+            {formatWeight(payload[0].value)}
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   return (
     <>
       {isLoading && showSkeleton ? (
@@ -396,26 +604,34 @@ export const Profile: React.FC = () => {
                 
                 <div className="max-w-2xl mx-auto">
                   <PageHeader
-                    title="Profile"
+                    title="You"
                     subtitle="Configure settings, view your profile and more."
                     scrollContainerRef={scrollContainerRef}
                   />
                   
                   <div className="pt-4 pb-32 px-4">
                     {/* User Info Card */}
-                    <motion.div 
-                      className="flex flex-row items-center p-5 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6 rounded-xl shadow-sm"
+                    <motion.button 
+                      onClick={() => navigate('/user-profile')}
+                      className="w-full flex flex-row items-center justify-between p-5 bg-gradient-to-r from-blue-50 to-indigo-50 mb-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:scale-[1.02]"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.15 }}>
-                      <div className="bg-blue-100 rounded-full p-3 mr-4">
-                        <User size={24} strokeWidth={2} className="text-blue-600" />
+                      <div className="flex items-center">
+                        <div className="bg-blue-100 rounded-full p-3 mr-4">
+                          <User size={24} strokeWidth={2} className="text-blue-600" />
+                        </div>
+                        <div className="text-left">
+                          <h2 className="text-lg font-medium text-gray-800">
+                            {userProfile?.full_name || 'Complete your profile'}
+                          </h2>
+                          <p className="text-sm text-gray-500">
+                            {userProfile?.full_name ? user?.email : 'Tap to add your details'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h2 className="text-lg font-medium text-gray-800">{user?.email?.split('@')[0] || 'User'}</h2>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                      </div>
-                    </motion.div>
+                      <ChevronRight size={20} className="text-gray-400" />
+                    </motion.button>
 
                     {/* Workout Insights */}
                     <motion.div 
@@ -550,9 +766,129 @@ export const Profile: React.FC = () => {
 
                     </motion.div>
 
+                    {/* Weight Tracking */}
+                    <motion.div 
+                      className="mb-6"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: 0.25 }}>
+                      <h3 className="text-md font-medium text-gray-700 mb-3 flex items-center">
+                        <Scale size={16} className="mr-2 text-purple-500" />
+                        Weight Tracking
+                      </h3>
+
+                      {/* Weight Overview Card */}
+                      <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center">
+                            <div className="bg-purple-100 rounded-full p-2 mr-3">
+                              <Weight size={16} className="text-purple-600" />
+                            </div>
+                            <h4 className="text-sm font-medium text-gray-700">Current Weight</h4>
+                          </div>
+                          <button
+                            onClick={() => {
+                              // Pre-fill with profile weight if no weight logs exist
+                              if (weightLogs.length === 0 && userProfile?.weight) {
+                                setWeightFormData({
+                                  weight: userProfile.weight.toString(),
+                                  logged_at: new Date().toISOString().slice(0, 16),
+                                  notes: 'Initial weight from profile'
+                                });
+                              }
+                              setShowWeightModal(true);
+                            }}
+                            className="flex items-center space-x-1 px-3 py-1.5 bg-purple-600 text-white text-xs rounded-lg hover:bg-purple-700 transition-colors"
+                          >
+                            <Plus size={14} />
+                            <span>Log Weight</span>
+                          </button>
+                        </div>
+
+                        {weightStats && (weightStats.totalEntries > 0 || weightStats.currentWeight) ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500 mb-1">Current</p>
+                              <p className="text-xl font-bold text-gray-800">
+                                {formatWeight(weightStats.currentWeight)}
+                              </p>
+                              {weightStats.totalEntries === 0 && weightStats.currentWeight && (
+                                <p className="text-xs text-gray-400">from profile</p>
+                              )}
+                            </div>
+                            
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500 mb-1">Change</p>
+                              <div className={`flex items-center justify-center space-x-1 ${getWeightChangeDisplay(weightStats.weightChange).color}`}>
+                                {getWeightChangeDisplay(weightStats.weightChange).icon === ArrowUp && <ArrowUp size={16} />}
+                                {getWeightChangeDisplay(weightStats.weightChange).icon === ArrowDown && <ArrowDown size={16} />}
+                                <p className="text-lg font-semibold">
+                                  {getWeightChangeDisplay(weightStats.weightChange).text}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="text-center py-4">
+                            <Weight size={32} className="mx-auto text-gray-300 mb-2" />
+                            <p className="text-sm text-gray-500 mb-1">No weight entries yet</p>
+                            <p className="text-xs text-gray-400">Start tracking your weight progress</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Weight Chart */}
+                      {weightLogs.length > 1 && (
+                        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 mb-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-medium text-gray-700">Progress Chart</h4>
+                            <p className="text-xs text-gray-500">Last 10 entries</p>
+                          </div>
+                          
+                          <div className="h-32">
+                            <ResponsiveContainer width="100%" height="100%">
+                              <LineChart data={prepareWeightChartData()}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                                <XAxis 
+                                  dataKey="formattedDate" 
+                                  tick={{ fontSize: 10 }}
+                                  stroke="#666"
+                                />
+                                <YAxis 
+                                  tick={{ fontSize: 10 }}
+                                  stroke="#666"
+                                  domain={['dataMin - 2', 'dataMax + 2']}
+                                />
+                                <Tooltip content={<CustomWeightTooltip />} />
+                                <Line 
+                                  type="monotone" 
+                                  dataKey="weight" 
+                                  stroke="#9333ea" 
+                                  strokeWidth={2}
+                                  dot={{ fill: '#9333ea', strokeWidth: 1, r: 3 }}
+                                  activeDot={{ r: 4, stroke: '#9333ea', strokeWidth: 1 }}
+                                />
+                              </LineChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* See All Entries Button */}
+                      {weightLogs.length > 0 && (
+                        <button
+                          onClick={() => navigate('/weight-entries')}
+                          className="w-full flex items-center justify-center space-x-2 py-2.5 bg-gray-50 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <Calendar size={16} />
+                          <span>See All Entries ({weightLogs.length})</span>
+                        </button>
+                      )}
+                    </motion.div>
+
                     {/* Settings and Actions */}
                     <motion.div
-                      className="rounded-xl overflow-hidden shadow-sm border border-gray-100 mb-6"
+                      className="rounded-xl bg-white overflow-hidden shadow-sm border border-gray-100 mb-6"
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: 0.2 }}>
@@ -669,6 +1005,102 @@ export const Profile: React.FC = () => {
             onFinishWorkout={handleFinishWorkout}
             onGoToWorkout={handleGoToWorkout}
           />
+
+          {/* Weight Logging Modal */}
+          <AnimatePresence>
+            {showWeightModal && (
+              <motion.div 
+                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div 
+                  className="bg-white rounded-xl p-6 w-full max-w-md"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                >
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold text-gray-800">Log Weight</h3>
+                    <button
+                      onClick={closeWeightModal}
+                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <X size={20} className="text-gray-500" />
+                    </button>
+                  </div>
+                  
+                  {weightError && (
+                    <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                      <p className="text-red-600 text-sm">{weightError}</p>
+                    </div>
+                  )}
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Weight ({weightUnit})
+                      </label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        value={weightFormData.weight}
+                        onChange={(e) => setWeightFormData({ ...weightFormData, weight: e.target.value })}
+                        placeholder={`Enter weight in ${weightUnit}`}
+                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Date & Time
+                      </label>
+                      <input
+                        type="datetime-local"
+                        value={weightFormData.logged_at}
+                        onChange={(e) => setWeightFormData({ ...weightFormData, logged_at: e.target.value })}
+                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Notes (Optional)
+                      </label>
+                      <textarea
+                        value={weightFormData.notes}
+                        onChange={(e) => setWeightFormData({ ...weightFormData, notes: e.target.value })}
+                        placeholder="Add any notes about this weight entry..."
+                        rows={3}
+                        className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="flex space-x-3 mt-6">
+                    <button
+                      onClick={handleWeightLog}
+                      disabled={isSavingWeight}
+                      className="flex-1 flex items-center justify-center space-x-2 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Save size={16} />
+                      <span>{isSavingWeight ? 'Saving...' : 'Log Weight'}</span>
+                    </button>
+                    
+                    <button
+                      onClick={closeWeightModal}
+                      disabled={isSavingWeight}
+                      className="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </>
       )}
     </>

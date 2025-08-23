@@ -607,5 +607,183 @@ export const supabaseService = {
     } catch (error) {
       return { data: null, error };
     }
+  },
+
+  async getUserProfile() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      // First check if user_profiles table exists and what columns it has
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('id, user_id, full_name, email, height, weight, date_of_birth, sex, created_at, updated_at')
+        .eq('user_id', session.user.id)
+        .maybeSingle();
+
+      if (error) {
+        // If table doesn't exist or has different structure, return null
+        console.error('User profiles table error:', error);
+        return { data: null, error: null };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error getting user profile:', error);
+      return { data: null, error };
+    }
+  },
+
+  async saveUserProfile(profile: {
+    full_name?: string;
+    height?: number;
+    weight?: number;
+    date_of_birth?: string;
+    sex?: string;
+  }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const profileData = {
+        user_id: session.user.id,
+        email: session.user.email,
+        ...profile,
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .upsert(profileData, {
+          onConflict: 'user_id'
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  },
+
+  // Weight logging methods
+  async getWeightLogs() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('user_weight_logs')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('logged_at', { ascending: false });
+
+      if (error) throw error;
+
+      return { data: data || [], error: null };
+    } catch (error) {
+      return { data: [], error };
+    }
+  },
+
+  async addWeightLog(weightData: { weight: number; logged_at: string; notes?: string }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('user_weight_logs')
+        .insert({
+          user_id: session.user.id,
+          weight: weightData.weight,
+          logged_at: weightData.logged_at,
+          notes: weightData.notes
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  },
+
+  async updateWeightLog(id: string, weightData: { weight: number; logged_at: string; notes?: string }) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase
+        .from('user_weight_logs')
+        .update({
+          weight: weightData.weight,
+          logged_at: weightData.logged_at,
+          notes: weightData.notes
+        })
+        .eq('id', id)
+        .eq('user_id', session.user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      return { data, error: null };
+    } catch (error) {
+      return { data: null, error };
+    }
+  },
+
+  async deleteWeightLog(id: string) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { error } = await supabase
+        .from('user_weight_logs')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      return { error: null };
+    } catch (error) {
+      return { error };
+    }
+  },
+
+  async getWeightStats() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('No authenticated user');
+
+      const { data, error } = await supabase.rpc('get_user_weight_stats', {
+        target_user_id: session.user.id
+      });
+
+      if (error) throw error;
+
+      const stats = data && data.length > 0 ? data[0] : null;
+      
+      return {
+        data: {
+          currentWeight: stats?.current_weight || null,
+          previousWeight: stats?.previous_weight || null,
+          weightChange: stats?.weight_change || null,
+          totalEntries: stats?.total_entries || 0,
+          avgLast7Days: stats?.avg_last_7_days || null,
+          avgLast30Days: stats?.avg_last_30_days || null,
+          firstEntryDate: stats?.first_entry_date || null,
+          lastEntryDate: stats?.last_entry_date || null
+        },
+        error: null
+      };
+    } catch (error) {
+      return { data: null, error };
+    }
   }
 };

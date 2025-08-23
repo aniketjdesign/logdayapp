@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { WorkoutProvider, useWorkout } from './context/WorkoutContext';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { OnboardingProvider, useOnboarding } from './context/OnboardingContext';
+import { WeightProvider } from './context/WeightContext';
 import { Navigation } from './components/Navigation';
 import { ExerciseList } from './components/ExerciseList';
 import { WorkoutSession } from './components/WorkoutSession';
@@ -21,6 +22,8 @@ import { UpdateNotification } from './components/others/UpdateNotification';
 import { WorkoutSkeleton } from './components/WorkoutSkeleton';
 import RoutinesPage from './pages/routines';
 import ProfilePage from './pages/ProfilePage';
+import { UserProfilePage } from './components/UserProfilePage';
+import { WeightEntries } from './components/WeightEntries';
 import { Capacitor } from '@capacitor/core';
 import { capacitorService } from './services/capacitor';
 import { WhatsNewModal } from './components/others/WhatsNewModal';
@@ -141,6 +144,8 @@ const AppContent = () => {
           <Route path="/contact" element={<ContactForm />} />
           <Route path="/routines" element={<RoutinesPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/user-profile" element={<UserProfilePage />} />
+          <Route path="/weight-entries" element={<WeightEntries />} />
           <Route path="*" element={<Navigate to={defaultHomePath} replace />} />
         </Routes>
       </div>
@@ -153,12 +158,14 @@ function App() {
   return (
     <AuthProvider>
       <SettingsProvider>
-        <WorkoutProvider>
-          <OnboardingProvider>
-            <UpdateNotification />
-            <AppContent />
-          </OnboardingProvider>
-        </WorkoutProvider>
+        <WeightProvider>
+          <WorkoutProvider>
+            <OnboardingProvider>
+              <UpdateNotification />
+              <AppContent />
+            </OnboardingProvider>
+          </WorkoutProvider>
+        </WeightProvider>
       </SettingsProvider>
     </AuthProvider>
   );
